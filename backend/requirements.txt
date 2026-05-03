@@ -1,0 +1,26 @@
+# FastAPI core
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# Database & Auth
+supabase==2.9.1
+
+# AI / LLM
+openai==1.51.0
+anthropic==0.36.0
+
+# Background jobs
+celery==5.4.0
+redis==5.1.1
+
+# Environment & utilities
+python-dotenv==1.0.1
+httpx==0.27.2
+
+# Web search fallback
+tavily-python==0.5.0
+
+# Push notifications
+firebase-admin==6.5.0

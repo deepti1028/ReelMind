@@ -1,0 +1,315 @@
+ReelMind — Product Requirements Document | CONFIDENTIAL 
+ReelMind 
+AI-Powered Short-Form Content Library 
+Product Requirements Document — MVP v1.0 
+Product 
+ReelMind — iOS & Android App
+Version 
+1.0 — MVP
+Status 
+Draft for Review
+Date 
+April 2026
+Platform 
+Instagram (public accounts only — MVP)
+Prepared by 
+Product Team
+
+
+
+1. Executive Summary 
+ReelMind solves a problem that every heavy Instagram user eventually hits: saved reels  become a second doom-scroll. A user saves hundreds of reels across skincare, fitness,  haircare, and nutrition — and when they actually need a specific recommendation, finding it  requires scrolling through an unorganised wall of content. The save folder becomes as noisy as  the feed itself. 
+ReelMind is a mobile application that intercepts shared reel URLs via the native iOS/Android  share sheet, automatically transcribes and categorises the content using AI, and stores it in a  personal, queryable knowledge base. Users can then ask natural-language questions — 'what  sunscreen for oily skin under ₹500 did I save?' — and receive a structured, conversational  answer backed by their own saved content and supplemented by web search. 
+The core insight: at save time, the user has no immediate intent. That processing window is  used to do all the expensive AI work upfront, so that query time is near-instant. The experience  feels like a personal AI assistant who has watched every reel you've ever saved. 
+2. Problem Statement 
+2.1 The Pain Point
+v1.0 — MVP | April 2026 Page PAGE 
+ReelMind — Product Requirements Document | CONFIDENTIAL 
+• Instagram's native save feature offers zero organisation. All saved content lives in a  single undifferentiated list. 
+• As the list grows, retrieval requires scrolling — which triggers the same dopamine loop as  the main feed, leading to unintended doom-scrolling within saved content. • Short-form video is increasingly how people learn about products, routines, and  recommendations. But this knowledge is trapped in a format that is difficult to search,  reference, or synthesise. 
+• There is no tool today that treats a user's saved reel library as a structured knowledge  base that can be queried conversationally. 
+2.2 Target User 
+• Primary: GenZ and millennial Instagram users who regularly save lifestyle content  (skincare, haircare, fitness, nutrition, fashion, AI/tech). 
+• These users are already curators — they save content intentionally. ReelMind makes that  curation useful. 
+• Secondary: Any user who uses saved content as a personal reference library across any  category. 
+3. Goals & Non-Goals 
+3.1 MVP Goals 
+• Enable frictionless reel saving via the share sheet — zero new UX steps added to the  user's current behaviour. 
+• Auto-categorise saved reels into lifestyle categories (skincare, haircare, bodycare, fitness,  nutrition, fashion) using AI — no manual tagging required. 
+• Allow users to query their saved library using natural language, per category and globally. • Return answers as a chat-style response with rich cards linking back to the original reel. • Pre-process all content at save time so query responses are fast (< 3 seconds). 
+3.2 Non-Goals (MVP) 
+• Multi-platform support (TikTok, YouTube Shorts, Pinterest) — Instagram only for MVP. • Private Instagram account support — public reels only for MVP. 
+• Price comparison engine (Nykaa, Flas.io integrations) — future scope. • Social/sharing features — this is a personal library, not a community product. • Web app — mobile app only for MVP. 
+4. User Stories
+v1.0 — MVP | April 2026 Page PAGE 
+ReelMind — Product Requirements Document | CONFIDENTIAL 
+ID 
+As a... 
+I want to... 
+So that... 
+Priority
+US 
+01
+New user 
+download the app and grant share sheet  permissions in one onboarding flow
+I can start saving reels without  any technical configuration
+Must Have
+US 
+02
+User 
+share a reel URL to ReelMind from the  Instagram share sheet
+saving a reel requires zero  extra steps beyond what I  already do
+Must Have
+US 
+03
+User 
+have my reel automatically transcribed  and categorised without any input from  me
+my library organises itself as I  save
+Must Have
+US 
+04
+User 
+receive a push notification when a reel is  saved, showing which category it was  assigned to
+I can confirm categorisation is  working correctly
+Must Have
+US 
+05
+User 
+reply to the categorisation notification  with a category name to reassign the reel
+I can correct the AI in one tap,  without opening the app
+Must Have
+US 
+06
+User 
+view my saved reels organised by  category in a clean home screen
+I can browse my library the  way I actually think about  content
+Must Have
+US 
+07
+User 
+type a natural-language question in any  category and receive a conversational  answer
+I can find specific  
+recommendations without  scrolling
+Must Have
+US 
+08
+User 
+see rich cards in the chat response, each  showing a reel thumbnail, creator name,  a summary, and a link to the original reel
+I can watch the specific reel  that contains the  
+recommendation
+Must Have
+US 
+09
+User 
+ask questions that span multiple  
+categories globally
+I don't have to know which  category to look in when I'm  not sure
+Should  
+Have
+US 
+10
+User 
+create a custom category manually from  within the app
+I can organise content that  doesn't fit the default  
+categories
+Should  
+Have
+US 
+11
+User 
+have web search automatically  
+supplement my query response when my  saved reels lack enough context
+I always get a complete  
+answer, not just 'no results  found'
+Should  
+Have
+US 
+12
+User 
+see the source of each claim in the chat  response (saved reel vs. web search)
+I can trust and verify the  
+information I receive
+Should  
+Have
+US 
+13
+User 
+delete a saved reel from my library 
+I can keep my library clean  over time
+Must Have
+US 
+14
+User 
+manually reassign a reel to a different  category from within the library view
+I have full control over my own  organisation
+Must Have
+US 
+15
+User 
+see an 'Uncategorised' inbox for reels  the AI was uncertain about
+nothing gets silently lost in my  library
+Must Have
+
+
+
+5. Feature Specifications 5.1 Save Flow — Reel Ingestion
+v1.0 — MVP | April 2026 Page PAGE 
+ReelMind — Product Requirements Document | CONFIDENTIAL 
+How it works 
+• User taps Share on any public Instagram reel, selects ReelMind from the share sheet. • App receives the reel URL. If the URL is inaccessible (private account, region block,  deleted reel), the app notifies the user immediately with a specific error and does not  attempt processing. 
+• Audio is extracted and transcribed using OpenAI Whisper. Caption text, hashtags, and  creator handle are also extracted. 
+• All extracted text is sent to an LLM (Claude / GPT-4o) with a classification prompt. The  model returns a category and a confidence score. 
+◦ Confidence ≥ 0.75: reel is auto-assigned to the category. 
+◦ Confidence < 0.75: reel is placed in the Uncategorised inbox. 
+• The full transcript is chunked, embedded via a text embedding model, and stored in the  vector database alongside metadata (reel URL, creator handle, category, thumbnail URL,  timestamp). 
+• A push notification is sent: 'Saved to Skincare — tap to reassign.' User can reply inline  (WhatsApp-style) with a category name, and the reel is moved immediately. 
+5.2 Library View 
+Home screen layout 
+• Home screen shows a horizontal scroll of category pills (Skincare, Haircare, Bodycare,  Fitness, Nutrition, Fashion, + user-created categories, + Uncategorised badge if count >  0). 
+• Tapping a category shows a vertical scroll of saved reel cards: thumbnail, creator handle,  2-line auto-summary, date saved. 
+• Long-press on a card reveals: Reassign Category, Delete, Open in Instagram. • Uncategorised inbox is always visible as a badge on the home screen so the user never  loses content. 
+5.3 Chat Query — Per Category 
+Query experience 
+• Each category has a chat icon / 'Ask' button that opens a conversation scoped to that  category. 
+• At query time: the user's question is embedded and matched against the vector DB  (filtered by category). The top-k most relevant reel chunks are retrieved. 
+• If retrieved chunks provide sufficient context, the LLM generates a response using only  saved content. If context is thin (fewer than 2 relevant matches above similarity  threshold), web search is triggered automatically.
+v1.0 — MVP | April 2026 Page PAGE 
+ReelMind — Product Requirements Document | CONFIDENTIAL 
+• The response is rendered as a chat message followed by 2–4 rich cards. Each card  contains: reel thumbnail, creator handle, a 2-line extract from the transcript, and a 'Watch  Reel' deep-link button to Instagram. 
+• Web-sourced content is clearly labelled 'From the web' with the source URL. • Conversation history within a session is maintained — follow-up questions work naturally. 
+5.4 Global Search 
+Cross-category queries 
+• A search bar on the home screen allows queries across all categories simultaneously. • Technically identical to category query — same RAG pipeline, no category filter applied. • Response cards include a category badge so users know where each result came from. 
+5.5 Notification Reply — Category Assignment 
+WhatsApp-style inline reply 
+• On save notification: 'Saved to Uncategorised — reply with a category name to assign.' • User replies with a text string (e.g. 'Makeup'). App creates the category if it doesn't exist  and moves the reel. 
+• Confirmation notification sent: 'Added to Makeup.' 
+• iOS limitation note: notification reply character limit is 140 characters. If category name is  ambiguous (matches multiple existing categories partially), the app defaults to creating a  new one and the user can merge later. 
+5.6 Edge Cases & Error Handling 
+Known edge cases 
+• Private reel URL: Detected at ingestion. Error notification sent. Reel is not stored. If a  previously public account goes private after a reel was saved, the stored transcript and  metadata are retained (we already have it). The 'Watch Reel' link will surface an  Instagram error — the card should degrade gracefully and show 'Content may be  unavailable.' 
+• Deleted reel: Same graceful degradation. Transcript is retained for query purposes. • No audio / music-only reel: If Whisper returns an empty transcript, the system falls back to  caption + hashtag analysis only. If both are empty, the reel goes to Uncategorised. • Duplicate save: If the same reel URL is shared again, the app detects the duplicate,  notifies the user ('You already saved this on [date]'), and does not re-process. • Transcription failure: Reel is queued for retry (up to 3 attempts). On final failure, reel is  placed in Uncategorised with a flag indicating processing failed.
+v1.0 — MVP | April 2026 Page PAGE 
+ReelMind — Product Requirements Document | CONFIDENTIAL 
+6. Technical Architecture 
+6.1 Recommended Stack 
+Layer 
+Technology 
+Rationale
+Mobile App 
+React Native 
+Single codebase for iOS and Android. Share sheet  extensions work natively in RN.
+Backend API 
+Node.js + Express /  FastAPI
+Lightweight REST API. FastAPI preferred if the team  is Python-first (matches AI tooling).
+Transcription 
+OpenAI Whisper API 
+Best-in-class accuracy, multilingual, cost-effective at  MVP scale.
+LLM  
+(categorisation +  synthesis)
+Claude claude-sonnet 4-20250514 / GPT-4o
+Either works. Claude has better instruction-following  for structured classification prompts.
+Embeddings 
+OpenAI text 
+embedding-3-small
+Fast, cheap, high quality. Runs at save time.
+Vector Database 
+Supabase pgvector 
+Managed Postgres with vector extension. Avoids a  separate Pinecone account at MVP scale. Scales  well.
+Web Search (RAG  supplement)
+Tavily API / Perplexity  API
+Designed for LLM-augmented search. Returns  clean, citable results.
+Push Notifications 
+Firebase Cloud  
+Messaging (FCM)
+Cross-platform, free tier sufficient for MVP.
+Auth 
+Supabase Auth 
+Email + Google Sign-In. Keeps the stack unified.
+File Storage 
+Supabase Storage 
+Reel thumbnails cached here.
+Job Queue  
+(background  
+processing)
+BullMQ (Redis-backed) 
+Transcription and embedding run as background  jobs, not in the request cycle.
+
+
+
+6.2 Processing Architecture 
+All expensive processing (transcription, embedding, classification) happens at save time via a  background job queue. This is the key architectural decision that makes query responses fast. 
+• Save time: URL received → queued as a BullMQ job → Whisper transcription → LLM  classification → embedding → Supabase vector store → push notification. Expected total  time: 15–45 seconds depending on reel length. User is not waiting for this.
+v1.0 — MVP | April 2026 Page PAGE 
+ReelMind — Product Requirements Document | CONFIDENTIAL 
+• Query time: Question embedded → vector similarity search (Supabase pgvector) → top-k  chunks retrieved → LLM synthesis call → response streamed to client. Expected latency:  2–4 seconds. 
+• Web search is triggered conditionally: if the number of retrieved chunks above the  similarity threshold is fewer than 2, Tavily search is called and its results are appended to  the LLM context. 
+7. MVP Scope & Phasing 
+Phase 1 — MVP (Months 1–3) 
+• Share sheet ingestion for Instagram public reels. 
+• Auto-categorisation into 6 preset lifestyle categories. 
+• Uncategorised inbox with notification reply for category assignment. 
+• Per-category chat query with rich card responses. 
+• Global search bar (same RAG pipeline, no category filter). 
+• Manual reassign and delete from library view. 
+• User-created custom categories. 
+• Graceful degradation for inaccessible / deleted / audio-less reels. 
+Phase 2 — Post-MVP (Months 4–6) 
+• Multi-platform support: TikTok, YouTube Shorts. 
+• Product price comparison via Nykaa / Flas.io API integrations. 
+• Cross-reel synthesis: 'What do all my saved creators say about retinol?' type  summarisation queries. 
+• Private account support (if Instagram policy allows). 
+• Android home screen widget for quick save. 
+Phase 3 — Growth 
+• Collaborative libraries (share a category with a friend). 
+• Creator analytics: which creators appear most in your library. 
+• Trend alerts: 'Three new reels about SPF 50 sunscreen this week based on your  interests.' 
+8. Success Metrics 
+8.1 Activation
+v1.0 — MVP | April 2026 Page PAGE 
+ReelMind — Product Requirements Document | CONFIDENTIAL 
+• % of new users who successfully save their first reel within 24 hours of install. • Target: 60%+ 
+8.2 Retention 
+• D7 retention (users who save at least one reel in the first 7 days after install). • Target: 40%+ 
+8.3 Engagement 
+• Average queries per active user per week. 
+• Target: 3+ queries/week for weekly active users. 
+• % of query sessions where user taps a 'Watch Reel' card link. 
+• Target: 35%+ 
+8.4 Quality 
+• Auto-categorisation accuracy rate (sampled user surveys + correction rate). • Target: 80%+ correct without user correction. 
+• Query response user satisfaction (thumbs up/down on responses). 
+• Target: 75%+ positive. 
+9. Open Questions & Risks 
+9.1 Open Questions 
+• Reel download mechanism: Several third-party services offer unofficial Instagram reel  download APIs. A vendor needs to be evaluated for reliability, ToS exposure, and rate  limits before development begins. 
+• Whisper cost at scale: At high save volumes, transcription costs could become significant.  Cost modelling should be done before launch. 
+• Category confidence threshold: The 0.75 threshold is an initial assumption. This should  be calibrated on real data during beta. 
+9.2 Risks 
+• Instagram API restrictions: Instagram has historically been aggressive about blocking  unofficial data access. The share sheet approach (URL-only) is the safest available  option, but it still depends on the reel being publicly accessible. Any change to  Instagram's URL scheme or access controls could break ingestion.
+v1.0 — MVP | April 2026 Page PAGE 
+ReelMind — Product Requirements Document | CONFIDENTIAL 
+• Content becoming unavailable: A reel saved today may be deleted or account-privated  tomorrow. The transcript is retained, but the 'Watch Reel' link degrades. This is a known  and accepted limitation for MVP. 
+• LLM hallucination in query responses: The LLM must be prompted to answer only from  provided context and to clearly label web-sourced content. Hallucinated product  recommendations are a reputational risk. RAG architecture mitigates but does not  eliminate this. 
+10. Appendix — Default Categories (MVP) 
+Category 
+Example reel signals (keywords / topics)
+Skincare 
+sunscreen, SPF, retinol, vitamin C, moisturiser, toner, serum, cleanser,  exfoliant, niacinamide, hyaluronic acid, GRWM (skin)
+Haircare 
+shampoo, conditioner, hair mask, scalp, hair oil, frizz, heat protectant, keratin,  hair growth
+Bodycare 
+body lotion, scrub, body wash, deodorant, stretch marks, tan removal, body  sunscreen
+Fitness 
+workout, exercise, gym, yoga, pilates, strength, cardio, HIIT, calories, protein,  form
+Nutrition 
+diet, meal prep, recipes, protein, gut health, supplements, calories, macros,  healthy eating
+Fashion 
+outfit, OOTD, styling, trends, haul, wardrobe, fashion tips, how to style
+
+
+
+All 6 categories are extendable. Users can create custom categories from inside the app at any  time, and the AI classification prompt is updated dynamically to include user-defined categories  in future saves. 
+ReelMind — MVP PRD v1.0 | Confidential | April 2026
+v1.0 — MVP | April 2026 Page PAGE 
+

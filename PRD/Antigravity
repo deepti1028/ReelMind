@@ -1,0 +1,449 @@
+# ReelMind — Product Requirements Document
+
+> **Version**: 1.1 (MVP)
+**Date**: April 2026
+**Status**: Ready for Development
+> 
+
+---
+
+## 1. Executive Summary
+
+### Problem Statement
+
+Short-form video content (Reels) has become one of the primary mediums through which people discover products, routines, and advice. Users instinctively save Reels they find valuable — but Instagram's native save feature offers zero organization, zero search, and zero intelligence. The result: users doom-scroll their own saved lists, defeating the purpose of saving in the first place.
+
+### Solution
+
+**ReelMind** is an AI-powered personal knowledge base for saved Instagram Reels. It automatically organizes saved content by topic, transcribes and understands what creators are actually saying, and lets users query their saved content conversationally — like asking a smart friend who has watched every Reel you've ever saved.
+
+### One-Line Pitch
+
+*"Your saved Reels, finally organized and searchable — powered by AI."*
+
+---
+
+## 2. Target Audience
+
+### Primary Persona — The Lifestyle Curator
+
+- **Age**: 18–30
+- **Platform**: Instagram-native, heavy Reels consumer
+- **Behavior**: Saves 10–30 Reels per week across skincare, fitness, fashion, food etc.
+- **Pain Point**: Can't find specific Reels when they need them; ends up re-watching the same creators or doom-scrolling saves
+- **Tech Comfort**: High — comfortable with app permissions, share sheets, and AI-powered tools
+
+### Secondary Persona — The Knowledge Hoarder
+
+- Saves Reels about finance tips, career advice, cooking techniques
+- Wants to retrieve specific information without rewatching the video
+- Values the chatbot layer more than the organization layer
+
+---
+
+## 3. Core Principles
+
+1. **Zero friction saving** — Adding a Reel must never take more than 2 taps
+2. **Invisible AI** — The AI should feel like magic, not like a tool. Users shouldn't need to understand how it works
+3. **Fast retrieval** — Query responses must feel instant (all heavy processing happens at save time, not query time)
+4. **Conversational, not clinical** — The interface is chat-first with rich visual cards, not a database browser
+
+---
+
+## 4. Feature Specifications
+
+### 4.1 Reel Saving via Share Sheet
+
+**Description**: Users save a Reel directly from Instagram using the native OS share sheet. No copy-pasting, no switching apps manually.
+
+**User Flow**:
+
+1. User views a Reel on Instagram
+2. Taps the **Share** icon on the Reel
+3. Selects **ReelMind** from the share sheet
+4. A bottom sheet appears in ReelMind showing: *"Saving reel... this will take a moment"*
+5. User can dismiss and continue browsing — processing happens in the background
+6. A push notification confirms: *"✅ Reel saved to [Category Name]"* or prompts for category if uncertain
+
+**Technical Notes**:
+
+- ReelMind registers as a share target for URLs on both iOS (Share Extension) and Android (Intent Filter)
+- The shared data is the public Instagram Reel URL (e.g., `https://www.instagram.com/reel/XXXXX/`)
+- MVP supports **public account Reels only**
+
+**Constraints**:
+
+- Private account Reels are not supported in MVP (user sees a friendly error: *"This Reel is from a private account and can't be saved yet"*)
+- Region-blocked or deleted Reels show an error with a retry option
+
+---
+
+### 4.2 AI Processing Pipeline (Backend — Triggered at Save Time)
+
+> All heavy AI processing happens at **save time**, not at query time. This ensures sub-second query responses.
+> 
+
+**Step-by-step pipeline**:
+
+```
+URL Received
+    ↓
+Validate URL (public reel check)
+    ↓
+Download Reel (yt-dlp + FFmpeg — video + audio merged as .mp4)
+    ↓
+Extract Audio Track (FFmpeg — strip audio from .mp4)
+    ↓
+Fetch Page Metadata (caption, hashtags, creator handle, thumbnail)
+    ↓
+Audio Transcription
+(OpenAI Whisper API — converts audio to text)
+    ↓
+Content Extraction
+(LLM prompt: extract products mentioned, topics discussed, key advice given)
+    ↓
+Auto-Categorization
+(LLM prompt: assign to best-fit category with confidence score)
+    ↓
+[If confidence ≥ threshold] → Auto-assign + notify user
+[If confidence < threshold] → Send notification asking user to name category
+    ↓
+Generate Vector Embeddings
+(text-embedding-3-small or equivalent)
+    ↓
+Store in Vector DB + Relational DB
+Cleanup temporary media files from server
+```
+
+**Confidence Threshold**: 75% (tunable). Below this, a notification is triggered.
+
+> [!IMPORTANT]
+yt-dlp is an open-source tool that works by reverse-engineering Instagram's CDN URLs from public page responses. It does not use Instagram's official API. It must be kept updated on the server (`yt-dlp -U`) as Instagram periodically changes its response structure. This is the same mechanism used by all reel downloader websites.
+> 
+
+**Content stored per Reel**:
+
+- Original URL
+- Reel thumbnail (cached)
+- Creator handle & display name
+- Full transcription
+- AI-extracted summary (2–3 sentences)
+- Products/topics mentioned (structured list)
+- Category assigned
+- Vector embedding
+- Timestamp saved
+- Processing status (queued / processing / done / failed)
+
+---
+
+### 4.3 Category System
+
+**Pre-defined MVP Categories** (6 lifestyle niches):
+
+| Category | Example Content |
+| --- | --- |
+| 🧴 Skincare | Sunscreens, serums, moisturizers, routines |
+| 💇 Haircare | Shampoos, hair masks, growth tips, styling |
+| 🛁 Bodycare | Body lotions, scrubs, deodorants, shower routines |
+| 🏋️ Fitness | Workouts, gym routines, form tips, equipment |
+| 🥗 Nutrition | Meals, supplements, diet tips, recipes |
+| 👗 Fashion | Outfit ideas, styling tips, shopping hauls |
+
+**AI-Generated Categories**:
+
+- If a Reel clearly belongs to a topic outside the 6 defaults (e.g., "Productivity," "Travel"), the LLM suggests a new category name
+- Category is created only after user confirmation (via notification reply or in-app prompt)
+
+**User-Created Categories**:
+
+- Users can manually create custom categories from within the app
+- Users can manually re-assign a Reel to a different category
+
+---
+
+### 4.4 Notification-Based Category Resolution
+
+**Trigger**: AI confidence score falls below threshold during categorization.
+
+**Notification Flow**:
+
+```
+Push Notification:
+"❓ We couldn't figure out where to save this Reel by [Creator Name].
+ Reply with a category name, or tap to choose in-app."
+
+[Reply directly from notification] → User types "Productivity" → category created → Reel saved
+[Tap notification] → Opens in-app category picker
+[No response within 7 days] → Reel saved to "Uncategorized"
+```
+
+**Technical Note**: Inline notification replies require iOS Notification Content Extensions and Android Direct Reply — both natively supported via Expo Notifications + Firebase Cloud Messaging (FCM).
+
+**"Uncategorized" Bucket**:
+
+- Acts as a catch-all inbox
+- Users can browse and manually assign from here
+- AI periodically (weekly) re-attempts categorization on uncategorized Reels
+
+---
+
+### 4.5 Per-Category AI Chatbot
+
+**Description**: Each category has a dedicated AI assistant that knows every Reel the user has saved in that category. Users can ask natural language questions and get intelligent, sourced answers.
+
+**Access Flow**:
+
+1. User opens ReelMind
+2. Taps a category (e.g., Skincare)
+3. Sees their saved Reels feed + a chat FAB (floating action button)
+4. Taps chat → opens the category chatbot
+5. Types a question → gets a response with rich cards
+
+**Example Queries**:
+
+- *"What sunscreen is best for oily skin?"*
+- *"Which creators talked about Vitamin C serums?"*
+- *"Give me a morning skincare routine based on what I've saved"*
+- *"What did the Minimalist recommend for dark spots?"*
+
+**Response Format — Chat + Cards**:
+
+```
+[AI Text Response]
+"Based on your saved Reels, 3 creators mentioned sunscreens for oily skin.
+Here's what they recommended:"
+
+[Card 1]
+┌─────────────────────────────────┐
+│ 🎬 [Thumbnail]  @skincarebyrhi  │
+│ "Best sunscreens for oily..."   │
+│ ⭐ Recommended: Minimalist SPF  │
+│ [Open Reel ↗]                   │
+└─────────────────────────────────┘
+
+[Card 2] ...
+```
+
+**RAG Architecture**:
+
+- User's question → converted to vector embedding
+- Vector similarity search against user's saved Reels in that category
+- Top N relevant Reel transcriptions pulled as context
+- LLM generates response using retrieved context
+- If context is insufficient → LLM supplements with web knowledge (clearly labeled: *"From general knowledge:"*)
+
+**Chatbot Scope (MVP)**:
+
+- Per-category only (not global across all saves)
+- Context: user's saved Reels in that category only
+- Web supplement: enabled by default, can be toggled off
+
+---
+
+### 4.6 Saved Reels Feed (Per Category)
+
+**Description**: A browsable grid/list of all saved Reels within a category.
+
+**Each Reel card shows**:
+
+- Thumbnail
+- Creator handle
+- AI-generated 1-line summary (what the Reel is about)
+- Date saved
+- Tap → opens Instagram Reel directly (deep link to app or Instagram web)
+
+**Sorting options**: Date saved (default), Creator, AI relevance score
+
+---
+
+### 4.7 Onboarding Flow
+
+1. **Welcome screen** — Explain the core value prop in 3 slides (max)
+2. **Permissions** — Request notifications permission (explain why: category resolution + save confirmation)
+3. **Category setup** — Show the 6 default categories, let user enable/disable/rename
+4. **Share sheet tutorial** — Animated walkthrough showing exactly how to share a Reel to ReelMind
+5. **First save prompt** — Deep link to Instagram with a prompt to save their first Reel
+
+---
+
+## 5. Technical Architecture
+
+### 5.1 Tech Stack
+
+| Layer | Technology | Rationale |
+| --- | --- | --- |
+| **Mobile App** | React Native + Expo | Cross-platform iOS + Android, JS ecosystem, Expo handles share extensions & push notifications |
+| **Backend API** | Node.js + Express (or Fastify) | Same language as frontend, fast async processing |
+| **Task Queue** | BullMQ + Redis | Async AI processing pipeline — jobs don't block the API |
+| **Reel Extraction** | yt-dlp + FFmpeg (server-side) | yt-dlp downloads public Reels (video+audio) from Instagram's CDN; FFmpeg merges/extracts audio stream |
+| **Database** | PostgreSQL (via Supabase) | Relational data: users, reels, categories, metadata |
+| **Vector Database** | Supabase pgvector | RAG embeddings stored alongside relational data — simpler ops than Pinecone for MVP |
+| **Audio Transcription** | OpenAI Whisper API | Best-in-class accuracy, handles multiple languages and accents |
+| **LLM (Categorization + Chat)** | GPT-4o (OpenAI) | Strong reasoning, function calling support, large context window |
+| **Embeddings** | OpenAI text-embedding-3-small | Cost-efficient, high quality for semantic search |
+| **Push Notifications** | Firebase Cloud Messaging (FCM) + Expo Push | Handles both iOS (APNs) and Android, inline reply support |
+| **Auth** | Supabase Auth | Email/social login, JWT, Row Level Security out of the box |
+| **Storage** | Supabase Storage | Reel thumbnails only (video files deleted after transcription to save cost) |
+| **Hosting** | Railway or Render | Simple Node.js deployment with Redis + yt-dlp/FFmpeg support |
+
+### 5.2 High-Level Architecture Diagram
+
+```
+[Instagram App]
+      |
+   Share Sheet (user shares Reel URL)
+      |
+[ReelMind Mobile App] ──── Auth ────► [Supabase Auth]
+      |
+   HTTP POST /reels/save (URL + user_id)
+      |
+[Node.js API] → validates URL → Enqueue job
+      |
+   [Redis / BullMQ Queue]
+      |
+[Worker Process]
+      ├── yt-dlp → download .mp4 from Instagram CDN
+      ├── FFmpeg → extract audio track (.mp3)
+      ├── Scrape page HTML → caption, hashtags, creator, thumbnail
+      ├── OpenAI Whisper → transcription text
+      ├── GPT-4o → content extraction + categorization (confidence score)
+      ├── OpenAI Embeddings → vector
+      ├── Store → PostgreSQL + pgvector (Supabase)
+      ├── Upload thumbnail → Supabase Storage
+      ├── Delete temp .mp4 + .mp3 from server
+      └── FCM → Push notification to user
+
+[Query Flow]
+[ReelMind Chat UI]
+      |
+   HTTP POST /chat (question + category_id + user_id)
+      |
+[Node.js API]
+      ├── Embed question → vector
+      ├── pgvector similarity search → top N reels (user's saves only)
+      ├── GPT-4o (RAG prompt with retrieved context) → response
+      └── Return: { text, reel_cards[], sources[] }
+```
+
+---
+
+## 6. Data Models (Simplified)
+
+### Users
+
+```
+id, email, created_at, notification_token, preferences (JSON)
+```
+
+### Categories
+
+```
+id, user_id, name, icon, is_default, is_ai_generated, created_at
+```
+
+### Reels
+
+```
+id, user_id, category_id, instagram_url, reel_id (from URL),
+creator_handle, thumbnail_url, transcription (text),
+ai_summary (text), products_mentioned (JSON array),
+embedding (vector), processing_status, saved_at, reel_created_at
+```
+
+### Chat Messages
+
+```
+id, user_id, category_id, role (user/assistant),
+content (text), source_reel_ids (array), created_at
+```
+
+---
+
+## 7. Edge Cases & Known Limitations
+
+| Scenario | Handling |
+| --- | --- |
+| **Reel from private account** | Reject at save time with user-friendly error. Show "Private Account" badge. |
+| **Account goes private after save** | Content already transcribed and stored locally — chatbot still works. But "Open Reel" link will fail. Show warning badge on card. Future fix: detect and alert user. |
+| **Reel is deleted after save** | Same as above — content preserved in DB, link dead. Show "Reel deleted" badge. |
+| **No audio in Reel (text-only / visual content)** | Fall back to caption + hashtag analysis for categorization. Flag in UI: *"This Reel had no audio — categorized by caption."* |
+| **Non-English Reel** | Whisper supports multilingual transcription. LLM handles multilingual categorization. MVP: best-effort, no language restriction. |
+| **User never responds to uncategorized notification** | After 7 days, auto-assign to "Uncategorized." Re-attempt AI categorization weekly. |
+| **Duplicate Reel saved** | Detect by reel_id. Show: *"You've already saved this Reel — it's in [Category]."* No duplicate stored. |
+| **AI processing fails** | Mark as failed, retry up to 3 times. If still failing, notify user and save to Uncategorized with raw URL. |
+| **Rate limits on OpenAI API** | BullMQ handles retries with exponential backoff. Queue design prevents thundering herd. |
+
+---
+
+## 8. MVP Scope
+
+### ✅ In MVP
+
+- Share sheet save (iOS + Android)
+- AI processing pipeline (transcription → categorization → embedding)
+- 6 default lifestyle categories
+- AI-generated categories (suggested, user-confirmed)
+- Notification-based category resolution with inline reply
+- Uncategorized bucket
+- Per-category Reel feed (grid view)
+- Per-category AI chatbot with rich cards
+- Card: thumbnail + creator + summary + "Open in Instagram" CTA
+- User auth (email + Google)
+- Basic onboarding flow
+- Manual reel re-categorization
+- Duplicate detection
+- Processing status indicator
+
+### ❌ Out of MVP (Future Scope)
+
+- Multi-platform support (TikTok, YouTube Shorts, Pinterest)
+- Global chatbot (cross-category search)
+- Price comparison via Nykaa / Tira / [Flass.io](http://flass.io/) integration
+- Private account support
+- Creator analytics (which creators you save most)
+- Social features (share your organized lists with friends)
+- Web dashboard companion
+- Saved Reel collections / sub-folders within categories
+- Export to Notion / Notes
+
+---
+
+## 9. Success Metrics (MVP)
+
+| Metric | Target (3 months post-launch) |
+| --- | --- |
+| Reels saved per active user / week | ≥ 5 |
+| Chatbot queries per active user / week | ≥ 3 |
+| Auto-categorization accuracy | ≥ 85% |
+| Share sheet → save completion rate | ≥ 80% |
+| D7 retention | ≥ 35% |
+| Push notification open rate | ≥ 40% |
+
+---
+
+## 10. Resolved Decisions
+
+| Decision | Resolution |
+| --- | --- |
+| App Name | **ReelMind** ✅ |
+| Monetization | **Free — no paywall for MVP** ✅ |
+| Reel extraction method | **yt-dlp + FFmpeg on server** ✅ (see Section 4.2 for full notes) |
+| Platform scope | **Instagram-first MVP**, multi-platform future scope ✅ |
+| UI priority | **Backend + MVP logic first**, UI polish later ✅ |
+
+---
+
+## 11. Risks
+
+| Risk | Likelihood | Impact | Mitigation |
+| --- | --- | --- | --- |
+| **Instagram breaks yt-dlp compatibility** | Medium | High | Pin yt-dlp version in production, monitor for failures, auto-update via CI job. Degrade gracefully: if download fails, save URL-only with a "pending" state and retry. |
+| **Instagram rate-limits server IP** | Medium | High | Use rotating proxies or residential IP pool (e.g., Bright Data) for yt-dlp requests. Queue jobs with delay between requests. |
+| **OpenAI API costs at scale** | Medium | Medium | Delete audio/video after transcription (don't store). Cache transcriptions — same reel URL = same content. Use GPT-4o-mini for categorization, GPT-4o only for chat. |
+| **Auto-categorization accuracy below expectations** | Medium | Medium | Human-in-the-loop fallback (notification), user correction, weekly re-categorization of uncategorized items. |
+| **App Store / Play Store rejection** | Low | High | Clear privacy policy, no hidden data collection, request only necessary permissions. |
+| **Whisper accuracy for non-English / accent-heavy audio** | Low | Low | Whisper is multilingual and handles accents well. Flag low-confidence transcriptions in DB for monitoring. |
+
+---
+
+*End of Document — Version 1.0*
