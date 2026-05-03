@@ -59,7 +59,6 @@ def validate_config():
         "SUPABASE_URL",
         "SUPABASE_ANON_KEY",
         "SUPABASE_SERVICE_ROLE_KEY",
-        "OPENAI_API_KEY",
     ]
     missing = [var for var in required if not os.getenv(var)]
     if missing:
