@@ -45,6 +45,14 @@ Deferred features and enhancements for future phases.
 
 ### Few decesions that needs to be re iterated
 - We should save the reels that are in the uncategorised state by our llm/backend. This can be used for adding new default reels or to understand the parts of our LLM that still needs to get trained
+
+## Share Extension UX
+
+### Show error to user when no URL is found (Phase 2)
+- Currently if the Share Extension receives something that isn't a valid Instagram reel URL (e.g. a photo, a story, a profile link), we silently do nothing
+- User should see a clear error message: "This doesn't look like an Instagram reel. Only public reel links are supported."
+- Helps user understand why nothing happened instead of thinking the app is broken
+
 ---
 
-*Last updated: 2026-05-02*
+*Last updated: 2026-05-05*
