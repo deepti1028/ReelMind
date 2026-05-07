@@ -57,7 +57,7 @@ class ShareViewController: UIViewController {
         static let slideUpDuration: TimeInterval = 0.35
         static let progressFillDuration: TimeInterval = 0.8
         static let savingToSavedAt: TimeInterval = 0.8
-        static let dismissAt: TimeInterval = 1.5     // saved state visible for ~0.7s, then dismiss
+        static let dismissAt: TimeInterval = 1.6    // saved state visible for ~0.7s, then dismiss
     }
 
     // MARK: - Colors
@@ -130,14 +130,36 @@ class ShareViewController: UIViewController {
         super.viewWillAppear(animated)
         clearAncestorBackgrounds()
 
-        // Sync slide-up with iOS's chrome presentation so both arrive together.
+        // Two strategies for syncing the slide-up with iOS's chrome animation:
+        //
+        // 1. transitionCoordinator (preferred when available) — gives us a hook
+        //    into the same animation block iOS uses for its chrome. We animate
+        //    inside `animate(alongsideTransition:)` and both move in lockstep.
+        //
+        // 2. Fire spring animation immediately in viewWillAppear (fallback) —
+        //    share extensions on most iOS versions DON'T expose a coordinator
+        //    here, so we kick off the animation manually. Because viewWillAppear
+        //    fires *while* iOS is animating its chrome in (not after, like
+        //    viewDidAppear), our 0.35s spring runs during the same window.
+        //    Result: chrome and sheet arrive in place at roughly the same time.
+        //
+        // Either way the slide-up never waits for viewDidAppear.
         if let coordinator = transitionCoordinator {
             Log.debug("Animating slide-up alongside iOS presentation (transitionCoordinator hooked)")
             coordinator.animate(alongsideTransition: { _ in
                 self.bottomSheet.transform = .identity
             }, completion: nil)
         } else {
-            Log.warn("No transitionCoordinator available — slide-up will fall back to viewDidAppear")
+            Log.debug("No transitionCoordinator — running spring slide-up in viewWillAppear (parallel to iOS chrome)")
+            UIView.animate(
+                withDuration: K.slideUpDuration,
+                delay: 0,
+                usingSpringWithDamping: 0.75,
+                initialSpringVelocity: 0.4,
+                options: .curveEaseOut,
+                animations: { self.bottomSheet.transform = .identity },
+                completion: nil
+            )
         }
     }
 
@@ -154,22 +176,11 @@ class ShareViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        Log.event("viewDidAppear — starting progress + URL extraction")
+        Log.event("viewDidAppear — starting progress + URL extraction (sheet already mid-slide-up from viewWillAppear)")
 
-        // Fallback if transitionCoordinator wasn't available.
-        if bottomSheet.transform != .identity {
-            Log.warn("Sheet still off-screen — running fallback spring slide-up")
-            UIView.animate(
-                withDuration: K.slideUpDuration,
-                delay: 0,
-                usingSpringWithDamping: 0.75,
-                initialSpringVelocity: 0.4,
-                options: .curveEaseOut,
-                animations: { self.bottomSheet.transform = .identity },
-                completion: nil
-            )
-        }
-
+        // Slide-up was already kicked off in viewWillAppear (either via the
+        // transitionCoordinator or via the fallback spring). By the time we get
+        // here, the sheet is partway up or has finished animating.
         startProgressAndStateTimeline()
         extractAndHandleURL()
     }
