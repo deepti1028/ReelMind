@@ -57,14 +57,13 @@ class ShareViewController: UIViewController {
         static let slideUpDuration: TimeInterval = 0.35
         static let progressFillDuration: TimeInterval = 0.8
         static let savingToSavedAt: TimeInterval = 0.8
-        static let dismissAt: TimeInterval = 1.6    // saved state visible for ~0.7s, then dismiss
+        static let dismissAt: TimeInterval = 1.9    // 0.8s saving + 0.2s fade-out + 0.5s checkmark pop + 0.4s settle
     }
 
     // MARK: - Colors
 
     private static let sheetColor = UIColor(red: 26/255, green: 26/255, blue: 26/255, alpha: 1)
     private static let dragHandleColor = UIColor(white: 68/255, alpha: 1)
-    private static let progressTrackColor = UIColor(white: 51/255, alpha: 1)
     private static let secondaryTextColor = UIColor(white: 153/255, alpha: 1)
 
     // MARK: - UI
@@ -97,8 +96,18 @@ class ShareViewController: UIViewController {
         v.alpha = 1
         return v
     }()
-    private let progressTrackLayer = CAShapeLayer()
-    private let progressFillLayer = CAShapeLayer()
+    // Native iOS spinner — replaces the custom CAShapeLayer progress ring.
+    // Why: the custom ring (white outline circle) was visually too similar to
+    // the checkmark wrapper (white filled circle) that appears right after,
+    // creating a "loader appears twice" perception. The native spinner is
+    // unambiguously a "loading" indicator and looks nothing like the checkmark.
+    private let savingSpinner: UIActivityIndicatorView = {
+        let s = UIActivityIndicatorView(style: .large)
+        s.color = .white
+        s.hidesWhenStopped = false
+        s.translatesAutoresizingMaskIntoConstraints = false
+        return s
+    }()
     private let savingLabel = UILabel()
     private let savingInfoLabel = UILabel()
 
@@ -113,6 +122,16 @@ class ShareViewController: UIViewController {
     private let checkmarkLabel = UILabel()
     private let savedTitleLabel = UILabel()
     private let savedInfoLabel = UILabel()
+
+    // MARK: - Idempotency flags
+    //
+    // Share-extension lifecycle is finicky — iOS sometimes fires viewWillAppear
+    // and/or viewDidAppear more than once during a single presentation (e.g.
+    // when the extension's view is re-laid out, when the parent host briefly
+    // hides it, etc.). Without guards, we'd kick off the slide-up and progress
+    // animations again, which the user perceives as a "double loader".
+    private var hasStartedSlideUp = false
+    private var hasStartedTimeline = false
 
     // MARK: - Lifecycle
 
@@ -129,6 +148,12 @@ class ShareViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         clearAncestorBackgrounds()
+
+        guard !hasStartedSlideUp else {
+            Log.debug("viewWillAppear fired again — slide-up already started, skipping")
+            return
+        }
+        hasStartedSlideUp = true
 
         // Two strategies for syncing the slide-up with iOS's chrome animation:
         //
@@ -176,6 +201,13 @@ class ShareViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+
+        guard !hasStartedTimeline else {
+            Log.debug("viewDidAppear fired again — timeline already running, skipping")
+            return
+        }
+        hasStartedTimeline = true
+
         Log.event("viewDidAppear — starting progress + URL extraction (sheet already mid-slide-up from viewWillAppear)")
 
         // Slide-up was already kicked off in viewWillAppear (either via the
@@ -214,29 +246,7 @@ class ShareViewController: UIViewController {
 
     private func setupSavingState() {
         bottomSheet.addSubview(savingContainer)
-
-        let ring = UIView()
-        ring.translatesAutoresizingMaskIntoConstraints = false
-        savingContainer.addSubview(ring)
-
-        let center = CGPoint(x: 28, y: 28)
-        let radius: CGFloat = 25
-        let path = UIBezierPath(arcCenter: center, radius: radius,
-                                startAngle: -.pi / 2, endAngle: 1.5 * .pi, clockwise: true)
-
-        progressTrackLayer.path = path.cgPath
-        progressTrackLayer.fillColor = UIColor.clear.cgColor
-        progressTrackLayer.strokeColor = ShareViewController.progressTrackColor.cgColor
-        progressTrackLayer.lineWidth = 2.5
-        ring.layer.addSublayer(progressTrackLayer)
-
-        progressFillLayer.path = path.cgPath
-        progressFillLayer.fillColor = UIColor.clear.cgColor
-        progressFillLayer.strokeColor = UIColor.white.cgColor
-        progressFillLayer.lineWidth = 2.5
-        progressFillLayer.lineCap = .round
-        progressFillLayer.strokeEnd = 0
-        ring.layer.addSublayer(progressFillLayer)
+        savingContainer.addSubview(savingSpinner)
 
         savingLabel.text = "Saving..."
         savingLabel.font = .systemFont(ofSize: 14, weight: .semibold)
@@ -244,19 +254,16 @@ class ShareViewController: UIViewController {
         savingLabel.translatesAutoresizingMaskIntoConstraints = false
         savingContainer.addSubview(savingLabel)
 
-//        savingInfoLabel.text = "Reel added to ReelMind"
         savingInfoLabel.font = .systemFont(ofSize: 12, weight: .regular)
         savingInfoLabel.textColor = ShareViewController.secondaryTextColor
         savingInfoLabel.translatesAutoresizingMaskIntoConstraints = false
         savingContainer.addSubview(savingInfoLabel)
 
         NSLayoutConstraint.activate([
-            ring.topAnchor.constraint(equalTo: savingContainer.topAnchor),
-            ring.centerXAnchor.constraint(equalTo: savingContainer.centerXAnchor),
-            ring.widthAnchor.constraint(equalToConstant: 56),
-            ring.heightAnchor.constraint(equalToConstant: 56),
+            savingSpinner.topAnchor.constraint(equalTo: savingContainer.topAnchor),
+            savingSpinner.centerXAnchor.constraint(equalTo: savingContainer.centerXAnchor),
 
-            savingLabel.topAnchor.constraint(equalTo: ring.bottomAnchor, constant: 12),
+            savingLabel.topAnchor.constraint(equalTo: savingSpinner.bottomAnchor, constant: 16),
             savingLabel.centerXAnchor.constraint(equalTo: savingContainer.centerXAnchor),
 
             savingInfoLabel.topAnchor.constraint(equalTo: savingLabel.bottomAnchor, constant: 4),
@@ -472,18 +479,11 @@ class ShareViewController: UIViewController {
     // MARK: - Animation Sequence
 
     private func startProgressAndStateTimeline() {
-        Log.event("Starting progress fill + state transition timeline")
+        Log.event("Starting native spinner + state transition timeline")
 
-        // Progress ring fills 0 → 1 over 0.8s
-        let progressAnim = CABasicAnimation(keyPath: "strokeEnd")
-        progressAnim.fromValue = 0
-        progressAnim.toValue = 1
-        progressAnim.duration = K.progressFillDuration
-        progressAnim.timingFunction = CAMediaTimingFunction(name: .easeOut)
-        progressAnim.fillMode = .forwards
-        progressAnim.isRemovedOnCompletion = false
-        progressFillLayer.add(progressAnim, forKey: "fill")
-        progressFillLayer.strokeEnd = 1
+        // Native iOS spinner spins on its own — no Core Animation choreography
+        // needed. It just animates indefinitely until we hide it.
+        savingSpinner.startAnimating()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + K.savingToSavedAt) { [weak self] in
             Log.event("Transitioning to saved state")
@@ -499,32 +499,41 @@ class ShareViewController: UIViewController {
     }
 
     private func transitionToSavedState() {
-        UIView.animate(withDuration: 0.2) {
-            self.savingContainer.alpha = 0
-        }
-
+        // Pre-stage the saved state OFFSCREEN-EQUIVALENT — checkmark is at
+        // scale ~0 and labels are alpha 0, so even though savedContainer.alpha
+        // is 1, the contents are invisible. This keeps us from competing with
+        // the saving content during the cross-fade.
         savedContainer.alpha = 1
         savedTitleLabel.alpha = 0
         savedInfoLabel.alpha = 0
         checkmarkCircle.transform = CGAffineTransform(scaleX: 0.001, y: 0.001)
 
-        UIView.animate(
-            withDuration: 0.5,
-            delay: 0,
-            usingSpringWithDamping: 0.55,
-            initialSpringVelocity: 0.8,
-            options: .curveEaseOut,
-            animations: {
-                self.checkmarkCircle.transform = .identity
-            }
-        )
+        // Fade the saving content out completely BEFORE the checkmark pops.
+        // Sequential transition keeps the spinner and checkmark from ever
+        // being on screen at the same time.
+        UIView.animate(withDuration: 0.2, animations: {
+            self.savingContainer.alpha = 0
+        }, completion: { _ in
+            self.savingSpinner.stopAnimating()
+            // Now that saving is fully gone, pop the checkmark in.
+            UIView.animate(
+                withDuration: 0.5,
+                delay: 0,
+                usingSpringWithDamping: 0.55,
+                initialSpringVelocity: 0.8,
+                options: .curveEaseOut,
+                animations: {
+                    self.checkmarkCircle.transform = .identity
+                }
+            )
 
-        UIView.animate(withDuration: 0.4, delay: 0.2, options: .curveEaseOut) {
-            self.savedTitleLabel.alpha = 1
-        }
-        UIView.animate(withDuration: 0.4, delay: 0.3, options: .curveEaseOut) {
-            self.savedInfoLabel.alpha = 1
-        }
+            UIView.animate(withDuration: 0.4, delay: 0.1, options: .curveEaseOut) {
+                self.savedTitleLabel.alpha = 1
+            }
+            UIView.animate(withDuration: 0.4, delay: 0.2, options: .curveEaseOut) {
+                self.savedInfoLabel.alpha = 1
+            }
+        })
     }
 
     // MARK: - Dismiss
