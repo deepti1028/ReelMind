@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-
+import Auth
 
 struct ContentView: View {
     @EnvironmentObject private var auth: AuthSession

@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import Supabase
 
@@ -26,7 +27,7 @@ final class AuthSession: ObservableObject {
 
         // Listen for sign-in / sign-out / token-refresh events forever.
         listenerTask = Task { [weak self] in
-            for await (_, newSession) in await SupabaseManager.shared.client.auth.authStateChanges {
+            for await (_, newSession) in SupabaseManager.shared.client.auth.authStateChanges {
                 await MainActor.run {
                     self?.session = newSession
                     self?.syncToken(newSession?.accessToken)
