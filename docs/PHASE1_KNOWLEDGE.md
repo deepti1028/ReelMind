@@ -81,11 +81,13 @@ Supabase is a hosted PostgreSQL database with auth, storage, and real-time subsc
 SUPABASE_URL        → Your Supabase project URL
 SUPABASE_ANON_KEY   → Public key (safe to use in iOS app)
 SUPABASE_SERVICE_ROLE_KEY → Secret key (backend only, never in iOS)
-OPENAI_API_KEY      → For Whisper + embeddings
+GROQ_API_KEY        → For Whisper transcription + Llama classification (free tier)
 REDIS_URL           → For background job queue
 FCM_SERVER_KEY      → For push notifications
 TAVILY_API_KEY      → For web search fallback
 ```
+
+> **Note (2026-05-07):** We initially planned to use OpenAI (Whisper + embeddings) and Anthropic (Claude). We switched to Groq + `sentence-transformers` to stay on free tiers during MVP. See [DECISIONS.md](DECISIONS.md) for the rationale.
 
 **Why two different keys?**
 - **Anon key**: Safe for the iOS frontend. Limited by Row-Level Security (RLS). Even if someone extracts this from the app binary, they can only see their own data — the database enforces this.
@@ -310,7 +312,7 @@ This runs once when migrations are applied and populates the 6 default categorie
 | RLS approach | Basic isolation now, advanced later | Ship faster, upgrade path tracked in backlog |
 | Backend DB auth | Service role key (bypasses RLS) | Backend needs to process any user's data |
 | iOS DB auth | Anon key (limited by RLS) | Safe for client-side, database enforces isolation |
-| Embeddings | OpenAI text-embedding-3-small, 1536 dims | Cost-effective, well-supported by pgvector |
+| Embeddings | `sentence-transformers` (local, free) | No per-call cost; runs in Celery worker. Dim may change from 1536 — see DECISIONS.md |
 | Vector search | ivfflat ANN index | Fast approximate search at scale |
 | Reel deletion | Soft delete (`deleted_at`) | Chat history can still reference deleted reels |
 

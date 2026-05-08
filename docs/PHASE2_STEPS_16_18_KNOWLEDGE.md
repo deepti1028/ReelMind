@@ -4,6 +4,8 @@
 
 *Written so anyone can understand exactly how a downloaded mp3 is converted into structured data — a transcript, a category, a confidence score, and a 2-sentence summary — that drives everything else in the app.*
 
+> ⚠️ **Provider update (2026-05-07):** This document was originally written assuming OpenAI Whisper for transcription and Anthropic Claude for classification. We have since switched to **Groq** (free tier) for both — `whisper-large-v3` for transcription, `llama-3.3-70b-versatile` for classification. The architecture, prompts, confidence routing, and best-effort policy all remain valid; just mentally substitute provider names where you see "OpenAI" or "Claude" below. The future implementation in `services/transcriber.py` and `services/classifier.py` will use the Groq SDK, not OpenAI/Anthropic SDKs. See [DECISIONS.md](DECISIONS.md) for the rationale and trade-offs. Embeddings (Step 20) similarly switched to `sentence-transformers` — local, free, no API.
+
 ---
 
 ## The Big Picture
@@ -29,9 +31,11 @@ Steps 16-18 produce all three. They are the **first AI/LLM steps in the entire a
 
 | Step | Job | Where it lives |
 |---|---|---|
-| **16 (AI)** | Transcribe audio with Whisper | [`backend/services/transcriber.py`](../backend/services/transcriber.py) |
-| **17 (AI)** | Caption + hashtag extraction (fallback path) | Captured during Step 15 in [`backend/services/downloader.py`](../backend/services/downloader.py); used here as classifier input |
-| **18 (AI)** | LLM classification with Claude | [`backend/services/classifier.py`](../backend/services/classifier.py) |
+| **16 (AI)** | Transcribe audio with Whisper; set `has_audio` flag based on result | [`backend/services/transcriber.py`](../backend/services/transcriber.py) |
+| **17 (data)** | Caption + hashtag extraction — **compulsory** input to classification, not a fallback | Captured during Step 15 in [`backend/services/downloader.py`](../backend/services/downloader.py); always included in classifier input |
+| **18 (AI)** | LLM classification with Groq Llama, using transcript + caption + hashtags together | [`backend/services/classifier.py`](../backend/services/classifier.py) |
+
+**Important framing change (2026-05-07):** Caption + hashtags are *compulsory* inputs to the classifier, not a fallback used only when transcription fails. Every classification run gets all three: transcript, caption, hashtags. See [DECISIONS.md](DECISIONS.md) for the rationale. The doc below still uses the word "fallback" in some places where the meaning should be read as "always-extracted backup signal."
 
 The three steps are wired together inside a single Celery task in [`backend/workers/tasks.py`](../backend/workers/tasks.py).
 
@@ -98,6 +102,7 @@ A few intentional choices:
 | **Singleton OpenAI client** (`_get_client`) | OpenAI's SDK is thread-safe and reusable. Creating one per call wastes a TLS handshake per transcription. The lazy singleton means we only instantiate once per worker. |
 | **No `response_format="text"`** | The default JSON response gives us `response.text` plus other fields (duration, language). We only use `.text` today, but the JSON form lets us add features (e.g., language detection) without changing the call. |
 | **Strip and default to empty string** | Whisper occasionally returns `None` for completely silent audio. We normalize to `""` so callers can rely on always getting a string. |
+| **Set `has_audio` based on transcript outcome** | After Whisper runs, the Celery task writes `reels.has_audio = (len(transcript.strip()) > 0)` — `TRUE` if Whisper produced speech, `FALSE` if empty (music-only or silent). This is a permanent record on the row that lets the UI badge "classified from caption only" reels and prevents pointless Whisper retries on known-silent reels. See [DECISIONS.md](DECISIONS.md). |
 | **`raise FileNotFoundError`** | Defensive — should never happen because `download_reel_audio` just produced this file, but if it does (e.g., a `/tmp` cleanup race), we want a clear error rather than a confusing OpenAI SDK exception. |
 | **Errors not caught here** | The function lets OpenAI SDK exceptions propagate. The Celery task catches them broadly and degrades to caption-only classification (see "Best-effort policy" below). |
 
@@ -135,14 +140,14 @@ We're nowhere near the limit. If Instagram ever extends reels beyond 90 s, we'd 
 
 ---
 
-## Step 17 — Caption + Hashtag Fallback
+## Step 17 — Caption + Hashtag Extraction (Compulsory)
 
-This step is **not a separate function** — it's a design pattern. The work happens in two places:
+Caption and hashtags are **always extracted and always fed to the classifier** — they are not a fallback triggered only when Whisper fails. This step is **not a separate function** — it's a design pattern. The work happens in two places:
 
 1. **Capture** — during the yt-dlp download in Step 15, we extract caption, hashtags, creator, thumbnail. Already covered in the Steps 14-15 doc.
-2. **Use** — when calling the classifier in Step 18, we always include caption + hashtags as input, regardless of whether Whisper produced a transcript.
+2. **Use** — when calling the classifier in Step 18, we always include caption + hashtags as input alongside the transcript (which may be empty).
 
-### Why no dedicated "fallback" function?
+### Why caption is always included, not a fallback
 
 The naive design would be:
 
@@ -406,8 +411,8 @@ The orchestration in [`backend/workers/tasks.py`](../backend/workers/tasks.py) f
    └──────────────────┬───────────────────────────────────┘
                       ▼
    ┌──────────────────────────────────────────────────────┐
-   │ Step 17: caption fallback (no-op — already captured) │
-   │ → just logs "no transcript" if relevant              │
+   │ Step 17: caption + hashtags (compulsory, no-op here) │
+   │ → already captured in Step 15; passed to classifier  │
    └──────────────────┬───────────────────────────────────┘
                       ▼
    ┌──────────────────────────────────────────────────────┐

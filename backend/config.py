@@ -15,8 +15,8 @@ class Config:
     SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
     SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
-    # OpenAI
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    # Groq (Whisper transcription + Llama classification — free tier)
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
     # Redis
     REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")

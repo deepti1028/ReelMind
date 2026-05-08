@@ -78,6 +78,21 @@ supabase/migrations/
 ```
 
 ---
+## Daily workflow of backednd
+# Tab 1
+cd ~/Desktop/Deepti/Projects/ReelMind/backend
+docker-compose up -d              # Redis
+source venv/bin/activate
+uvicorn main:app --reload          # FastAPI
+
+# Tab 2
+cd ~/Desktop/Deepti/Projects/ReelMind/backend
+source venv/bin/activate
+celery -A workers.celery_app worker --loglevel=info
+
+# Tab 3
+ngrok http 8000
+# Copy new ngrok URL → update ShareViewController.swift → rebuild iOS
 
 ## 🔐 Security Reminders
 

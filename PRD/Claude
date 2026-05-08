@@ -188,7 +188,7 @@ WhatsApp-style inline reply
 5.6 Edge Cases & Error Handling 
 Known edge cases 
 • Private reel URL: Detected at ingestion. Error notification sent. Reel is not stored. If a  previously public account goes private after a reel was saved, the stored transcript and  metadata are retained (we already have it). The 'Watch Reel' link will surface an  Instagram error — the card should degrade gracefully and show 'Content may be  unavailable.' 
-• Deleted reel: Same graceful degradation. Transcript is retained for query purposes. • No audio / music-only reel: If Whisper returns an empty transcript, the system falls back to  caption + hashtag analysis only. If both are empty, the reel goes to Uncategorised. • Duplicate save: If the same reel URL is shared again, the app detects the duplicate,  notifies the user ('You already saved this on [date]'), and does not re-process. • Transcription failure: Reel is queued for retry (up to 3 attempts). On final failure, reel is  placed in Uncategorised with a flag indicating processing failed.
+• Deleted reel: Same graceful degradation. Transcript is retained for query purposes. • No audio / music-only reel: Caption + hashtags are ALWAYS extracted at ingestion (compulsory, not a fallback). If Whisper returns an empty transcript, the reel's `has_audio` flag is set to FALSE and classification proceeds using caption + hashtags alone. If transcript, caption, AND hashtags are all empty, the reel goes to Uncategorised. • Duplicate save: If the same reel URL is shared again, the app detects the duplicate,  notifies the user ('You already saved this on [date]'), and does not re-process. • Transcription failure: Reel is queued for retry (up to 3 attempts). On final failure, reel is  placed in Uncategorised with a flag indicating processing failed.
 v1.0 — MVP | April 2026 Page PAGE 
 ReelMind — Product Requirements Document | CONFIDENTIAL 
 6. Technical Architecture 
@@ -202,17 +202,16 @@ Single codebase for iOS and Android. Share sheet  extensions work natively in RN
 Backend API 
 Node.js + Express /  FastAPI
 Lightweight REST API. FastAPI preferred if the team  is Python-first (matches AI tooling).
-Transcription 
-OpenAI Whisper API 
-Best-in-class accuracy, multilingual, cost-effective at  MVP scale.
-LLM  
+Transcription
+Groq whisper-large-v3 (free tier)
+High accuracy, multilingual, $0 per call on free tier (rate-limited). See docs/DECISIONS.md.
+LLM
 (categorisation +  synthesis)
-Claude claude-sonnet 4-20250514 / GPT-4o
-Either works. Claude has better instruction-following  for structured classification prompts.
-Embeddings 
-OpenAI text 
-embedding-3-small
-Fast, cheap, high quality. Runs at save time.
+Groq llama-3.3-70b-versatile (free tier)
+Strong instruction-following, runs on Groq's free tier with generous rate limits. Originally planned to use Anthropic Claude; switched to stay $0 during MVP.
+Embeddings
+sentence-transformers (local)
+No API call — runs in Celery worker. Free forever. Smaller dimension than the originally-planned OpenAI embeddings (will require a vector(N) column update before Step 20).
 Vector Database 
 Supabase pgvector 
 Managed Postgres with vector extension. Avoids a  separate Pinecone account at MVP scale. Scales  well.

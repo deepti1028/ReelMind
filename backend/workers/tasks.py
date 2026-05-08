@@ -12,13 +12,13 @@ def process_reel(self, reel_id: str) -> dict:
     """Process a saved reel end-to-end.
 
     Pipeline (Phase 2):
-        1. Download reel audio        — Step 15
-        2. Transcribe with Whisper    — Step 16
-        3. Caption fallback if empty  — Step 17
-        4. Classify with Claude       — Step 18
-        5. Confidence routing         — Step 19
-        6. Chunk + embed transcript   — Step 20
-        7. Send FCM push notification — Step 22
+        1. Download reel audio                       — Step 15
+        2. Transcribe with Groq Whisper-large-v3     — Step 16
+        3. Caption + hashtag extraction (compulsory) — Step 17
+        4. Classify with Groq Llama 3.3              — Step 18
+        5. Confidence routing                        — Step 19
+        6. Chunk + embed via sentence-transformers   — Step 20
+        7. Send FCM push notification                — Step 22
     """
     # TODO: implement in Phase 2
     return {"reel_id": reel_id, "status": "stub"}

@@ -10,368 +10,370 @@
 
 When a user is watching a reel inside Instagram and taps the system share sheet, our **Share Extension** is one of the apps that appears. The user taps "ReelMind" and our extension is activated by iOS as a tiny separate process.
 
-Our extension has **one job, executed in under a second**:
+Our extension has **one job, executed in 1.7 seconds**:
 
-1. Show a polite "Saving..." spinner so the user knows something is happening
-2. Pull the reel URL out of whatever Instagram handed us
-3. Drop a copy of the URL into a shared container so the main app can recover it later
-4. Fire a `POST /api/v1/reels` to the backend so processing can start immediately
-5. Get out of the way
+1. Slide a polished bottom sheet up from the bottom of the screen
+2. Show a progress ring filling + "Saving..." text for 0.8s
+3. Cross-fade to a checkmark + "Saved!" celebration
+4. Slide the sheet back down and dismiss
 
-**Crucially: the extension does NOT wait for the backend response.** It dismisses immediately. All the heavy work (downloading the video, transcribing, classifying) happens asynchronously on the backend. By the time the user gets a push notification saying "Saved to Skincare", our extension has long since vanished.
+The host app (Instagram) remains fully visible behind the sheet — no dim layer, no overlay. The view controller's view is `.clear` so iOS's natural extension presentation chrome is the only thing between the host and our sheet.
 
-Steps 12 and 13 of the build plan together implement this entire flow.
+Behind the scenes during those 1.7s:
+- Pull the reel URL out of whatever Instagram handed us
+- Drop a copy of the URL into the App Group queue (so the main app can recover it)
+- Fire `POST /api/v1/reels` to the backend (fire-and-forget)
+
+**Crucially: the extension does NOT wait for the backend response.** All the heavy work (downloading the video, transcribing, classifying) happens asynchronously on the backend. By the time the user gets a push notification saying "Saved to Skincare", our extension has long since vanished.
 
 | Step | What it covers |
 |---|---|
 | **12 (Swift)** | Build Share Extension capture flow — the UI + URL extraction + App Group write |
-| **13 (Swift)** | POST URL to backend on share — the network call + immediate dismiss |
+| **13 (Swift)** | POST URL to backend on share — the network call + auto dismiss |
 
-We implemented both in the same files because they're really one continuous flow. Splitting them across separate files would have been an artificial seam.
+We implemented both in the same file (`ShareViewController.swift`).
 
 ---
 
 ## Why a Share Extension at All?
 
-This is worth understanding before reading any code.
+A "Share Extension" is one of Apple's **App Extension** types. It's a separate executable bundled inside your app, run by iOS inside the host app's process space with strict memory and time budgets.
 
-A "Share Extension" is one of Apple's **App Extension** types. From the user's perspective, it's the icon that appears in the iOS share sheet alongside Messages, Mail, AirDrop, etc. From the developer's perspective, it's a separate executable bundled inside your app.
+Two practical consequences:
 
-Why separate? Because Instagram (the host app) is what's running when the user taps share. Apple cannot launch your full app, hand it the URL, and let it process — that would be slow and disorienting. Instead, iOS runs a tiny sandboxed version of your code (the extension) **inside Instagram's process space**, with a strict memory budget and a strict time budget.
-
-This has two practical consequences for us:
-
-1. **The Share Extension is a different target than the main app.** It's a separate Swift module, with its own `Info.plist`, its own bundle ID, its own entitlements. It cannot import code from the main app unless we deliberately share it (e.g. via a framework).
-2. **The extension cannot directly talk to the main app at runtime.** They're separate processes. The only way to communicate is via a *shared container* — a folder both processes can read and write. Apple's mechanism for this is **App Groups**.
-
-Both of these consequences shape the code we wrote.
+1. **The Share Extension is a different target than the main app** — separate Swift module, own `Info.plist`, own bundle ID, own entitlements.
+2. **The extension cannot directly talk to the main app at runtime** — they're separate processes. Communication happens via a *shared container* (App Groups).
 
 ---
 
-## Prerequisite: App Groups (Step 3)
+## Prerequisite: App Groups
 
-This is **the one manual thing the user must do in Xcode** that no amount of code can do for them.
-
-In `Signing & Capabilities` for **both** targets:
-- Main app target: `ReelMind`
-- Extension target: `URL Sharing module`
-
-…the developer must enable the **App Groups** capability and add a group identifier:
+In `Signing & Capabilities` for **both** targets (`ReelMind` main app + `URL Sharing module` extension), enable the **App Groups** capability with identifier:
 
 ```
-group.com.reelmind.app
+group.com.deepti.ReelMind
 ```
 
-This must be **byte-identical** on both targets. If they differ — even by one character — `UserDefaults(suiteName:)` returns `nil` and our code silently does nothing. There is no error, no crash, no log line. It just doesn't work.
-
-The string `"group.com.reelmind.app"` is hard-coded in `ShareViewController.swift` as `K.appGroupID`. If the actual group ID in Xcode differs, **change the constant to match** — don't try to change Xcode to match the constant, because the entitlement system is what gates access to the shared container.
+This must be byte-identical on both targets. Mismatch → `UserDefaults(suiteName:)` returns `nil` and writes silently fail. The constant `K.appGroupID` in `ShareViewController.swift` must match the entitlement.
 
 ---
 
 ## File Inventory
 
-Two Swift files inside `URL Sharing module/`:
-
 ```
 URL Sharing module/
-├── ShareViewController.swift   ← entry point; iOS instantiates this
-├── SavingView.swift            ← the SwiftUI "Saving..." UI
-├── Info.plist                  ← extension config (unchanged)
+├── ShareViewController.swift         ← entry point + UI + URL extraction + POST
+├── Info.plist                        ← extension config (URL-only activation rule)
+├── URL Sharing module.entitlements   ← App Groups entitlement
+├── Assets.xcassets/                  ← AppIcon for the share sheet
 └── Base.lproj/
-    └── MainInterface.storyboard ← references ShareViewController by name
+    └── MainInterface.storyboard      ← references ShareViewController by name
 ```
 
-A note on the storyboard: it already existed when we started, and it references `ShareViewController` as the initial view controller's `customClass`. We deliberately **kept** the storyboard rather than switching to `NSExtensionPrincipalClass`, because:
+The storyboard's view has a transparent background and references `ShareViewController` as the initial view controller's `customClass`. We set `view.backgroundColor = .clear` in `viewDidLoad` so only our two visual elements (backdrop + bottom sheet) are seen.
 
-- The storyboard has `customModuleProvider="target"`, which means it auto-resolves the class from the extension's own module — no module-name string to maintain.
-- The storyboard's view has a transparent background (`alpha=0`), which we override in `viewDidLoad` with `view.backgroundColor = .systemBackground`. This was a one-line fix vs. modifying the storyboard XML.
+---
 
-So the boot sequence is:
-1. iOS reads `Info.plist` → sees `NSExtensionMainStoryboard = MainInterface`
-2. Loads `MainInterface.storyboard` → finds initial view controller with `customClass="ShareViewController"`
-3. Looks up `ShareViewController` in our module
-4. Instantiates it and calls `viewDidLoad`
+## The UI: Just a Bottom Sheet
 
-No magic, just Apple's standard storyboard plumbing.
+A single visual element — the bottom sheet. No backdrop, no overlay. Host app (e.g. Instagram) stays fully visible behind. The view's background is `.clear` so iOS's natural chrome is whatever's above the sheet.
+
+### Bottom Sheet specs
+
+- Anchored to the bottom of the screen
+- Height: **55% of screen** (was 40% — increased by 15 percentage points per spec)
+- Background: `#1a1a1a` (near-black) — currently overridden to green for visual debugging
+- Top corners rounded (20pt radius), bottom flush with screen edge
+- Drop shadow above the sheet for depth
+- Drag handle (36×4pt, `#444`) at the top — purely visual; no actual drag gesture wired up
+
+### Making the host app visible behind the sheet
+
+By default, iOS wraps a share extension's view inside chrome that has an opaque background — a white/grey rectangle that hides the host app entirely. Setting our own `view.backgroundColor = .clear` is necessary but not sufficient; the chrome's parent views are still opaque.
+
+The fix is a **view-hierarchy transparency walk**: in `viewWillAppear`, we traverse up from `self.view` to the root and set every ancestor's `backgroundColor = .clear`. This is a known share-extension trick — it works on most iOS versions. Implementation:
+
+```swift
+private func clearAncestorBackgrounds() {
+    var ancestor: UIView? = view
+    while let v = ancestor {
+        v.backgroundColor = .clear
+        ancestor = v.superview
+    }
+}
+```
+
+**Caveat:** in the iOS Simulator with no real host app providing content, you'll still see white/grey because there's nothing to show through. To see the host content (e.g. an Instagram reel) behind the sheet, you have to test from an actual app sharing into ReelMind, ideally on a real device.
+
+### Two states inside the sheet, swapped during the animation
+
+| State | Duration | Contents |
+|---|---|---|
+| Saving | 0.0–0.8s | Circular progress ring (56×56pt, white over `#333` track) + "Saving..." (14pt semibold white) + "Reel added to ReelMind" (12pt `#999`) |
+| Saved | 0.8s onwards | White circle (72×72pt) with black ✓ checkmark + "Saved!" (17pt bold) + "Reel added to your library" (12pt `#999`) |
+
+Both containers share the same center constraints inside the sheet — they overlap visually, and we cross-fade between them via alpha.
+
+**Initial alpha values are set at property declaration, not in `viewDidLoad`:**
+
+```swift
+private let savingContainer: UIView = {
+    let v = UIView()
+    v.alpha = 1   // visible from frame zero
+    return v
+}()
+
+private let savedContainer: UIView = {
+    let v = UIView()
+    v.alpha = 0   // hidden from frame zero — never flashes alongside saving
+    return v
+}()
+```
+
+This was a real bug: previously `savedContainer.alpha = 0` was set in `viewDidAppear`, which fires *after* the view is first rendered. That meant for one frame the user saw both the saving subtitle ("Reel added to ReelMind") and the saved subtitle ("Reel added to your library") stacked on top of each other. Setting alpha at construction prevents the flash.
+
+---
+
+## Animation Timeline
+
+| Time | What happens | How it's done |
+|---|---|---|
+| 0.0s | Sheet slides up | `UIView.animate` with `usingSpringWithDamping: 0.75` (cubic-bezier overshoot equivalent) |
+| 0.0–0.8s | Progress ring fills | `CABasicAnimation` on `strokeEnd` of `CAShapeLayer`, ease-out |
+| 0.8s | Saving content fades out | 0.2s alpha animation |
+| 0.8s | Checkmark pops in | Spring `damping: 0.55` (gives 0→1.1→1 overshoot bounce) |
+| 1.0s | "Saved!" title fades in | 0.4s with 0.2s delay |
+| 1.1s | Subtitle fades in | 0.4s with 0.3s delay |
+| 1.5s | `completeRequest()` | Hands off to iOS — chrome + sheet animate out together in a single smooth dismissal. No manual slide-down. |
+
+**Important: the off-screen positioning happens in `viewDidLoad`, not `viewDidAppear`.** This was a bug we hit: setting the off-screen transform in `viewDidAppear` runs *after* the view's first frame is rendered, so the user briefly sees the sheet in its final position before it jumps off-screen and animates back. The fix is to apply the off-screen transform immediately in `viewDidLoad` using a hardcoded large offset (1500pt — guaranteed off-screen on any device, since we may not have accurate bounds at this point in the lifecycle).
+
+**Equally important: the slide-up animation always starts in `viewWillAppear`, never `viewDidAppear`.** On real devices, iOS's share-extension chrome presentation takes ~0.5s. `viewDidAppear` only fires *after* that completes. If we kicked off the slide-up there, the user would see iOS's chrome appear, sit empty for half a second, and only then see our sheet slide up — a perceptible two-step entry.
+
+The fix has two strategies, both starting in `viewWillAppear`:
+
+1. **Preferred: `transitionCoordinator?.animate(alongsideTransition:)`** — hooks our animation into the same animation block iOS uses for its chrome. Both move in lockstep. Works when iOS exposes the coordinator (some iOS versions / contexts do, some don't).
+
+2. **Fallback: fire the spring animation directly in `viewWillAppear`** — share extensions on most iOS versions don't expose a `transitionCoordinator`. In that case we just kick off `UIView.animate(...)` ourselves. Because `viewWillAppear` fires *during* iOS's chrome presentation (not after, like `viewDidAppear`), our 0.35s spring runs in parallel with the chrome animation. Both arrive in place at roughly the same time.
+
+Either path: the slide-up never waits for `viewDidAppear`. Empirically the fallback is what fires for most users (the warning we used to log "No transitionCoordinator available" was misleading — it implied we'd wait for `viewDidAppear`, which we now never do).
+
+The animation only runs if URL extraction succeeds. If extraction fails (rare — iOS only activates us when there's a URL), we dismiss immediately without animation rather than show a fake "Saved!".
 
 ---
 
 ## Walkthrough: `ShareViewController.swift`
 
-The whole file is ~150 lines. Let's go through it in execution order.
+### The Logger
 
-### The constants block
+A small `Log` enum produces colorful, leveled logs visible in Xcode's debug console when running the extension scheme:
+
+```swift
+private enum Log {
+    static func debug(_:)   // 🔍 [DEBUG]
+    static func info(_:)    // ℹ️  [INFO]
+    static func warn(_:)    // ⚠️  [WARN]
+    static func error(_:)   // ❌ [ERROR]
+    static func success(_:) // ✅ [SUCCESS]
+    static func event(_:)   // 🎬 [EVENT]    — lifecycle milestones
+    static func net(_:)     // 🌐 [NET]      — network activity
+}
+```
+
+Logs are sprinkled throughout: viewDidLoad/viewDidAppear, attachment loading, App Group writes, auth token reads, network request/response (with status, latency, body preview), and dismiss. Read the console while debugging to see the entire flow narrate itself.
+
+### Constants
 
 ```swift
 private enum K {
-    static let appGroupID = "group.com.reelmind.app"
+    static let appGroupID = "group.com.deepti.ReelMind"
     static let backendBaseURL = "https://reelmind-api.onrender.com"
     static let pendingURLsKey = "pendingReelURLs"
     static let authTokenKey = "supabaseAuthToken"
-    static let dismissDelay: TimeInterval = 0.8
+
+    static let sheetHeightRatio: CGFloat = 0.55
+    static let backdropAlpha: CGFloat = 0.4
+
+    static let slideUpDuration: TimeInterval = 0.4
+    static let slideDownDuration: TimeInterval = 0.4
+    static let progressFillDuration: TimeInterval = 0.8
+    static let savingToSavedAt: TimeInterval = 0.8
+    static let slideDownAt: TimeInterval = 1.3
+    static let dismissAt: TimeInterval = 1.7
 }
 ```
-
-Five things, all worth understanding:
-
-| Constant | Purpose |
-|---|---|
-| `appGroupID` | The shared-container identifier. Must match the Xcode entitlement on both targets exactly. |
-| `backendBaseURL` | Production backend URL. The service name `reelmind-api` comes from `render.yaml` (see Steps 14-15 doc). For local dev you'd swap this for `http://<your-ngrok-url>` or similar. |
-| `pendingURLsKey` | The `UserDefaults` key under which we store an array of unsent URLs as a backup queue (see "App Group Persistence" below). |
-| `authTokenKey` | Where we expect the main app to have stashed the user's Supabase JWT after login. The extension can't run a login flow — it relies on the main app to write this token first. |
-| `dismissDelay` | We wait 0.8 s before calling `completeRequest`. Two reasons: (a) gives the user enough time to read the "Saving..." message so the experience doesn't feel jarring, and (b) gives `URLSession` enough time to actually flush bytes onto the network before the extension is killed. |
 
 ### `viewDidLoad`
 
+Sets `view.backgroundColor = .clear` (transparent — only backdrop and sheet are visible), builds the UI hierarchy in z-order: backdrop → bottom sheet → drag handle → saving container → saved container.
+
+### `viewDidAppear`
+
+- Lays out the view, then translates the bottom sheet off-screen (`y += sheetHeight + 50`) — this is the starting state for the slide-up animation
+- Calls `extractAndHandleURL()` — the work begins
+
+### `extractAndHandleURL()`
+
+Pulls URLs out of `extensionContext.inputItems`. Each item has `attachments`, which are `NSItemProvider` instances. We try `public.url` first, fall back to `public.plain-text`.
+
+- `loadItem(forTypeIdentifier:)` is async — we use a `DispatchGroup` to wait for the callback before proceeding
+- `break outer` bails out the moment we find one usable attachment
+- On `group.notify(queue: .main)`:
+  - URL found → `handleURL(url)` does the work + `runFullAnimation()` plays the visual flow
+  - No URL → `finish()` immediately (no animation, honest dismiss)
+
+### `handleURL(_:)`
+
+Two synchronous, fast actions:
+1. `writeURLToAppGroup(url)` — append to the App Group queue, dedup if already present
+2. `postURLToBackend(url:authToken:)` — fire-and-forget HTTPS POST
+
+Once these are kicked off, the visual animation starts.
+
+### `writeURLToAppGroup(_:)` & `readAuthToken()`
+
+App Group `UserDefaults` reads/writes. The `if !queue.contains` check dedups within the queue.
+
+**⚠️ Honest caveat:** The "main app drains the queue on next launch" logic is **not yet implemented**. Today, the queue is a write-only scaffold. If the network POST fails, the URL is effectively lost.
+
+### `postURLToBackend(...)`
+
+Standard `URLSession.dataTask`, with rich logging around it:
+
 ```swift
-override func viewDidLoad() {
-    super.viewDidLoad()
-    embedSavingUI()
-    extractAndHandleURL()
+Log.net("➡️  POST \(apiURL.absoluteString)")
+Log.net("    Headers: Content-Type=application/json, Authorization=Bearer ...")
+Log.net("    Body: [\"url\": \"...\"]")
+
+let startTime = Date()
+URLSession.shared.dataTask(with: request) { data, response, error in
+    let elapsed = String(format: "%.0f", Date().timeIntervalSince(startTime) * 1000)
+    // logs response status, latency, body preview
+}.resume()
+```
+
+Status codes get differentiated emoji (✅ 2xx, ⚠️ 4xx, ❌ 5xx). Response bodies are truncated to 500 chars to keep logs readable. Total request latency in ms.
+
+### `runFullAnimation()`
+
+Four phases via `DispatchQueue.main.asyncAfter`:
+
+```swift
+// Phase 1: Slide up + backdrop fade in (now)
+UIView.animate(... usingSpringWithDamping: 0.75 ...) {
+    self.bottomSheet.transform = .identity
+    self.backdropView.alpha = K.backdropAlpha
+}
+
+// Progress ring fill (now → 0.8s)
+CABasicAnimation(keyPath: "strokeEnd")  fromValue: 0  toValue: 1
+
+// Phase 2: Cross-fade to saved state (at 0.8s)
+DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { transitionToSavedState() }
+
+// Phase 3: Slide down + backdrop fade out (at 1.3s)
+DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) { runExitAnimation() }
+
+// Phase 4: Dismiss (at 1.7s)
+DispatchQueue.main.asyncAfter(deadline: .now() + 1.7) { finish() }
+```
+
+### `transitionToSavedState()`
+
+- Fades saving content out (alpha → 0, 0.2s)
+- Reveals saved container (alpha → 1)
+- Pops the checkmark in: starts at scale 0.001, springs to identity with `damping: 0.55`
+- Fades title in at 0.2s delay, subtitle at 0.3s delay (staggered like CSS keyframes)
+
+### `runExitAnimation()`
+
+```swift
+clearAncestorBackgrounds()  // defensive: iOS may have reset them mid-lifecycle
+
+UIView.animate(withDuration: 0.4, delay: 0, options: .curveEaseIn) {
+    self.bottomSheet.transform = CGAffineTransform(translationX: 0, y: ...) // off-screen
+    self.bottomSheet.alpha = 0  // cross-fade to mask any "white reveal" seam
 }
 ```
 
-Two operations, both kicked off the moment the view loads. We don't wait for `viewDidAppear` — that would add ~50ms latency for no benefit, since the extension's view is presented modally and animates in regardless.
+Two important details here:
 
-### `embedSavingUI()` — the SwiftUI host
+1. **`clearAncestorBackgrounds()` is called again at exit.** The same hack we run in `viewWillAppear` — iOS sometimes resets ancestor view backgrounds during state transitions, which would cause the area vacated by the sheet to flash white during the slide-down.
 
-This is the only piece of UIKit-to-SwiftUI bridging in the file:
+2. **Sheet alpha fades to 0 alongside the slide-down.** Without this, you see a gap between our slide-down ending and iOS's own dismiss animation taking over — the empty area where the sheet was briefly shows iOS's white/grey chrome (or simulator background). Cross-fading the sheet hides that seam.
 
-```swift
-let host = UIHostingController(rootView: SavingView())
-addChild(host)
-host.view.frame = view.bounds
-host.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-view.addSubview(host.view)
-host.didMove(toParent: self)
-```
+### `finish()`
 
-We use `UIHostingController` (not `NSHostingController`, that's macOS) to wrap a SwiftUI view inside a UIKit view controller. The container parent-child dance (`addChild`, `didMove(toParent:)`) is required by UIKit's view-controller hierarchy rules — without it, lifecycle events don't propagate correctly.
+`extensionContext?.completeRequest(returningItems: [], completionHandler: nil)`
 
-`autoresizingMask` is the old-school equivalent of pinning all four edges. We use it instead of Auto Layout because (a) it's one line, and (b) the hosting view's intrinsic content size is its full bounds anyway, so layout constraints would be overkill.
-
-### `extractAndHandleURL()` — the heart of Step 12
-
-This is where we pull the URL out of whatever Instagram (or any other app) handed us. iOS gives us this through `extensionContext?.inputItems`, which is an `[NSExtensionItem]`. Each item has `attachments`, which is an `[NSItemProvider]`. Each provider can vend data of one or more types (UTIs).
-
-**What does Instagram actually share?** In our testing:
-- Most reels arrive as `public.url` (a `URL` object)
-- Occasionally as `public.plain-text` (a `String` containing the URL)
-
-We handle both, with `public.url` preferred because it's already typed:
-
-```swift
-if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-    group.enter()
-    provider.loadItem(forTypeIdentifier: UTType.url.identifier) { data, _ in
-        if let url = data as? URL { extracted = url }
-        group.leave()
-    }
-    break outer
-}
-```
-
-A few things worth noting:
-
-- **`loadItem(forTypeIdentifier:)` is asynchronous.** It calls back on a background queue. That's why we use a `DispatchGroup` — to wait for the callback before proceeding.
-- **`break outer` is intentional.** The `outer:` label on the loop lets us bail out the moment we find a single URL. We don't process multiple attachments — just the first usable one.
-- **`extracted` is captured weakly via the dispatch group's `notify(queue: .main)` block**, ensuring we hop back to the main thread before touching UI or `extensionContext`.
-
-If neither type matches, we just call `finish()` to dismiss empty-handed. No error UI — there's nothing the user could do anyway, and showing an error after they tapped share would be hostile.
-
-### `handleURL(_:)` — the bridge between Step 12 and Step 13
-
-Once we have a URL, three things happen, in this order:
-
-```swift
-private func handleURL(_ url: URL) {
-    writeURLToAppGroup(url)                                         // Step 12
-    postURLToBackend(url: url, authToken: readAuthToken())          // Step 13
-
-    DispatchQueue.main.asyncAfter(deadline: .now() + K.dismissDelay) {
-        [weak self] in self?.finish()
-    }
-}
-```
-
-The order matters:
-
-1. **Write to App Group first.** This is synchronous and durable. Even if the extension is killed mid-network-call, the URL is safely persisted. The main app drains this queue on next launch as a safety net (see below).
-2. **Fire the POST.** Asynchronous, fire-and-forget. We don't even hold a reference to the data task — once `.resume()` is called, `URLSession` retains it internally for the duration of the request.
-3. **Schedule the dismiss.** 0.8 seconds later, we call `extensionContext?.completeRequest(...)`, which tells iOS we're done.
-
-### `writeURLToAppGroup(_:)` — Step 12 finale
-
-```swift
-private func writeURLToAppGroup(_ url: URL) {
-    guard let defaults = UserDefaults(suiteName: K.appGroupID) else { return }
-    var queue = defaults.stringArray(forKey: K.pendingURLsKey) ?? []
-    let str = url.absoluteString
-    if !queue.contains(str) { queue.append(str) }
-    defaults.set(queue, forKey: K.pendingURLsKey)
-}
-```
-
-Why a queue (an array of strings) rather than just one URL?
-
-Imagine the user shares three reels in rapid succession before opening the main app. Without a queue, each call would overwrite the previous URL — losing two of the three. With an array, all three accumulate, and the main app can drain them all on next launch.
-
-The `if !queue.contains(str)` check is cheap dedup — if the user shares the same reel twice in a row (a real thing that happens), we don't need two copies. The backend has a stronger duplicate guard at the database level (UNIQUE constraint on `(user_id, url)`), so this is just a nicety, not a correctness requirement.
-
-`UserDefaults.synchronize()` is **not** called. It's a no-op since iOS 12 — Apple deprecated the explicit sync call because the OS now handles it automatically. Some old tutorials still call it, but it does nothing.
-
-### `postURLToBackend(...)` — Step 13
-
-```swift
-var request = URLRequest(url: apiURL)
-request.httpMethod = "POST"
-request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
-request.timeoutInterval = 10
-
-request.httpBody = try? JSONSerialization.data(
-    withJSONObject: ["url": url.absoluteString]
-)
-
-URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
-```
-
-A few intentional choices:
-
-- **`Bearer \(authToken)`** — the token is whatever the main app stored after the user logged in via Supabase Auth. If the user has never logged in, `authToken` is `""` and we send `"Bearer "` as the header value. The backend will reject this with 401 (see Steps 14-15 doc). That's the correct behavior — if the user isn't logged in, the save shouldn't succeed.
-- **`timeoutInterval = 10`** — generous but bounded. We don't want a stuck request keeping the URLSession task alive in the background.
-- **`JSONSerialization` over `JSONEncoder`** — using a `Codable` struct here would mean defining a `RequestBody` type for one field. `JSONSerialization` with a dictionary literal is shorter and equally type-safe in this case.
-- **The completion handler ignores everything: `{ _, _, _ in }`** — fire-and-forget. The extension is going to be torn down in 0.8s anyway, so we have nothing useful to do with the response. If the server is down or returns 500, the URL is still safely in the App Group queue, and the main app will retry from there.
-
-### `finish()` — saying goodbye to iOS
-
-```swift
-private func finish() {
-    extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
-}
-```
-
-This is the magic call that tells iOS "we're done, please dismiss our UI." The `returningItems: []` is for extensions that hand modified content back to the host app (e.g. Markup on a photo); we have nothing to return. iOS will animate our view away and reactivate Instagram.
+Tells iOS we're done. iOS animates our view away and reactivates Instagram.
 
 ---
 
-## Walkthrough: `SavingView.swift`
+## The Activation Rule (Info.plist)
 
-This is a 20-line SwiftUI view. Nothing clever:
-
-```swift
-struct SavingView: View {
-    var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "bookmark.fill")
-                .font(.system(size: 40))
-                .foregroundColor(.purple)
-
-            ProgressView()
-                .scaleEffect(1.3)
-
-            Text("Saving to ReelMind...")
-                .font(.headline)
-
-            Text("You can leave this screen")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
-    }
-}
+```xml
+<key>NSExtensionActivationRule</key>
+<dict>
+    <key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
+    <integer>1</integer>
+</dict>
 ```
 
-The `"You can leave this screen"` subtitle is deliberate UX. Without it, users will sit and watch the spinner, expecting it to "complete." Telling them they can leave makes the 0.8-second wait feel intentional rather than a hang.
+ReelMind only appears in the share sheet when exactly one web URL is being shared.
 
-`Color(.systemBackground)` adapts automatically to dark mode — `.white` would have been a bug.
-
----
-
-## The Two-Tier Reliability Story
-
-There's a subtle but important architectural decision baked into Steps 12 & 13: **the URL is written to the App Group before the network call, not after.**
-
-This creates a two-tier delivery mechanism:
-
-| Tier | Mechanism | Failure mode |
-|---|---|---|
-| **Fast path** | `POST /api/v1/reels` directly from the extension | Network down, server down, auth expired |
-| **Slow path (safety net)** | App Group queue → main app drains on launch | Only fails if device storage is corrupt |
-
-If the fast path succeeds, the slow path is redundant — the main app on next launch sees the URL in the queue, asks the backend "do you already know about this?", gets a 409 Conflict (see Step 14), and quietly discards the queue entry. No duplicate processing.
-
-If the fast path fails, the slow path saves us. The user shared a reel, we wrote it to App Group, and even though the POST went into the void, the next time they open the main app it'll pick up the queue and retry the POST.
-
-This pattern — **persist locally before attempting the network call** — is one of the most important reliability patterns for share extensions. It's the iOS equivalent of an outbox pattern in distributed systems.
-
-**Note:** the "main app drains the App Group queue" code is *not yet implemented* — it's listed as Phase 3 work because the main app's launch flow doesn't exist yet. But the data is ready and waiting whenever that code is written.
+A future enhancement (in backlog): restrict to **Instagram only** by filtering on host app bundle ID.
 
 ---
 
-## Why Fire-and-Forget Instead of Awaiting?
-
-A common alternative design would be: **await the POST response, show success/error UI based on the result, then dismiss.**
-
-We deliberately did not do this. Reasons:
-
-1. **The user has already moved on mentally.** They're watching reels — they don't want to babysit a "Saving..." spinner for 3 seconds. The dismiss should be near-instant.
-2. **Network latency is unpredictable.** A 4G connection in a basement could take 8+ seconds for a single POST. Waiting that long inside a Share Extension violates Apple's HIG and may cause iOS to kill us anyway.
-3. **The extension has limited memory.** The shorter it lives, the less risk of an OOM kill. Fire-and-forget keeps the extension lifetime tight.
-4. **The actual work happens server-side.** Even if our POST succeeded synchronously, all we'd be confirming is "the URL was queued." The user doesn't really care about that — they care that the reel ends up in their library, and that's a push notification that comes minutes later (Step 22).
-
-So: silent dismiss, with a push notification later carrying the real success signal.
-
----
-
-## Edge Cases We Handle
+## Edge Cases
 
 | Scenario | Behavior |
 |---|---|
 | Instagram shares as `public.url` | ✅ Direct extraction |
-| Instagram shares as `public.plain-text` containing a URL | ✅ Fallback path |
-| User shares from a non-Instagram app | ✅ Same code path — we accept any URL. Backend will fail later if it can't be processed, and that's fine. |
-| User shares the same reel twice rapidly | ✅ App Group dedup (in-array check) + backend UNIQUE constraint (Step 14) |
-| User shares before logging in | ✅ POST goes out with empty `Bearer` token, backend rejects 401, App Group queue still holds the URL for retry |
-| User shares with no internet | ✅ POST silently fails, App Group queue holds the URL for the main app to retry |
-| User shares 10 reels back-to-back | ✅ Each invocation appends to the queue — none are lost |
-| Instagram shares neither URL nor text | ⚠️ Extension dismisses with no action. No error UI. |
+| Shares as `public.plain-text` containing a URL | ✅ Fallback path |
+| Non-Instagram app sharing a URL | ✅ Same code path |
+| Same reel shared twice rapidly | ✅ App Group dedup + backend UNIQUE constraint |
+| Shared before logging in | ✅ POST goes out with empty bearer token, backend rejects 401 |
+| Shared with no internet | ⚠️ POST silently fails; URL is in App Group queue but no drain logic yet |
+| 10 reels shared back-to-back | ✅ Each invocation appends to the queue |
+| No URL in attachments (rare) | ✅ Dismiss immediately, no fake "Saved!" |
 
 ---
 
-## What's NOT Done Here (for clarity)
+## What's NOT Done Here
 
-These are explicitly *not* part of Steps 12 & 13 and live in later phases:
-
-- **Reading auth token from Keychain.** Right now we read from App Group `UserDefaults`. The plan (Step 25) is for the main app to log in via Supabase Auth, store the JWT in Keychain, and *also* mirror it into App Group `UserDefaults` so the extension can read it. The mirror is necessary because Keychain access groups require additional entitlement setup that we haven't done yet.
-- **Draining the App Group queue.** As noted above, this is Phase 3 main-app work.
-- **Showing success/failure UI inside the extension.** The plan calls for a single push notification (Step 22) instead.
-- **Restricting the activation rule.** Right now `Info.plist` uses `TRUEPREDICATE` — the extension shows up for *any* shared content. Eventually we should restrict to URL-bearing items only, but it's harmless during development and makes testing easier.
+- **Reading auth token from Keychain** — Step 25; for now App Group `UserDefaults` only
+- **Draining the App Group queue** — main app launch flow doesn't exist yet
+- **Restricting activation to Instagram only** — backlog item
+- **Error UI when no URL is found** — currently silent dismiss; backlog
+- **Drag-to-dismiss on the bottom sheet** — drag handle is purely visual
 
 ---
 
-## How to Verify This Code Works
+## How to Verify
 
-A minimal smoke test:
-
-1. **Configure App Groups in Xcode** (the manual step).
-2. **In the main app** (or temporarily in any test code), write a fake auth token:
+1. Configure App Groups in Xcode for both `ReelMind` and `URL Sharing module` targets with `group.com.deepti.ReelMind`
+2. Optionally seed a fake auth token in the main app:
    ```swift
-   UserDefaults(suiteName: "group.com.reelmind.app")?
+   UserDefaults(suiteName: "group.com.deepti.ReelMind")?
        .set("test-token", forKey: "supabaseAuthToken")
    ```
-3. **Run the extension** by Cmd-clicking the `URL Sharing module` scheme and selecting Instagram (or Safari) as the host.
-4. **Share any URL** from the host app to ReelMind.
-5. **Verify**:
-   - The "Saving..." UI appears for ~0.8 s and dismisses
-   - The URL ends up in the App Group queue:
+3. Run the `URL Sharing module` scheme; choose Instagram or Safari as the host
+4. Share any URL
+5. Verify:
+   - Backdrop fades in (dim but not blackout)
+   - Bottom sheet slides up smoothly, takes ~55% of screen
+   - "Saving..." with progress ring for 0.8s
+   - Checkmark pops, "Saved!" with subtitle for 0.5s
+   - Sheet slides back down, backdrop fades, extension dismisses at ~1.7s
+   - Console shows the full narrative — every step logged
+   - URL appears in:
      ```swift
-     UserDefaults(suiteName: "group.com.reelmind.app")?
-         .stringArray(forKey: "pendingReelURLs")  // should contain the URL
+     UserDefaults(suiteName: "group.com.deepti.ReelMind")?
+         .stringArray(forKey: "pendingReelURLs")
      ```
-   - The backend logs show a `POST /api/v1/reels` arrived (will 401 with the fake token, but the request reaches the server — that's what we're verifying)
+   - Backend logs show `POST /api/v1/reels` arrived (will 401 with fake token)
 
 ---
 
@@ -379,15 +381,24 @@ A minimal smoke test:
 
 | Decision | What we chose | Why |
 |---|---|---|
-| Communication: extension ↔ main app | App Group `UserDefaults` queue | Standard Apple pattern, no extra entitlements beyond App Groups |
-| Persist before POST | Yes | Reliability — survives network failures and process kills |
-| Wait for POST response? | No (fire-and-forget) | Latency, memory, UX — user doesn't need to watch the spinner |
-| UI framework inside extension | SwiftUI via `UIHostingController` | Consistent with main app; trivial to maintain |
-| Dismiss delay | 0.8 s | Long enough to read "Saving...", short enough to feel snappy, long enough for `URLSession` to flush bytes |
-| Dedup at extension level | In-array check in App Group write | Cheap; defensive layer above DB UNIQUE constraint |
-| Activation rule | `TRUEPREDICATE` (accept all) | Easier dev/test; can tighten later |
-| Backend URL | Hard-coded constant | One change point if Render service moves; environment-specific URL switching is Phase 3+ |
+| Communication: extension ↔ main app | App Group `UserDefaults` queue | Standard Apple pattern, minimal entitlements |
+| Persist before POST | Yes | Reliability scaffolding (drain logic to come) |
+| Wait for POST response? | No (fire-and-forget) | Latency, memory, UX |
+| UI framework | Pure UIKit | Simpler than SwiftUI bridging at this scale |
+| Backdrop dim layer | None — host app stays visible | User wants no dim |
+| Host transparency | Walk view hierarchy in `viewWillAppear`, clear all ancestor backgrounds | iOS chrome is opaque by default; setting only our own view to `.clear` isn't enough |
+| Bottom sheet height | 55% of screen | 40% + 15% per design spec; gives room for both states comfortably |
+| Off-screen positioning | In `viewDidLoad` (not `viewDidAppear`) | Avoids one-frame flash where the sheet shows in final position before sliding |
+| Slide-up timing | `transitionCoordinator.animate(alongsideTransition:)` in `viewWillAppear` | Syncs with iOS's chrome presentation so both arrive together; eliminates the ~0.5s perceptible delay we saw on real devices |
+| Slide-down on exit | None — just `completeRequest()`, let iOS handle dismissal | Manual slide-down ahead of iOS's chrome dismissal exposes a "white reveal" gap. Letting iOS animate the chrome and our sheet out together in one motion looks clean. |
+| Exit animation | Slide-down + alpha fade simultaneously | Cross-fading hides the seam between our slide-down and iOS's dismiss; without the fade, white briefly shows where the sheet was |
+| State alpha defaults | Set at property declaration | Prevents one-frame flash where both states briefly visible |
+| Animation total duration | 1.7s | Long enough to read "Saved!", short enough to feel snappy |
+| Checkmark animation | Spring damping 0.55 | Bouncy overshoot like CSS `cubic-bezier(0.175, 0.885, 0.32, 1.275)` |
+| Activation rule | URL-only | Don't pollute share sheet for non-URL content |
+| Logging | Custom emoji-prefixed `Log` enum | Visible in Xcode debug console; easy to follow flow |
+| Backend URL | Hard-coded constant | One change point; environment switching is Phase 3+ |
 
 ---
 
-*ReelMind Phase 2 Knowledge Doc — Steps 12 & 13 — v1.0*
+*ReelMind Phase 2 Knowledge Doc — Steps 12 & 13 — v1.3 (updated 2026-05-06)*

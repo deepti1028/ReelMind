@@ -7,8 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0FE6748CC25E2D58256D9151 /* Pods_URL_Sharing_module.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2B416407665F3D269767AD3 /* Pods_URL_Sharing_module.framework */; };
 		C6CE218630ECEC5D2366EE03 /* Pods_ReelMind.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 408B929B51002F4186F29C60 /* Pods_ReelMind.framework */; };
+		DE4AACD02FAE2D9700C72FB2 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACCF2FAE2D9700C72FB2 /* Auth */; };
+		DE4AACD22FAE2D9700C72FB2 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACD12FAE2D9700C72FB2 /* Functions */; };
+		DE4AACD42FAE2D9700C72FB2 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACD32FAE2D9700C72FB2 /* PostgREST */; };
+		DE4AACD62FAE2D9700C72FB2 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACD52FAE2D9700C72FB2 /* Realtime */; };
+		DE4AACD82FAE2D9700C72FB2 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACD72FAE2D9700C72FB2 /* Storage */; };
+		DE4AACE42FAE332900C72FB2 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACE32FAE332900C72FB2 /* Supabase */; };
 		DE4FFF112FA4C0F7009193DB /* URL Sharing module.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DE4FFF072FA4C0F7009193DB /* URL Sharing module.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -37,8 +42,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		0494DBF2292A1566CF90C217 /* Pods-URL Sharing module.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-URL Sharing module.release.xcconfig"; path = "Target Support Files/Pods-URL Sharing module/Pods-URL Sharing module.release.xcconfig"; sourceTree = "<group>"; };
-		291E79C417CEA95BB74FCBA3 /* Pods-URL Sharing module.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-URL Sharing module.debug.xcconfig"; path = "Target Support Files/Pods-URL Sharing module/Pods-URL Sharing module.debug.xcconfig"; sourceTree = "<group>"; };
 		408B929B51002F4186F29C60 /* Pods_ReelMind.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ReelMind.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F0371F9ED165EF2E2D1B549 /* Pods-ReelMind.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ReelMind.debug.xcconfig"; path = "Target Support Files/Pods-ReelMind/Pods-ReelMind.debug.xcconfig"; sourceTree = "<group>"; };
 		93C7CABF7C81DE4DE03EB5A3 /* Pods-ReelMind.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ReelMind.release.xcconfig"; path = "Target Support Files/Pods-ReelMind/Pods-ReelMind.release.xcconfig"; sourceTree = "<group>"; };
@@ -46,7 +49,6 @@
 		DE3C69CE2FAA358E006166C4 /* ReelMind.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReelMind.entitlements; sourceTree = "<group>"; };
 		DE4FFEF52FA4B87D009193DB /* ReelMind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReelMind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE4FFF072FA4C0F7009193DB /* URL Sharing module.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "URL Sharing module.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
-		E2B416407665F3D269767AD3 /* Pods_URL_Sharing_module.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_URL_Sharing_module.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -80,6 +82,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DE4AACE42FAE332900C72FB2 /* Supabase in Frameworks */,
+				DE4AACD82FAE2D9700C72FB2 /* Storage in Frameworks */,
+				DE4AACD42FAE2D9700C72FB2 /* PostgREST in Frameworks */,
+				DE4AACD22FAE2D9700C72FB2 /* Functions in Frameworks */,
+				DE4AACD02FAE2D9700C72FB2 /* Auth in Frameworks */,
+				DE4AACD62FAE2D9700C72FB2 /* Realtime in Frameworks */,
 				C6CE218630ECEC5D2366EE03 /* Pods_ReelMind.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -88,7 +96,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0FE6748CC25E2D58256D9151 /* Pods_URL_Sharing_module.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,7 +106,6 @@
 			isa = PBXGroup;
 			children = (
 				408B929B51002F4186F29C60 /* Pods_ReelMind.framework */,
-				E2B416407665F3D269767AD3 /* Pods_URL_Sharing_module.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -131,8 +137,6 @@
 			children = (
 				8F0371F9ED165EF2E2D1B549 /* Pods-ReelMind.debug.xcconfig */,
 				93C7CABF7C81DE4DE03EB5A3 /* Pods-ReelMind.release.xcconfig */,
-				291E79C417CEA95BB74FCBA3 /* Pods-URL Sharing module.debug.xcconfig */,
-				0494DBF2292A1566CF90C217 /* Pods-URL Sharing module.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -168,7 +172,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = DE4FFF132FA4C0F7009193DB /* Build configuration list for PBXNativeTarget "URL Sharing module" */;
 			buildPhases = (
-				2A911F50289C14E16FF8B9C1 /* [CP] Check Pods Manifest.lock */,
 				DE4FFF032FA4C0F7009193DB /* Sources */,
 				DE4FFF042FA4C0F7009193DB /* Frameworks */,
 				DE4FFF052FA4C0F7009193DB /* Resources */,
@@ -212,6 +215,9 @@
 			);
 			mainGroup = DE4FFEEC2FA4B87D009193DB;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				DE4AACCE2FAE2D9700C72FB2 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DE4FFEF62FA4B87D009193DB /* Products */;
 			projectDirPath = "";
@@ -241,28 +247,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		2A911F50289C14E16FF8B9C1 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-URL Sharing module-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
 		4542CC2CE00801213EAD763A /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -393,6 +377,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -450,6 +435,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -474,6 +460,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -510,6 +497,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -529,7 +517,6 @@
 		};
 		DE4FFF142FA4C0F7009193DB /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 291E79C417CEA95BB74FCBA3 /* Pods-URL Sharing module.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "URL Sharing module/URL Sharing module.entitlements";
 				CODE_SIGN_STYLE = Automatic;
@@ -540,6 +527,7 @@
 				INFOPLIST_FILE = "URL Sharing module/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "URL Sharing module";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -560,7 +548,6 @@
 		};
 		DE4FFF152FA4C0F7009193DB /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0494DBF2292A1566CF90C217 /* Pods-URL Sharing module.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "URL Sharing module/URL Sharing module.entitlements";
 				CODE_SIGN_STYLE = Automatic;
@@ -571,6 +558,7 @@
 				INFOPLIST_FILE = "URL Sharing module/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "URL Sharing module";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -620,6 +608,50 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		DE4AACCE2FAE2D9700C72FB2 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DE4AACCF2FAE2D9700C72FB2 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE4AACCE2FAE2D9700C72FB2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		DE4AACD12FAE2D9700C72FB2 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE4AACCE2FAE2D9700C72FB2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		DE4AACD32FAE2D9700C72FB2 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE4AACCE2FAE2D9700C72FB2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		DE4AACD52FAE2D9700C72FB2 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE4AACCE2FAE2D9700C72FB2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		DE4AACD72FAE2D9700C72FB2 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE4AACCE2FAE2D9700C72FB2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		DE4AACE32FAE332900C72FB2 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE4AACCE2FAE2D9700C72FB2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DE4FFEED2FA4B87D009193DB /* Project object */;
 }

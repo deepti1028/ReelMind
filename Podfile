@@ -8,10 +8,6 @@ target 'ReelMind' do
 
 end
 
-target 'URL Sharing module' do
-  use_frameworks!
-
-end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|

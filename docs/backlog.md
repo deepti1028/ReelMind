@@ -46,6 +46,15 @@ Deferred features and enhancements for future phases.
 ### Few decesions that needs to be re iterated
 - We should save the reels that are in the uncategorised state by our llm/backend. This can be used for adding new default reels or to understand the parts of our LLM that still needs to get trained
 
+## App Group Queue — Offline Fallback Drain
+
+### Drain the pending URL queue on main app launch (Phase 2)
+- The Share Extension writes every reel URL to `UserDefaults(suiteName: "group.com.deepti.ReelMind")` under key `pendingReelURLs` **before** it fires the backend POST. This queue is a reliability net: if the POST fails (no internet, server down, 401), the URL is not lost — it sits in the shared container.
+- On each main app launch, the app should read this queue, call `GET /api/v1/reels?status=queued,failed` for the user, compare, and re-POST any URLs that are in the local queue but missing from the backend (or in `failed` state).
+- After a successful re-POST, remove the URL from the queue.
+- **Current state:** Queue is write-only. The drain logic does not exist yet. If a POST fails silently, the URL is orphaned in the queue and never retried.
+- **Why deferred:** The main app launch flow and auth persistence haven't been built yet. This depends on the login/token-storage work (Phase 2).
+
 ## Share Extension UX
 
 ### Show error to user when no URL is found (Phase 2)
@@ -53,6 +62,25 @@ Deferred features and enhancements for future phases.
 - User should see a clear error message: "This doesn't look like an Instagram reel. Only public reel links are supported."
 - Helps user understand why nothing happened instead of thinking the app is broken
 
+### Show ReelMind in share sheet only when sharing from Instagram (Phase 2)
+- Currently the app appears in the share sheet from any app as long as a URL is being shared
+- Should only be visible when the user is sharing from Instagram specifically
+- Requires updating `NSExtensionActivationRule` in the Share Extension's `Info.plist` to filter by source app bundle ID (`com.burbn.instagram`)
+- This is an undocumented/complex predicate rule — needs research and testing to confirm it works reliably across iOS versions
+
+### Remove "Testing" default category before public launch
+- A "Testing" default category was added in migration `20260507000002_seed_testing_category.sql` for development convenience (so we can dump test reels into a known place during Phase 2 verification).
+- Before public launch, either:
+  - (a) drop it via a new migration, or
+  - (b) add `is_internal` boolean to `categories` and hide internal categories from regular users
+- Tracking here so we don't accidentally ship a "Testing" category to real users.
+
+### Make ReelMind appear in share sheet by default on first install
+- When the app is freshly installed, the user currently has to manually scroll into "More" in the share sheet and toggle ReelMind on / pin it to the top
+- We want it visible (and ideally near the top) the first time a user opens the share sheet, no manual toggling needed
+- Investigate: iOS doesn't directly expose ordering control, but Apple's heuristics weight extensions higher when (a) the app has been launched recently, (b) the user has used the extension before, (c) the activation rule is tightly scoped. We may be able to nudge first-impression visibility by ensuring the main app launches once after install (onboarding flow) before the user tries to share.
+- Worth researching whether `LSApplicationQueriesSchemes` or `NSExtensionActivationRule` tightening helps
+
 ---
 
-*Last updated: 2026-05-05*
+*Last updated: 2026-05-07*
