@@ -4,7 +4,9 @@
 
 *Written so anyone can understand exactly how a downloaded mp3 is converted into structured data — a transcript, a category, a confidence score, and a 2-sentence summary — that drives everything else in the app.*
 
-> ⚠️ **Provider update (2026-05-07):** This document was originally written assuming OpenAI Whisper for transcription and Anthropic Claude for classification. We have since switched to **Groq** (free tier) for both — `whisper-large-v3` for transcription, `llama-3.3-70b-versatile` for classification. The architecture, prompts, confidence routing, and best-effort policy all remain valid; just mentally substitute provider names where you see "OpenAI" or "Claude" below. The future implementation in `services/transcriber.py` and `services/classifier.py` will use the Groq SDK, not OpenAI/Anthropic SDKs. See [DECISIONS.md](DECISIONS.md) for the rationale and trade-offs. Embeddings (Step 20) similarly switched to `sentence-transformers` — local, free, no API.
+> ⚠️ **Implementation update (2026-05-10):** Step 16 (Whisper) is **implemented** using Groq's `whisper-large-v3-turbo`. Steps 17 & 18 are still as-described (Step 17 is a design pattern handled inside Step 15's downloader; Step 18/Llama classification has **not been implemented yet** — the file `backend/services/classifier.py` referenced below does not exist on disk). The actual Step 16 section below has been rewritten to match the real implementation; the Step 18 section is still aspirational. Embeddings (Step 20) likewise still pending.
+>
+> Earlier rewrite (2026-05-07): we switched providers from OpenAI Whisper / Anthropic Claude to Groq for both transcription and classification, and from `text-embedding-3-small` to local `sentence-transformers`. Where this doc still says "OpenAI" or "Claude", read it as "Groq".
 
 ---
 
@@ -59,84 +61,147 @@ render.yaml               ← OPENAI_API_KEY, ANTHROPIC_API_KEY, REDIS_URL added
 
 ---
 
-## Step 16 — Whisper Transcription
+## Step 16 — Groq Whisper Transcription
 
-The implementation is intentionally minimal: a single function in [`backend/services/transcriber.py`](../backend/services/transcriber.py).
+The implementation is a single function in [`backend/services/transcriber.py`](../backend/services/transcriber.py): `transcribe_audio(audio_path, reel_id) -> TranscriptionResult`.
 
-### Why Whisper specifically?
+### Why Groq Whisper
 
-OpenAI's `whisper-1` model is the industry-standard speech-to-text API. Why we chose it over alternatives:
+We use Groq's hosted Whisper (free tier) over alternatives:
 
 | Option | Pros | Cons |
 |---|---|---|
-| **OpenAI Whisper API** ✅ | Best-in-class accuracy across languages and accents, handles music + speech, no infra to run | Per-minute API cost (~$0.006/min) |
-| Self-hosted Whisper (open-source weights) | No per-call cost | Need a GPU; cold starts; ops burden |
-| Google Speech-to-Text | Good accuracy | Per-minute cost similar; more friction setting up |
-| Assembly AI / Deepgram | Solid options | Yet another vendor to manage |
+| **Groq Whisper API** ✅ | Free tier covers our scale, ~7× faster than OpenAI's hosted Whisper, same model family | Need a Groq account; rate limits on free tier |
+| OpenAI Whisper API | Best-in-class polish | Paid (~$0.006/min); slower for the same model |
+| Self-hosted Whisper | Free | GPU required; ops burden; cold starts |
 
-For our scale (a few hundred reels per active user per month), the API cost is negligible compared to the engineering cost of self-hosting. So: hosted Whisper.
+For our scale (hundreds of reels per active user per month), Groq's free tier is more than enough.
+
+### Model: `whisper-large-v3-turbo`
+
+We picked the **turbo** variant rather than the regular `whisper-large-v3`:
+
+- ~7× faster (matters when the user is waiting for `status='ready'`)
+- Marginally lower accuracy — negligible on 5-60 second clips with clear audio
+- Same input/output format, so swapping is a one-line change if accuracy ever becomes a problem
 
 ### The implementation
 
 ```python
-def transcribe_audio(audio_path: str) -> str:
-    path = Path(audio_path)
-    if not path.exists():
-        raise FileNotFoundError(f"Audio file not found at {audio_path}")
-
-    client = _get_client()
-    with path.open("rb") as f:
+def transcribe_audio(audio_path: str, reel_id: str) -> TranscriptionResult:
+    # ... file size + existence guards ...
+    client = Groq(api_key=config.GROQ_API_KEY)
+    with open(audio_path, "rb") as fh:
         response = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=f,
+            file=(os.path.basename(audio_path), fh.read()),
+            model="whisper-large-v3-turbo",
+            response_format="verbose_json",
+            temperature=0.0,
         )
-
-    transcript = (response.text or "").strip()
-    return transcript
+    text = (response.text or "").strip()
+    return TranscriptionResult(
+        text=text,
+        has_audio=bool(text),
+        language=response.language,
+        duration_seconds=float(response.duration),
+        model="whisper-large-v3-turbo",
+    )
 ```
 
-A few intentional choices:
+Key choices:
 
 | Choice | Why |
 |---|---|
-| **Singleton OpenAI client** (`_get_client`) | OpenAI's SDK is thread-safe and reusable. Creating one per call wastes a TLS handshake per transcription. The lazy singleton means we only instantiate once per worker. |
-| **No `response_format="text"`** | The default JSON response gives us `response.text` plus other fields (duration, language). We only use `.text` today, but the JSON form lets us add features (e.g., language detection) without changing the call. |
-| **Strip and default to empty string** | Whisper occasionally returns `None` for completely silent audio. We normalize to `""` so callers can rely on always getting a string. |
-| **Set `has_audio` based on transcript outcome** | After Whisper runs, the Celery task writes `reels.has_audio = (len(transcript.strip()) > 0)` — `TRUE` if Whisper produced speech, `FALSE` if empty (music-only or silent). This is a permanent record on the row that lets the UI badge "classified from caption only" reels and prevents pointless Whisper retries on known-silent reels. See [DECISIONS.md](DECISIONS.md). |
-| **`raise FileNotFoundError`** | Defensive — should never happen because `download_reel_audio` just produced this file, but if it does (e.g., a `/tmp` cleanup race), we want a clear error rather than a confusing OpenAI SDK exception. |
-| **Errors not caught here** | The function lets OpenAI SDK exceptions propagate. The Celery task catches them broadly and degrades to caption-only classification (see "Best-effort policy" below). |
+| **`response_format="verbose_json"`** | Gives us `language` (auto-detected ISO code) and `duration` (seconds) alongside `text`. We log both — useful for debugging "the transcript is in the wrong language" vs "the audio was 2s and Whisper had nothing to work with". |
+| **`temperature=0.0`** | Deterministic output — same audio → same transcript. Simplifies debugging and any future caching. |
+| **Audio container: `.m4a` (no transcoding)** | Step 15 saves the audio as native HE-AAC inside MP4 — Groq Whisper accepts m4a directly, so we skip ffmpeg entirely. |
+| **`has_audio = bool(text.strip())`** | Three-state flag persisted to `reels.has_audio`: `true` = Whisper produced speech; `false` = reel had no extractable speech (music-only, silent, or unintelligible); `null` = not yet processed. The DB migration `20260507000001_add_has_audio_to_reels.sql` documents the rationale. |
+| **Defensive guards** | Reject files that don't exist, are 0 bytes, or exceed 25 MB before calling Groq — these would just waste an API round trip. |
+
+### What `transcribe_audio` returns
+
+```python
+@dataclass
+class TranscriptionResult:
+    text: str                    # may be "" for silent / music-only reels
+    has_audio: bool              # True iff text.strip() != ""
+    language: str | None         # e.g. "en", "hi"
+    duration_seconds: float | None
+    model: str
+```
+
+The Celery task in `tasks.py` reads `text` and `has_audio` and writes them to `reels.transcript` / `reels.has_audio`.
+
+### Error mapping — retryable vs non-retryable
+
+Same contract as Step 15: a custom `TranscriptionError(is_retryable: bool)` lets `tasks.py` use one retry path for both stages.
+
+| Failure | Class | Reason |
+|---|---|---|
+| `groq.RateLimitError` (HTTP 429) | retryable | Wait it out — free tier rate limit |
+| `groq.APITimeoutError` | retryable | Server slow |
+| `groq.APIConnectionError` | retryable | Transient network blip |
+| `groq.APIError` with HTTP 5xx | retryable | Groq server-side hiccup |
+| `groq.APIError` with HTTP 4xx (e.g. 401 bad key, 400 malformed) | **non**-retryable | Configuration bug; retrying won't fix it |
+| Audio file missing / 0 bytes / > 25 MB | **non**-retryable | Local file is permanently unusable |
+| `GROQ_API_KEY` not configured | **non**-retryable | Deploy-time misconfiguration |
+
+Each error log line includes the **HTTP status code** and a **likely cause** so on-call can diagnose quickly:
+
+```
+Groq API error | status=401 | retryable=False | invalid api key
+```
+
+### Linear backoff (shared with Step 15)
+
+Same retry policy as the downloader: 60 s, 120 s, 180 s, then mark `failed`. See the Steps 14 & 15 doc for the full explanation.
 
 ### What does Whisper return for a typical reel?
 
-A 30-second skincare reel might return:
+A 30-second skincare reel:
 
 ```
 "Hey gorgeous, today I'm sharing my five-step morning routine for glass skin.
 Step one: gentle cleanser — I love this one because it doesn't strip your moisture barrier..."
 ```
 
-A 30-second music-only fashion reel returns:
+A 30-second music-only fashion reel:
 
 ```
 ""
 ```
 
-A 30-second cooking reel where the creator just narrates briefly returns:
+A cooking reel where the creator narrates briefly:
 
 ```
 "Add the garlic. Let it sizzle for thirty seconds. Don't burn it."
 ```
 
-These wildly different outputs are exactly why Step 17 exists.
+These wildly different outputs are exactly why Step 17 (caption + hashtags as compulsory classifier inputs) exists.
 
 ### File size considerations
 
-Whisper has a 25 MB upload limit. Our mp3s are encoded at 128 kbps:
+Groq's Whisper has a 25 MB upload limit. Our `.m4a` files are typically:
 
-- 30-second reel ≈ 480 KB
-- 90-second reel (Instagram's max) ≈ 1.4 MB
+- 30-second reel ≈ 200-400 KB
+- 90-second reel (Instagram's max) ≈ 600-900 KB
 
-We're nowhere near the limit. If Instagram ever extends reels beyond 90 s, we'd want to add a chunking pre-pass — but that's a non-issue today.
+We're nowhere near the limit. The pre-call size check is purely defensive in case Instagram ever ships ultra-long-form clips.
+
+### What "persist" means here
+
+After `transcribe_audio` returns, the Celery task does:
+
+```python
+supabase.table("reels").update({
+    "transcript": transcription.text or None,
+    "has_audio": transcription.has_audio,
+}).eq("id", reel_id).execute()
+```
+
+Two columns written to the `reels` row, both surviving the task. The `.m4a` file is then deleted by the `finally` block in `process_reel`.
+
+The transcript lives on `reels.transcript` (single TEXT column). It is **not** chunked or embedded here — that's Step 20's job, and it lives in a **separate table** (`reel_chunks`) with its own service module. See "Cross-references" at the bottom for the embeddings layout.
 
 ---
 

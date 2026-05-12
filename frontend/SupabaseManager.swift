@@ -1,3 +1,4 @@
+import Auth
 import Foundation
 import Supabase
 
@@ -27,7 +28,16 @@ final class SupabaseManager {
     private init() {
         client = SupabaseClient(
             supabaseURL: AppConfig.supabaseURL,
-            supabaseKey: AppConfig.supabaseAnonKey
+            supabaseKey: AppConfig.supabaseAnonKey,
+            options: SupabaseClientOptions(
+                auth: SupabaseClientOptions.AuthOptions(
+                    // Opt in to the corrected initial-session behavior
+                    // (supabase-swift PR #822). Without this, the auth
+                    // listener double-emits during bootstrap, causing the
+                    // duplicate "token cleared/synced" events.
+                    emitLocalSessionAsInitialSession: true
+                )
+            )
         )
     }
 }

@@ -1,0 +1,245 @@
+{
+  "communities": {
+    "0": [
+      "services_downloader_download_file",
+      "services_downloader_download_reel",
+      "services_downloader_downloadresult",
+      "services_downloader_extract_hashtags",
+      "services_downloader_extract_mentions",
+      "services_downloader_imageversion",
+      "services_downloader_musicinfo",
+      "services_downloader_parse_dash_manifest",
+      "services_downloader_parse_metadata",
+      "services_downloader_parse_music",
+      "services_downloader_py",
+      "services_downloader_rationale_1",
+      "services_downloader_rationale_184",
+      "services_downloader_rationale_597",
+      "services_downloader_rationale_642",
+      "services_downloader_rationale_713",
+      "services_downloader_reelmetadata",
+      "services_downloader_reeluser",
+      "services_downloader_safe_cleanup",
+      "services_downloader_videoversion"
+    ],
+    "1": [
+      "api_deps_get_current_user_id",
+      "api_deps_py",
+      "api_deps_rationale_1",
+      "api_deps_rationale_13",
+      "api_v1_reels_py",
+      "backend_supabase_client_get_supabase",
+      "backend_supabase_client_rationale_1",
+      "backend_supabase_client_rationale_20",
+      "supabase_client_py",
+      "v1_reels_create_reel",
+      "v1_reels_rationale_1",
+      "v1_reels_rationale_19"
+    ],
+    "2": [
+      "backend_config_config",
+      "backend_config_developmentconfig",
+      "backend_config_get_config",
+      "backend_config_productionconfig",
+      "backend_config_rationale_1",
+      "backend_config_rationale_36",
+      "backend_config_rationale_42",
+      "backend_config_rationale_48",
+      "backend_config_rationale_57",
+      "backend_config_validate_config",
+      "config_py"
+    ],
+    "3": [
+      "workers_tasks_cleanup",
+      "workers_tasks_handle_pipeline_error",
+      "workers_tasks_ping",
+      "workers_tasks_process_reel",
+      "workers_tasks_py",
+      "workers_tasks_rationale_1",
+      "workers_tasks_rationale_172",
+      "workers_tasks_rationale_186",
+      "workers_tasks_rationale_204",
+      "workers_tasks_rationale_40"
+    ],
+    "4": [
+      "services_downloader_bound_logger",
+      "services_transcriber_attr",
+      "services_transcriber_py",
+      "services_transcriber_rationale_1",
+      "services_transcriber_rationale_222",
+      "services_transcriber_rationale_58",
+      "services_transcriber_transcribe_audio",
+      "services_transcriber_transcriptionresult"
+    ],
+    "5": [
+      "exception",
+      "services_downloader_downloaderror",
+      "services_downloader_downloaderror_init",
+      "services_downloader_fetch_reel_html",
+      "services_downloader_rationale_161",
+      "services_transcriber_rationale_46",
+      "services_transcriber_transcriptionerror"
+    ],
+    "6": [
+      "services_downloader_extract_media_item",
+      "services_downloader_find_first_media_item",
+      "services_downloader_rationale_367",
+      "services_downloader_rationale_408",
+      "services_downloader_rationale_423",
+      "services_downloader_walk_dicts"
+    ],
+    "7": [
+      "basemodel",
+      "schemas_reel_py",
+      "schemas_reel_rationale_1",
+      "schemas_reel_reelcreate",
+      "schemas_reel_reelresponse"
+    ],
+    "8": [
+      "backend_main_lifespan",
+      "backend_main_rationale_1",
+      "backend_main_root",
+      "main_py"
+    ],
+    "9": [
+      "api_v1_health_py",
+      "v1_health_health_check",
+      "v1_health_rationale_1"
+    ],
+    "10": [
+      "init_py",
+      "v1_init_rationale_1"
+    ],
+    "11": [
+      "workers_celery_app_py",
+      "workers_celery_app_rationale_1"
+    ]
+  },
+  "cohesion": {
+    "0": 0.17,
+    "1": 0.17,
+    "2": 0.25,
+    "3": 0.24,
+    "4": 0.36,
+    "5": 0.33,
+    "6": 0.33,
+    "7": 0.5,
+    "8": 0.5,
+    "9": 0.67,
+    "10": 1.0,
+    "11": 1.0
+  },
+  "gods": [
+    {
+      "id": "services_downloader_download_reel",
+      "label": "download_reel()",
+      "degree": 10
+    },
+    {
+      "id": "services_downloader_parse_metadata",
+      "label": "_parse_metadata()",
+      "degree": 10
+    },
+    {
+      "id": "services_transcriber_transcribe_audio",
+      "label": "transcribe_audio()",
+      "degree": 8
+    },
+    {
+      "id": "workers_tasks_process_reel",
+      "label": "process_reel()",
+      "degree": 7
+    },
+    {
+      "id": "services_downloader_downloaderror",
+      "label": "DownloadError",
+      "degree": 7
+    },
+    {
+      "id": "backend_config_get_config",
+      "label": "get_config()",
+      "degree": 5
+    },
+    {
+      "id": "backend_supabase_client_get_supabase",
+      "label": "get_supabase()",
+      "degree": 5
+    },
+    {
+      "id": "services_downloader_extract_media_item",
+      "label": "_extract_media_item()",
+      "degree": 5
+    },
+    {
+      "id": "services_transcriber_transcriptionerror",
+      "label": "TranscriptionError",
+      "degree": 5
+    },
+    {
+      "id": "backend_config_developmentconfig",
+      "label": "DevelopmentConfig",
+      "degree": 4
+    }
+  ],
+  "surprises": [
+    {
+      "source": "transcribe_audio()",
+      "target": "get_config()",
+      "source_files": [
+        "services/transcriber.py",
+        "config.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "process_reel()",
+      "target": "get_supabase()",
+      "source_files": [
+        "workers/tasks.py",
+        "supabase_client.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "process_reel()",
+      "target": "download_reel()",
+      "source_files": [
+        "workers/tasks.py",
+        "services/downloader.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "process_reel()",
+      "target": "transcribe_audio()",
+      "source_files": [
+        "workers/tasks.py",
+        "services/transcriber.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "get_current_user_id()",
+      "target": "get_supabase()",
+      "source_files": [
+        "api/deps.py",
+        "supabase_client.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}

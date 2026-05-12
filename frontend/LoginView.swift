@@ -10,66 +10,81 @@ struct LoginView: View {
     @State private var showSignup = false
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        ZStack {
+            OnboardingTheme.background.ignoresSafeArea()
 
-            Text("Login")
-                .font(.system(size: 32, weight: .bold))
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(spacing: 24) {
+                Spacer()
 
-            VStack(spacing: 16) {
-                TextField("Email", text: $email)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-
-                SecureField("Password", text: $password)
-                    .textContentType(.password)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-            }
-
-            if let errorMessage = errorMessage {
-                Text(errorMessage)
-                    .font(.footnote)
-                    .foregroundColor(.red)
+                Text("Login")
+                    .font(.system(size: 36, weight: .bold, design: .serif))
+                    .foregroundColor(OnboardingTheme.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-            }
 
-            Button(action: submit) {
-                ZStack {
-                    Text("LOGIN")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.black)
-                        .opacity(isSubmitting ? 0 : 1)
-                    if isSubmitting {
-                        ProgressView()
-                    }
+                VStack(spacing: 16) {
+                    TextField("Email", text: $email)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .padding()
+                        .background(OnboardingTheme.cardSurface)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(OnboardingTheme.divider, lineWidth: 0.5)
+                        )
+
+                    SecureField("Password", text: $password)
+                        .textContentType(.password)
+                        .padding()
+                        .background(OnboardingTheme.cardSurface)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(OnboardingTheme.divider, lineWidth: 0.5)
+                        )
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.yellow)
-                .cornerRadius(8)
-            }
-            .disabled(isSubmitting || !canSubmit)
 
-            HStack {
-                Text("Don't have an account?")
-                    .foregroundColor(.secondary)
-                Button("Sign Up") { showSignup = true }
-                    .foregroundColor(.orange)
-                    .fontWeight(.semibold)
-            }
-            .font(.footnote)
+                if let errorMessage = errorMessage {
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
 
-            Spacer()
+                Button(action: submit) {
+                    ZStack {
+                        Text("LOGIN")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .opacity(isSubmitting ? 0 : 1)
+                        if isSubmitting {
+                            ProgressView()
+                                .tint(.white)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(OnboardingTheme.primary)
+                    .clipShape(Capsule())
+                    .shadow(color: OnboardingTheme.primary.opacity(0.25), radius: 10, x: 0, y: 5)
+                }
+                .disabled(isSubmitting || !canSubmit)
+
+                HStack {
+                    Text("Don't have an account?")
+                        .foregroundColor(OnboardingTheme.textMuted)
+                    Button("Sign Up") { showSignup = true }
+                        .foregroundColor(OnboardingTheme.primary)
+                        .fontWeight(.semibold)
+                }
+                .font(.footnote)
+
+                Spacer()
+            }
+            .padding(.horizontal, 24)
         }
-        .padding(.horizontal, 24)
         .sheet(isPresented: $showSignup) {
             SignupView()
                 .environmentObject(auth)

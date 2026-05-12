@@ -1,0 +1,82 @@
+{
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/config.py": {
+    "mtime": 1778104011.1148665,
+    "hash": "256e42f77bbcc44afafbacdf9bb622e9"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/__init__.py": {
+    "mtime": 1777672237.7351787,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/supabase_client.py": {
+    "mtime": 1777669125.7126195,
+    "hash": "6165da23893f041181f5eed4467709f4"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/main.py": {
+    "mtime": 1777672269.4478495,
+    "hash": "15a00b62e745f5bc9c9e25d924b062eb"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/schemas/reel.py": {
+    "mtime": 1777672285.6159902,
+    "hash": "92516bf1779b1a1066f7d0f725155970"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/schemas/__init__.py": {
+    "mtime": 1777672253.28381,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/api/deps.py": {
+    "mtime": 1778247437.2280707,
+    "hash": "81e110fef34632dc3ca788d94078ca1f"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/api/__init__.py": {
+    "mtime": 1777672241.239614,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/api/v1/health.py": {
+    "mtime": 1777848915.6931038,
+    "hash": "4cf94ed42fa44a75018a330517f43f7a"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/api/v1/__init__.py": {
+    "mtime": 1777672246.0037422,
+    "hash": "0d7ada8845d61ff7e8608cf54a5daae3"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/api/v1/reels.py": {
+    "mtime": 1778251542.5321066,
+    "hash": "1889fb96d72de90b1dd14ce6b45ff4b0"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/workers/tasks.py": {
+    "mtime": 1778422413.1477094,
+    "hash": "736f8a7a5fab4c3a38343043c1843439"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/workers/celery_app.py": {
+    "mtime": 1777672307.3811505,
+    "hash": "01d3d4217cc89a691e03a2fe652ac8bb"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/workers/__init__.py": {
+    "mtime": 1777672249.6219602,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/services/downloader.py": {
+    "mtime": 1778424668.099705,
+    "hash": "cbaf3e767f04bfdf3bc9b9ae666153b9"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/services/transcriber.py": {
+    "mtime": 1778424697.6809218,
+    "hash": "0aaadfdbd25550980f2ae374067f3c9e"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/services/__init__.py": {
+    "mtime": 1777672257.2423208,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/requirements.txt": {
+    "mtime": 1778302008.3555727,
+    "hash": "fff89b274b3ecacde69951356fb19e05"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/README.md": {
+    "mtime": 1777672379.8802972,
+    "hash": "bb98580defacf6ceb404a755e28aae4f"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/docker-compose.yml": {
+    "mtime": 1777672324.9329593,
+    "hash": "3fc101297ee0f79daf2d689da578782a"
+  }
+}

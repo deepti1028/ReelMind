@@ -27,6 +27,10 @@ We document them together because they're meant to be read in sequence: Step 14 
 
 ---
 
+> ⚠️ **Implementation update (2026-05-09):** This doc was written assuming `yt-dlp` + `ffmpeg` for Step 15. We abandoned that approach during implementation — research showed yt-dlp's Instagram extractor doesn't reliably surface caption/hashtag metadata, and we needed a richer payload (music info, like counts, etc.) than it exposes. The actual implementation scrapes Instagram's HTML directly and parses the embedded JSON. Step 14 is unchanged. The "Step 15" section below describes what we **actually built**; references to yt-dlp/mp3/ffmpeg in older sections of this doc are historical context only.
+
+---
+
 ## File Inventory
 
 ```
@@ -36,17 +40,16 @@ backend/
 │       └── reels.py           ← Step 14: POST /api/v1/reels endpoint
 ├── workers/
 │   ├── celery_app.py          ← Celery configuration (unchanged from Phase 1)
-│   └── tasks.py               ← Step 15 wired in here
+│   └── tasks.py               ← Step 15 + Step 16 wired in here
 ├── services/
-│   └── downloader.py          ← Step 15: yt-dlp wrapper (NEW in this phase)
+│   ├── downloader.py          ← Step 15: Instagram JSON scraper + DASH audio extractor
+│   └── transcriber.py         ← Step 16: Groq Whisper wrapper (see Steps 16-18 doc)
 ├── schemas/
 │   └── reel.py                ← request/response Pydantic models
-└── requirements.txt           ← yt-dlp pinned here
-
-render.yaml                    ← apt-get install ffmpeg added at build time
+└── requirements.txt           ← curl_cffi + parsel pinned here (no yt-dlp, no ffmpeg)
 ```
 
-The `services/` folder is the home for any "do one thing, no HTTP routes, no Celery glue" module. As we add Whisper, Claude, and embedding services in later steps, they'll all live here.
+The `services/` folder is the home for any "do one thing, no HTTP routes, no Celery glue" module. Whisper transcription and Llama classification live alongside it.
 
 ---
 
@@ -215,215 +218,241 @@ Three fields. The `reel_id` is the most important — the iOS app uses it to loo
 
 ---
 
-## Step 15 — The Audio Downloader Service
+## Step 15 — The Reel Extractor (Custom Instagram Scraper)
 
 Now we cross the API/worker boundary. Step 14 ends by calling `process_reel.delay(reel_id)`. From here on, we're inside a Celery worker process — a separate Python process from the FastAPI app, with its own memory, connecting to the same Redis and Supabase.
 
-The worker's first job is to download the reel's audio. This is implemented in [`backend/services/downloader.py`](../backend/services/downloader.py).
+The worker's first job is to download the reel's **audio** (for Whisper) and **metadata** (caption, hashtags, creator, thumbnail, music info, etc.). This is implemented in [`backend/services/downloader.py`](../backend/services/downloader.py).
 
-### Why download audio specifically (not video)?
+### Why we abandoned yt-dlp
 
-The Whisper transcription API (Step 16) accepts audio files up to 25 MB. A typical reel video is 5-50 MB; the audio track alone is 0.5-3 MB. Downloading audio-only is:
+The original plan called for `yt-dlp` + `ffmpeg`. We changed direction during implementation for two reasons:
 
-- **Faster** (less bandwidth)
-- **Smaller** (well under Whisper's limit)
-- **All we need** (we don't keep the video — we just want the spoken content)
+1. **Caption/hashtag extraction is unreliable.** yt-dlp's Instagram extractor reads only the video stream and thin metadata — it frequently returns empty or truncated captions and misses hashtag arrays.
+2. **We want richer signal.** The classifier benefits from like counts, music titles, verified-author flag, and more. yt-dlp doesn't surface these.
 
-`yt-dlp` makes this trivial via the `bestaudio` format selector and a postprocessor that pipes through `ffmpeg`.
+We replaced it with a custom 3-stage extractor that scrapes the public reel HTML directly, parses the JSON blob Instagram embeds in a `<script type="application/json">` tag, and pulls the audio-only DASH stream URL out of the `video_dash_manifest` XML inside that JSON.
 
-### Why yt-dlp and not the official Instagram API?
+### Tech stack — no ffmpeg, no yt-dlp
 
-Short answer: **there is no official Instagram API for reels.** Meta has the Graph API for business accounts, but it doesn't expose reel content. The community-maintained downloader libraries (`yt-dlp`, `instaloader`, `instagrapi`) reverse-engineer Instagram's web interface.
-
-We chose **yt-dlp** because:
-
-| Criterion | yt-dlp | instaloader | instagrapi |
-|---|---|---|---|
-| Active maintenance | ✅ Major releases monthly | ✅ Active | ⚠️ Less frequent |
-| ToS pressure | Treats public content as public, no login required for public reels | Same | Often requires login |
-| Format flexibility | Built-in audio extraction via ffmpeg | Limited | Limited |
-| Track record | Used by millions of users for thousands of sites | Instagram-only | Instagram-only |
-
-The trade-off: we're depending on an unstable upstream (Instagram's HTML structure can change), so `yt-dlp` versions need to be kept reasonably current. We pinned `yt-dlp==2024.11.18` — the last release before our build date — and you should bump this every few months.
-
-### The system dependency: ffmpeg
-
-`yt-dlp` itself doesn't decode audio. It downloads the source stream (often `.m4a` or some HLS variant) and shells out to `ffmpeg` to convert it to mp3. **ffmpeg must be installed at the OS level.**
-
-On macOS for local dev: `brew install ffmpeg`.
-On Render (production): we updated `render.yaml`'s build command:
-
-```yaml
-buildCommand: apt-get update -y && apt-get install -y ffmpeg && pip install -r backend/requirements.txt
-```
-
-Render's build environment runs as root on Ubuntu, so `apt-get` works without `sudo`. The first build will be slower (~30 s for the apt cache update + ffmpeg install), but subsequent builds are fast because Render caches the build environment.
-
-**If `ffmpeg` is missing, our code will return a non-retryable error.** Watch the Celery logs for `"ffmpeg may not be installed"` — that's the diagnostic we surface in [`downloader.py`](../backend/services/downloader.py).
-
-### Walkthrough of `download_reel_audio()`
-
-```python
-def download_reel_audio(url: str, reel_id: str) -> DownloadResult:
-    output_dir = tempfile.mkdtemp(prefix="reelmind_")
-    output_template = os.path.join(output_dir, f"{reel_id}.%(ext)s")
-
-    ydl_opts = {
-        "format": "bestaudio/best",
-        "postprocessors": [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": "128",
-        }],
-        "outtmpl": output_template,
-        "quiet": True,
-        "no_warnings": True,
-        "socket_timeout": 30,
-    }
-```
-
-| Option | What it does |
+| Library | Role |
 |---|---|
-| `format: "bestaudio/best"` | Prefer audio-only streams; fall back to "best" (any stream) if Instagram only serves combined video+audio. |
-| `FFmpegExtractAudio` postprocessor | After download, transcode whatever we got into mp3 at 128 kbps. 128 kbps is the sweet spot — high enough for clean Whisper transcription, low enough to stay fast. |
-| `outtmpl` | yt-dlp uses `printf`-like template strings. `%(ext)s` is replaced with the actual extension after postprocessing — so the final file lands at `/tmp/reelmind_xxx/<reel_id>.mp3`. |
-| `quiet: True, no_warnings: True` | Suppress yt-dlp's own logging — we control logging via Python's `logging` module. |
-| `socket_timeout: 30` | Don't sit forever on a hung connection. 30 s is generous but bounded. |
-| (deliberately omitted) `cookies` | We don't pass login cookies, so private reels will fail with an extractor error. That's by design — see error handling below. |
+| `curl_cffi` | HTTPS client that impersonates a real Chrome TLS fingerprint. Without this, Instagram returns a degraded HTML response that doesn't include the JSON blob we need. |
+| `parsel` | CSS selector for finding the embedded `<script type="application/json">` blocks in the HTML. |
+| `xml.etree.ElementTree` (stdlib) | Parses the DASH manifest XML to extract the audio Representation's `<BaseURL>`. |
 
-The actual download:
+**No `ffmpeg`** — we save the audio in its native container (`.m4a`, AAC codec inside MP4) and feed it directly to Groq Whisper, which accepts m4a. This eliminates a system-level dependency.
 
-```python
-with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-    info = ydl.extract_info(url, download=True)
+### Three-stage pipeline inside `download_reel`
+
 ```
-
-`extract_info(url, download=True)` does two jobs in one call:
-1. Downloads the audio file
-2. Returns a `dict` of metadata about the reel (caption, uploader, thumbnail URL, duration, etc.)
-
-This is convenient for **Step 17 (caption fallback)** — we capture the metadata for free during the download and don't need a second yt-dlp call. (See the Steps 16-18 doc for how that metadata is used.)
-
-### Error handling: the retryable/non-retryable distinction
-
-This is the most important design choice in the file:
-
-```python
-class DownloadError(Exception):
-    def __init__(self, message: str, *, is_retryable: bool = False):
-        super().__init__(message)
-        self.is_retryable = is_retryable
+┌────────────────────────────────────────────────────────┐
+│  Stage 1 — Fetch                                       │
+│  curl_cffi.get(url, impersonate="chrome")              │
+│  Detects: 4xx, 5xx, login redirect → DownloadError     │
+└────────────────────────┬───────────────────────────────┘
+                         ▼
+┌────────────────────────────────────────────────────────┐
+│  Stage 2 — Locate media item                           │
+│  parsel finds every <script type="application/json">   │
+│  Recursive walk for either of the keys IG ships under: │
+│    xdt_api__v1__media__shortcode_web_info              │
+│    xdt_api__v1__media__shortcode__web_info             │
+│  → returns items[0] dict                               │
+└────────────────────────┬───────────────────────────────┘
+                         ▼
+┌────────────────────────────────────────────────────────┐
+│  Stage 3 — Parse + downloads                           │
+│  Build ReelMetadata dataclass                          │
+│  Parse video_dash_manifest XML for audio URL           │
+│  Download audio  → /tmp/reelmind_xxx/<reel_id>.m4a     │
+│  Download thumb  → /tmp/reelmind_xxx/<reel_id>.jpg     │
+│  (video download function exists but is gated off)     │
+└────────────────────────────────────────────────────────┘
 ```
-
-We define our own exception class with an `is_retryable` flag, and we map yt-dlp's many possible errors to one or the other:
-
-| Original error | Mapped to | Why |
-|---|---|---|
-| `GeoRestrictionError` | non-retryable | The reel is blocked in our server's region. Retrying from the same server won't help. |
-| `ExtractorError` containing "private" / "login" / "unavailable" | non-retryable | The reel is private, deleted, or removed. Permanent state. |
-| `ExtractorError` (other) | non-retryable | Instagram changed their HTML and yt-dlp can't parse anymore. Won't fix until yt-dlp is updated. |
-| `DownloadError` containing "private" / "login" / "deleted" | non-retryable | Same as above |
-| `DownloadError` (other, generic) | **retryable** | Likely network timeout or transient 5xx. Worth retrying. |
-| `Exception` (anything else) | retryable | Conservative — assume unknown errors might be transient. |
-
-The Celery task uses this flag to decide whether to call `self.retry()`:
-
-```python
-if exc.is_retryable and self.request.retries < self.max_retries:
-    raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
-supabase.table("reels").update({"status": "failed"}).eq("id", reel_id).execute()
-```
-
-Retries are scheduled with linear backoff: 60 s, 120 s, 180 s. We don't use exponential because the per-task time limit is 600 s and we want to fit three retries inside that budget for transient failures.
-
-**Without this distinction, every failure would burn three retries before giving up** — including private reels that would never succeed. That's wasted compute and a slow user experience (a 3-minute wait before the user sees "this reel is private"). With the distinction, private/deleted reels fail in ~5 seconds and the user sees the failure status immediately.
 
 ### What gets returned
 
 ```python
 @dataclass
 class DownloadResult:
-    audio_path: str
-    metadata: ReelMetadata
+    metadata: ReelMetadata       # rich dataclass — see below
+    audio_path: str | None       # /tmp/.../<reel_id>.m4a
+    thumbnail_path: str | None   # /tmp/.../<reel_id>.jpg
+    video_path: str | None       # only when download_video=True (default off)
+    temp_dir: str                # caller is responsible for cleanup
 ```
 
-A path to the mp3 and a `ReelMetadata` struct containing `caption`, `hashtags`, `creator_handle`, `thumbnail_url`, `duration_seconds`. The metadata feeds Step 17; the audio path feeds Step 16.
+`ReelMetadata` carries every useful field from the JSON, including some we don't yet persist (likes, comments, music title/artist, post timestamp, original dimensions, verified-author flag, view count, paid-partnership flag). Forward-compat fields go into `metadata.extra`. See [docs/backlog.md](backlog.md) → "Persist richer reel metadata" for the plan to surface those in the schema.
+
+### What "persist" means here
+
+There are two storage layers, and they have very different lifetimes:
+
+| Storage | What lives there | Lifetime |
+|---|---|---|
+| `/tmp/reelmind_xxx/<reel_id>.m4a` (temp dir) | Downloaded audio file, downloaded thumbnail JPG | **Deleted at the end of the Celery task** in the `finally` block |
+| `reels` row in Supabase | DB columns: `caption`, `hashtags`, `creator_handle`, `thumbnail_url` (and after Step 16: `transcript`, `has_audio`) | **Forever** (until soft-delete) |
+
+When we say "Step 15 persists metadata to DB" we mean the `supabase.table("reels").update({...})` call in `tasks.py` — those columns survive the task. The audio file does not.
+
+### Error mapping — retryable vs non-retryable
+
+The downloader raises a custom `DownloadError(is_retryable: bool)`. The Celery task reads `is_retryable` to decide between calling `self.retry()` and marking the reel `failed`.
+
+| Failure | Class | Reason |
+|---|---|---|
+| Network timeout / connection reset (`curl_cffi` raised) | retryable | Wifi blip, IG latency spike — refresh fixes it |
+| HTTP 5xx from Instagram | retryable | Their server is having a moment |
+| Couldn't find JSON blob in HTML | retryable | IG occasionally serves degraded HTML |
+| Audio/thumbnail file download HTTP 5xx | retryable | CDN blip |
+| HTTP 401 / 403 from `/reel/...` | **non**-retryable | Reel is private or login-walled; retries won't help |
+| HTTP 404 from `/reel/...` | **non**-retryable | Reel deleted |
+| Redirected to `/accounts/login` | **non**-retryable | Same as 401 |
+| Audio/thumbnail file download HTTP 4xx | **non**-retryable | Asset URL expired or revoked |
+
+Each error log line includes both the **HTTP status code** and a **likely cause** so on-call can diagnose without re-running the request. Example log lines:
+
+```
+HTTP response | status=403 | bytes=14821
+Instagram returned 403 — likely login-required / private reel
+```
+
+### Linear backoff
+
+When the Celery task receives a retryable error, it schedules a retry with **linear backoff** — wait time grows by a constant amount each attempt:
+
+| Attempt | Wait before retry |
+|---|---|
+| 1st failure | 60 s |
+| 2nd failure | 120 s |
+| 3rd failure | 180 s |
+| 4th failure | give up, mark `failed` |
+
+Code: `countdown = 60 * (self.request.retries + 1)` ([tasks.py](../backend/workers/tasks.py)).
+
+We chose linear over **exponential backoff** (60/120/240/480) because exponential quickly exceeds Celery's 600 s task time limit. Linear stays inside the budget and gives predictable worst-case recovery (~6 minutes).
+
+**Without the retryable/non-retryable distinction, every failure would burn three retries** — including private reels that would never succeed. That's wasted compute and a slow UX. With the distinction, private/deleted reels fail in ~5 seconds.
 
 ---
 
-## Step 15 inside `process_reel` — How It's Called
+## Step 15 inside `process_reel` — how it's called
 
-Look at [`backend/workers/tasks.py`](../backend/workers/tasks.py). Stripped to just the Step 15 parts:
+Look at [`backend/workers/tasks.py`](../backend/workers/tasks.py). The relevant slice:
 
 ```python
 @celery_app.task(bind=True, max_retries=3)
 def process_reel(self, reel_id: str) -> dict:
     supabase = get_supabase()
-
-    # Mark as processing so the iOS app can show a spinner
-    supabase.table("reels").update({
-        "status": "processing",
-        "retry_count": self.request.retries,
-    }).eq("id", reel_id).execute()
-
-    # Fetch URL
-    row = supabase.table("reels").select("url, user_id").eq("id", reel_id).single().execute()
-    url = row.data["url"]
-
-    # Step 15
+    download_result = None
     try:
-        result = download_reel_audio(url, reel_id)
-    except DownloadError as exc:
-        if exc.is_retryable and self.request.retries < self.max_retries:
-            raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
-        supabase.table("reels").update({"status": "failed"}).eq("id", reel_id).execute()
-        return {"reel_id": reel_id, "status": "failed", "error": str(exc)}
+        # Mark processing so the iOS app sees the spinner state
+        supabase.table("reels").update({
+            "status": "processing",
+            "retry_count": self.request.retries,
+        }).eq("id", reel_id).execute()
 
-    # Persist metadata (caption, creator, thumbnail) immediately
-    supabase.table("reels").update({
-        "caption": result.metadata.caption,
-        "hashtags": result.metadata.hashtags,
-        "creator_handle": result.metadata.creator_handle,
-        "thumbnail_url": result.metadata.thumbnail_url,
-    }).eq("id", reel_id).execute()
+        # Fetch URL from DB (source of truth, not the Celery arg)
+        row = supabase.table("reels").select("url, user_id").eq("id", reel_id).single().execute()
+        url = row.data["url"]
 
-    # … Steps 16-22 follow …
+        # Step 15 — extract + download
+        try:
+            download_result = download_reel(url, reel_id)
+        except DownloadError as exc:
+            return _handle_pipeline_error(self, supabase, reel_id, exc, exc.is_retryable, log)
+
+        # Persist metadata immediately, before transcription
+        meta = download_result.metadata
+        supabase.table("reels").update({
+            "caption": meta.caption,
+            "hashtags": meta.hashtags,
+            "creator_handle": meta.creator_handle or None,
+            "thumbnail_url": meta.thumbnail_url,
+        }).eq("id", reel_id).execute()
+
+        # … Step 16 (transcription) follows …
+    finally:
+        if download_result is not None:
+            _cleanup(download_result, log)  # rm -rf the temp_dir
 ```
 
-**The order of operations matters:**
+**Order of operations matters:**
 
-1. **Mark `status='processing'` first.** This gives the iOS app a signal that work has started — prevents the user from thinking nothing is happening.
-2. **Fetch the URL second.** We don't trust the Celery argument blindly because the reel record is the source of truth, and a future feature might let users edit URLs before processing starts.
+1. **Mark `status='processing'` first** so the iOS app shows the spinner.
+2. **Fetch URL second** — the DB row is the source of truth, not the Celery arg.
 3. **Download third.**
-4. **Persist metadata immediately after download.** Even if Step 16 (Whisper) fails next, the caption/creator/thumbnail are already saved. The user gets *some* data on their reel card rather than a blank.
+4. **Persist metadata immediately after download** — before transcription. If Whisper later fails, the caption/hashtags/creator/thumbnail are already saved and the user gets *some* data on their reel card.
 
-This "save partial data as you go" pattern is repeated throughout the pipeline. It's a deliberate choice over the alternative ("run everything, save at the end, treat failures as all-or-nothing"). The reasoning:
-
-- Pipelines have many failure modes. The longer the pipeline, the more likely at least one step fails.
-- Users prefer a partially-populated reel to a fully-failed one.
-- Re-running the pipeline from a partial state is cheaper than re-running from scratch — though we don't yet implement "resume from step N", the data is in place when we eventually want to.
+This "save partial data as you go" pattern is deliberate. Pipelines have many failure modes; partial data beats a blank card.
 
 ---
 
-## Cleanup: the `finally` block
+## Cleanup — the `finally` block
 
 ```python
-finally:
-    if audio_path and os.path.exists(audio_path):
-        try:
-            os.remove(audio_path)
-            parent = os.path.dirname(audio_path)
-            if parent and not os.listdir(parent):
-                os.rmdir(parent)
-        except OSError as exc:
-            logger.warning("Could not clean up audio file %s: %s", audio_path, exc)
+def _cleanup(result: DownloadResult, log) -> None:
+    temp_dir = result.temp_dir
+    if not temp_dir or not os.path.exists(temp_dir):
+        return
+    log.info("cleanup | removing temp_dir=%s", temp_dir)
+    for name in os.listdir(temp_dir):
+        os.remove(os.path.join(temp_dir, name))
+    os.rmdir(temp_dir)
 ```
 
-The mp3 file is only useful for the duration of one Celery task — once Whisper has read it, we don't need it again. The `finally` block (covering the entire pipeline body) ensures we delete it whether the task succeeds, fails, or retries.
+The audio + thumbnail files are only useful for the duration of one Celery task. The `finally` block (wrapping the entire pipeline body) deletes the whole temp dir whether the task succeeded, failed, or retried.
 
-We also try to remove the parent temp directory if it's empty. `tempfile.mkdtemp()` creates a unique dir per call, so if we leak the dir (don't clean it up), `/tmp/` accumulates empty directories over time. Render's free tier has a small `/tmp/`, so this matters.
+`tempfile.mkdtemp()` creates a unique dir per call, so leaking the dir would accumulate empty directories in `/tmp/`. Render's free tier has a small `/tmp/`, so this matters.
 
 Errors during cleanup are logged but never raised — we don't want a transient permission issue on cleanup to mark a successful reel as failed.
+
+---
+
+## What you can verify after Step 15 + Step 16
+
+You can test the whole download → metadata → transcription pipeline end-to-end **without** waiting for Step 18 (classification).
+
+**In the Celery worker logs** — full per-stage trace (each line carries `reel_id` for grep):
+
+```
+process_reel start | retry=0/3
+marking status=processing
+reel url loaded | url=https://www.instagram.com/reel/...
+step 15 | downloading reel
+fetching reel HTML
+HTTP response | status=200 | bytes=...
+media item located in JSON blob #1
+DASH manifest present | length=8421 chars
+audio stream selected | codec=mp4a.40.5 | bandwidth=66525 | host=instagram.fdel1-7.fna.fbcdn.net
+metadata parsed | shortcode=DYFKkLQvXMP | creator=@gima_ashi | has_audio=True | duration=19.4s
+downloading audio | dest=/tmp/reelmind_.../<id>.m4a
+audio download done | bytes=162590
+downloading thumbnail | dest=/tmp/reelmind_.../<id>.jpg
+step 15 | persisting metadata | creator=@gima_ashi | hashtags=10 | caption_chars=156 | thumb=True
+step 15 | metadata saved to DB
+step 16 | transcribing audio
+calling Groq Whisper | model=whisper-large-v3-turbo
+transcription done | language=en | duration=19.4s | chars=247 | has_audio=True
+step 16 | transcript saved to DB
+cleanup | removing temp_dir=/tmp/reelmind_...
+process_reel done
+```
+
+**In Supabase Studio** (`reels` table):
+
+- `status`: `queued` → `processing` (stays there until Step 19 lands)
+- `caption`: actual reel text
+- `hashtags`: array like `["halloween", "halloweenmakeupideas", ...]`
+- `creator_handle`: IG @username
+- `thumbnail_url`: an Instagram CDN URL (open in browser to verify)
+- `transcript`: the Whisper output
+- `has_audio`: `true` for spoken reels, `false` for music-only
+
+**In the iOS app** (pull-to-refresh after the worker finishes):
+
+The dev-only rich card in [`frontend/TempReels/ReelsListView.swift`](../frontend/TempReels/ReelsListView.swift) renders thumbnail + `@creator_handle` + status pill (orange = `processing`) + caption excerpt + hashtag chips + transcript char count. Stuck at orange `processing` is the **success state** for now — Step 19 will flip it to `ready`/`uncategorised` once classification lands. See [docs/backlog.md](backlog.md) → "Replace dev-only rich reel card".
 
 ---
 
@@ -436,13 +465,12 @@ For the backend to actually receive POSTs on Render, the env vars in `render.yam
 | `SUPABASE_URL` | Supabase dashboard → Project Settings → API |
 | `SUPABASE_ANON_KEY` | Same |
 | `SUPABASE_SERVICE_ROLE_KEY` | Same — under "Service Role Key" (keep secret!) |
-| `OPENAI_API_KEY` | platform.openai.com → API Keys |
-| `ANTHROPIC_API_KEY` | console.anthropic.com → API Keys |
+| `GROQ_API_KEY` | console.groq.com → API Keys |
 | `REDIS_URL` | The cloud Redis instance (Upstash or Render's add-on) |
 
-`sync: false` in `render.yaml` means Render does **not** pull these from a synced source — they must be entered manually in the Render dashboard. The `sync: false` flag is the Render-recommended way to flag secret values.
+`sync: false` in `render.yaml` means Render does **not** pull these from a synced source — they must be entered manually in the Render dashboard.
 
-The build command `apt-get install -y ffmpeg && pip install -r backend/requirements.txt` runs on every deploy. The first build is ~2 minutes; subsequent ones are ~30 s thanks to apt and pip caching.
+The build command is just `pip install -r backend/requirements.txt` — **no `apt-get install ffmpeg`** since we removed the ffmpeg dependency by using the native `.m4a` audio container directly (Groq Whisper accepts m4a).
 
 ---
 
@@ -455,11 +483,13 @@ The build command `apt-get install -y ffmpeg && pip install -r backend/requireme
 | Expired/forged JWT | 401 |
 | Valid JWT, user already saved this URL | 409 with existing reel info |
 | Valid JWT, valid URL, valid user, healthy DB | 202 + `reel_id` |
-| DB write succeeds but Celery dispatch fails (Redis down) | Reel is queued in DB but never processed; needs a sweeper (TODO) |
-| Reel URL is private | Reel marked `failed` quickly (no retries) |
-| Reel URL is region-blocked | Reel marked `failed` quickly (no retries) |
-| Reel URL gives a network timeout | Retries up to 3× with linear backoff |
-| ffmpeg is missing | Reel marked `failed` with diagnostic in logs |
+| DB write succeeds but Celery dispatch fails (Redis down) | Reel queued in DB but never processed; needs a sweeper (TODO) |
+| Reel URL is private (HTTP 401/403 or login redirect) | Reel marked `failed` quickly (no retries) |
+| Reel URL is deleted (HTTP 404) | Reel marked `failed` quickly (no retries) |
+| Reel URL gives a network timeout / 5xx | Retries up to 3× with linear backoff (60/120/180 s) |
+| Instagram serves degraded HTML missing the JSON blob | Retried (assumed transient) |
+| Reel has no audio track (silent / `has_audio=false` in JSON) | Audio download skipped; `has_audio=false` written to DB; pipeline continues |
+| Audio CDN URL expired between scrape and download | Retried — Step 15 re-runs the full scrape |
 
 ---
 
@@ -503,13 +533,11 @@ curl -X POST http://localhost:8000/api/v1/reels \
 
 Expected output: HTTP 202, JSON `{"reel_id": "...", "status": "queued", "message": "..."}`.
 
-Watch Terminal 3 (Celery) — you should see logs:
-- `"Starting audio download for reel <id>"`
-- `"Audio ready: /tmp/reelmind_xxx/<id>.mp3 (XXX KB)"`
+Watch Terminal 3 (Celery) — you should see the full per-stage trace shown in the "What you can verify" section above (HTML fetch → JSON locate → DASH parse → audio + thumbnail download → metadata persist → Whisper → transcript persist → cleanup).
 
 Then look at the `reels` table in Supabase Studio:
-- The row should have `status='processing'` (or further along if subsequent steps run)
-- `caption`, `creator_handle`, `thumbnail_url` should be populated
+- The row should have `status='processing'` (will stay there until Step 19 lands)
+- `caption`, `creator_handle`, `thumbnail_url`, `hashtags`, `transcript`, `has_audio` should all be populated
 
 ---
 
@@ -522,13 +550,16 @@ Then look at the `reels` table in Supabase Studio:
 | Returning duplicate info | 409 with existing reel details | Lets clients render "you already saved this" |
 | Async dispatch | Celery `.delay()` to Redis | Keeps the API endpoint sub-100ms |
 | Argument passed to worker | `reel_id` only | Tiny payload, worker re-reads source of truth |
-| Audio download library | yt-dlp | Most active, most reliable, ffmpeg integration |
-| Audio format | mp3 @ 128 kbps | Whisper-friendly, small, good quality |
+| Audio download approach | Custom HTML scrape + DASH manifest parse (curl_cffi + parsel) | yt-dlp's caption/hashtag extraction is unreliable; we need richer signal |
+| Audio format | Native `.m4a` (HE-AAC inside MP4 container) | No ffmpeg dependency; Groq Whisper accepts m4a directly |
 | Audio storage location | `tempfile.mkdtemp()` in `/tmp` | Ephemeral, auto-cleaned, no Supabase Storage costs |
-| Error categorization | `is_retryable` flag on custom exception | Lets Celery retry network errors but skip permanent failures |
+| Thumbnail handling | Download to `/tmp` + store IG CDN URL in DB | URL works immediately for the iOS card; mirroring to Supabase Storage is on the backlog |
+| Video download | Function exists, gated off (`download_video=False`) | Not needed for transcription; on the backlog for in-app playback |
+| Error categorization | `is_retryable` flag on `DownloadError` / `TranscriptionError` | Lets Celery retry network errors but skip permanent failures |
 | Retry backoff | Linear: 60/120/180 s | Fits inside 600 s task time limit |
 | Metadata persistence timing | Immediately after download, before transcription | Partial data > no data on failure |
 | Cleanup strategy | `finally` block with logged-only failures | Prevents accumulated `/tmp` cruft |
+| Status after Step 16 | Stays `processing` until Step 19 routes to `ready` / `uncategorised` | Don't lie about readiness — reel isn't browsable until classified |
 
 ---
 
@@ -543,4 +574,4 @@ Then look at the `reels` table in Supabase Studio:
 
 ---
 
-*ReelMind Phase 2 Knowledge Doc — Steps 14 & 15 — v1.0*
+*ReelMind Phase 2 Knowledge Doc — Steps 14 & 15 — v2.0 (2026-05-10: rewritten Step 15 to reflect the custom-scraper implementation that replaced yt-dlp)*

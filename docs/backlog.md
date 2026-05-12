@@ -81,6 +81,22 @@ Deferred features and enhancements for future phases.
 - Investigate: iOS doesn't directly expose ordering control, but Apple's heuristics weight extensions higher when (a) the app has been launched recently, (b) the user has used the extension before, (c) the activation rule is tightly scoped. We may be able to nudge first-impression visibility by ensuring the main app launches once after install (onboarding flow) before the user tries to share.
 - Worth researching whether `LSApplicationQueriesSchemes` or `NSExtensionActivationRule` tightening helps
 
+## Reel Asset Persistence
+
+### Persist downloaded video to Supabase Storage (Phase 2+)
+- `backend/services/downloader.py` already includes video-download support gated behind `download_video=False`. We currently skip video download in the main pipeline because we only need the audio for Whisper.
+- When we want video playback inside the app (offline access, in-feed playback), wire `download_video=True` in `process_reel`, upload the resulting mp4 to Supabase Storage, and add a `video_url` column on `reels` pointing at the storage object.
+- Same flow for thumbnails — currently we download them to `/tmp` and store the original Instagram CDN URL in `reels.thumbnail_url`. IG CDN URLs expire; mirroring to Supabase Storage and rewriting `thumbnail_url` on completion is the durable fix.
+
+### Replace dev-only rich reel card with the final design (Phase 2+)
+- [`frontend/TempReels/ReelsListView.swift`](../frontend/TempReels/ReelsListView.swift) currently renders thumbnail + creator + status pill + caption + hashtag chips + transcript-char-count footer. This is intentionally informational — its job is to make the backend pipeline observable end-to-end while we're building Steps 15-22 (you can see at a glance whether a reel is `queued`/`processing`/`ready`/`failed`, whether transcription ran, etc.).
+- Before public release, swap this for the final UX (likely simpler, possibly category-grouped, no status pill or transcript count visible to end users).
+- The rich-card view code can be deleted; the data fields it reads (`thumbnailUrl`, `creatorHandle`, `caption`, `hashtags`, `transcript`, `status`) will continue to exist on the `Reel` model.
+
+### Persist richer reel metadata (Phase 2+)
+- The downloader returns a fully populated `ReelMetadata` dataclass (likes, comments, view count, music title/artist, post timestamp, original dimensions, verified-author flag, sharing-friction flag, etc.). Today we only persist `caption`, `hashtags`, `creator_handle`, `thumbnail_url`, and `has_audio`.
+- When product needs surface (e.g. "show like count on the card", "filter by music", "sort by post date"), add columns and persist from the dataclass — no second scrape required.
+
 ---
 
-*Last updated: 2026-05-07*
+*Last updated: 2026-05-09*

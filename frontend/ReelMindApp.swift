@@ -18,10 +18,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // Set up messaging delegate
         Messaging.messaging().delegate = self
 
-        // Request user notification permissions
+        // Notification permission is requested explicitly from the onboarding
+        // permissions screen, not on launch. We still set the delegate here so
+        // foreground / tap callbacks work once permission is granted.
         UNUserNotificationCenter.current().delegate = self
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if granted {
+
+        // If permission was already granted in a previous session, register
+        // for remote notifications so the FCM token is refreshed.
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            if settings.authorizationStatus == .authorized {
                 DispatchQueue.main.async {
                     UIApplication.shared.registerForRemoteNotifications()
                 }
