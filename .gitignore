@@ -4,7 +4,7 @@ xcuserdata/
 *.xcuserstate
 .env
 
-/graphify-out
+/graphify-out/
 
 supabase/.temp/
 
