@@ -215,6 +215,10 @@
     "mtime": 1777669048.8607368,
     "hash": "e8e5505185e9e239ae6c8520a1929359"
   },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/supabase/migrations/20260505000001_add_fcm_token_to_profiles.sql": {
+    "mtime": 1778860741.274912,
+    "hash": "9d59872a36428da31424d6ee6dc6ee29"
+  },
   "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/Pods/FirebaseCore/FirebaseCore/Extension/FIRComponentContainer.h": {
     "mtime": 1778079184.2766013,
     "hash": "82d607e70d03cb644241ef2397f94a61"
@@ -1996,8 +2000,8 @@
     "hash": "b22d4e3dea9891c70f87e21b065771f0"
   },
   "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/CLAUDE.md": {
-    "mtime": 1778614918.1086988,
-    "hash": "da79aa9343cd2b362206f03762160abc"
+    "mtime": 1778860355.2334704,
+    "hash": "081a834f3a7dd9eb87979b0ca93b2c66"
   },
   "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend/requirements.txt": {
     "mtime": 1778302008.3555727,
@@ -2022,6 +2026,14 @@
   "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/docs/SETUP_CHECKLIST.md": {
     "mtime": 1778177705.269123,
     "hash": "a681f6641a340b2a9bd07babe0009486"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/docs/ReelMind_DB_Schema.md": {
+    "mtime": 1778861425.4301257,
+    "hash": "6ce046c9efa44e5e691af980d5cd29f7"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/docs/ReelMind_Phase1_BuildPlan.md": {
+    "mtime": 1778861424.7071862,
+    "hash": "0671e2f576b1d55a6acaf48d9bdf5db1"
   },
   "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/docs/PHASE2_STEPS_14_15_KNOWLEDGE.md": {
     "mtime": 1778424544.5443692,
@@ -2082,6 +2094,14 @@
   "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/Pods/nanopb/LICENSE.txt": {
     "mtime": 1778079184.5778027,
     "hash": "9db4b73a55a3994384112efcdb37c01f"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/docs/ReelMind_Phase1_BuildPlan.pdf": {
+    "mtime": 1778860741.2791781,
+    "hash": "20cc2d66b4b42c21edea6c807d612eb6"
+  },
+  "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/docs/ReelMind_DB_Schema.pdf": {
+    "mtime": 1778860741.2824314,
+    "hash": "6956968a5bbf6b9fab74fb4f59d6ca7c"
   },
   "/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/URL Sharing module/Assets.xcassets/AppIcon.appiconset/AppIcon.png": {
     "mtime": 1777997378.058779,
