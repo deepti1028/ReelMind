@@ -61,13 +61,20 @@ def process_reel(self, reel_id: str) -> dict:
         log.info("fetching reel row from DB")
         row = (
             supabase.table("reels")
-            .select("url, user_id")
+            .select("url, user_id, status")
             .eq("id", reel_id)
             .single()
             .execute()
         )
-        url = row.data["url"]
-        log.info("reel url loaded | url=%s", url)
+        reel_data = row.data
+        url = reel_data["url"]
+        log.info("reel url loaded | url=%s | current_status=%s", url, reel_data.get("status"))
+
+        # Guard: if the reel is already in a terminal success state (e.g. from a
+        # duplicate task dispatch), skip processing entirely.
+        if reel_data.get("status") == "ready":
+            log.info("reel already ready — skipping duplicate task dispatch")
+            return {"reel_id": reel_id, "status": "already_ready"}
 
         # ------------------------------------------------------------------
         # Step 15 — download audio + metadata
@@ -111,24 +118,39 @@ def process_reel(self, reel_id: str) -> dict:
                 )
             except TranscriptionError as exc:
                 log.warning(
-                    "transcription failed | retryable=%s | %s",
+                    "transcription failed | retryable=%s | retries=%s/%s | %s",
                     exc.is_retryable,
+                    self.request.retries,
+                    self.max_retries,
                     exc,
                 )
-                return _handle_pipeline_error(
-                    self, supabase, reel_id, exc, exc.is_retryable, log
-                )
+                if exc.is_retryable and self.request.retries < self.max_retries:
+                    countdown = 60 * (self.request.retries + 1)
+                    log.info("scheduling transcription retry | countdown=%ss", countdown)
+                    raise self.retry(exc=exc, countdown=countdown)
 
-            log.info(
-                "step 16 | persisting transcript | chars=%d | has_audio=%s",
-                len(transcription.text),
-                transcription.has_audio,
-            )
-            supabase.table("reels").update({
-                "transcript": transcription.text or None,
-                "has_audio": transcription.has_audio,
-            }).eq("id", reel_id).execute()
-            log.info("step 16 | transcript saved to DB")
+                # Out of retries or non-retryable codec error — graceful degradation.
+                # Pipeline continues with has_audio=False; Steps 17-22 will
+                # classify from caption + hashtags alone.
+                log.warning(
+                    "step 16 | graceful degradation — transcription failed, "
+                    "continuing pipeline with caption-only signal"
+                )
+                supabase.table("reels").update(
+                    {"has_audio": False, "transcript": None}
+                ).eq("id", reel_id).execute()
+                log.info("step 16 | has_audio=False saved — pipeline continues")
+            else:
+                log.info(
+                    "step 16 | persisting transcript | chars=%d | has_audio=%s",
+                    len(transcription.text),
+                    transcription.has_audio,
+                )
+                supabase.table("reels").update({
+                    "transcript": transcription.text or None,
+                    "has_audio": transcription.has_audio,
+                }).eq("id", reel_id).execute()
+                log.info("step 16 | transcript saved to DB")
         else:
             # No audio URL was extractable — treat as silent reel. Step 17
             # (caption fallback) will eventually handle classification from
