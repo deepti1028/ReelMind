@@ -32,3 +32,10 @@ tavily-python==0.5.0
 
 # Push notifications
 firebase-admin==6.5.0
+
+# FFmpeg (bundled binary — no system install needed; also detects system ffmpeg as fallback)
+imageio-ffmpeg>=0.5.1
+
+# Testing
+pytest>=8.0.0
+pytest-mock>=3.14.0
