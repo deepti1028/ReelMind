@@ -231,9 +231,19 @@ def download_reel(
             log.info("downloading audio | dest=%s", audio_path)
             audio_bytes = _download_file(metadata.audio_url, audio_path, log)
             log.info("audio download done | bytes=%s", audio_bytes)
+        elif metadata.video_url_best:
+            # Fallback: no DASH audio-only stream, but a combined video exists.
+            # Download it and strip the audio track with FFmpeg.
+            log.warning(
+                "no DASH audio URL — trying video+audio fallback | has_audio=%s",
+                metadata.has_audio,
+            )
+            audio_path = _extract_audio_from_video_fallback(
+                metadata.video_url_best, reel_id, temp_dir, log
+            )
         else:
             log.warning(
-                "no audio URL available — reel reports has_audio=%s "
+                "no audio URL and no video URL — reel reports has_audio=%s "
                 "(silent reel or missing DASH manifest)",
                 metadata.has_audio,
             )
@@ -713,38 +723,36 @@ def _download_file(url: str, dest_path: str, log: logging.LoggerAdapter) -> int:
     """Stream ``url`` to ``dest_path``. Returns bytes written."""
     parsed = urlparse(url)
     try:
-        with cffi_requests.get(
-            url, impersonate="chrome", stream=True, timeout=60
-        ) as resp:
-            if resp.status_code != 200:
-                # 4xx on a CDN URL almost always means the asset URL has
-                # expired (IG CDN URLs are signed + short-lived); 5xx is a
-                # CDN hiccup worth retrying.
-                cause = (
-                    "CDN server-side issue"
-                    if resp.status_code >= 500
-                    else "asset URL expired or revoked (IG CDN URLs are signed+short-lived)"
-                )
-                log.error(
-                    "asset download failed | host=%s | path=%s | status=%s "
-                    "| likely_cause=%s",
-                    parsed.hostname,
-                    parsed.path,
-                    resp.status_code,
-                    cause,
-                )
-                raise DownloadError(
-                    f"download HTTP {resp.status_code} for {parsed.path}: {cause}",
-                    is_retryable=resp.status_code >= 500,
-                )
-            written = 0
-            with open(dest_path, "wb") as fh:
-                for chunk in resp.iter_content(chunk_size=64 * 1024):
-                    if not chunk:
-                        continue
-                    fh.write(chunk)
-                    written += len(chunk)
-            return written
+        resp = cffi_requests.get(url, impersonate="chrome", stream=True, timeout=60)
+        if resp.status_code != 200:
+            # 4xx on a CDN URL almost always means the asset URL has
+            # expired (IG CDN URLs are signed + short-lived); 5xx is a
+            # CDN hiccup worth retrying.
+            cause = (
+                "CDN server-side issue"
+                if resp.status_code >= 500
+                else "asset URL expired or revoked (IG CDN URLs are signed+short-lived)"
+            )
+            log.error(
+                "asset download failed | host=%s | path=%s | status=%s "
+                "| likely_cause=%s",
+                parsed.hostname,
+                parsed.path,
+                resp.status_code,
+                cause,
+            )
+            raise DownloadError(
+                f"download HTTP {resp.status_code} for {parsed.path}: {cause}",
+                is_retryable=resp.status_code >= 500,
+            )
+        written = 0
+        with open(dest_path, "wb") as fh:
+            for chunk in resp.iter_content(chunk_size=64 * 1024):
+                if not chunk:
+                    continue
+                fh.write(chunk)
+                written += len(chunk)
+        return written
     except DownloadError:
         raise
     except Exception as exc:
@@ -764,6 +772,60 @@ def _download_file(url: str, dest_path: str, log: logging.LoggerAdapter) -> int:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _extract_audio_from_video_fallback(
+    video_url: str,
+    reel_id: str,
+    temp_dir: str,
+    log: logging.LoggerAdapter,
+) -> str | None:
+    """Download the combined video and extract its audio track.
+
+    Returns the local audio path on success, or None on any failure.
+    Never raises — all errors are logged as warnings so the pipeline
+    continues without audio rather than crashing.
+    """
+    from services.ffmpeg_utils import FFmpegError, extract_audio_from_video, is_ffmpeg_available
+
+    if not is_ffmpeg_available():
+        log.warning(
+            "video-audio fallback skipped — FFmpeg not available; "
+            "install imageio-ffmpeg (pip install imageio-ffmpeg) to enable"
+        )
+        return None
+
+    fallback_video = os.path.join(temp_dir, f"{reel_id}_source.mp4")
+    audio_path = os.path.join(temp_dir, f"{reel_id}.m4a")
+    try:
+        video_bytes = _download_file(video_url, fallback_video, log)
+        log.info("fallback video downloaded | bytes=%s", video_bytes)
+        extract_audio_from_video(fallback_video, audio_path)
+        log.info("audio extracted from video | dest=%s", audio_path)
+        return audio_path
+    except FFmpegError as exc:
+        log.warning(
+            "audio extraction failed | ffmpeg_error=%s — proceeding without audio", exc
+        )
+    except DownloadError as exc:
+        log.warning(
+            "video download for fallback failed | error=%s — proceeding without audio", exc
+        )
+    except Exception as exc:
+        log.warning(
+            "unexpected error in audio fallback | exc_type=%s | reason=%s — "
+            "proceeding without audio",
+            type(exc).__name__,
+            exc,
+        )
+    finally:
+        if os.path.exists(fallback_video):
+            try:
+                os.remove(fallback_video)
+                log.info("removed intermediate fallback video | path=%s", fallback_video)
+            except OSError:
+                pass
+    return None
 
 
 def _bound_logger(reel_id: str) -> logging.LoggerAdapter:
