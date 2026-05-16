@@ -47,36 +47,33 @@ class TranscriptionError(Exception):
 
     ``is_retryable`` mirrors the contract used by services.downloader so the
     Celery task can apply the same retry logic to either failure source.
+    ``http_status`` carries the HTTP code from Groq when applicable.
     """
 
-    def __init__(self, message: str, *, is_retryable: bool = False):
+    def __init__(self, message: str, *, is_retryable: bool = False, http_status: int | None = None):
         super().__init__(message)
         self.is_retryable = is_retryable
+        self.http_status = http_status
 
 
 def transcribe_audio(audio_path: str, reel_id: str) -> TranscriptionResult:
     """Transcribe a local audio file with Groq Whisper.
 
+    Falls back to FFmpeg MP3 transcode + retry when Groq returns HTTP 400
+    (codec rejection). All other errors propagate as TranscriptionError.
+
     Args:
-        audio_path: Local filesystem path to the audio file (m4a, mp3, wav, etc.).
+        audio_path: Local path to the audio file (m4a, mp3, wav, etc.).
         reel_id: Caller-supplied identifier for log correlation.
-
-    Returns:
-        TranscriptionResult with text, language, duration, and ``has_audio`` flag.
-
-    Raises:
-        TranscriptionError: With ``is_retryable`` set so the worker knows
-            whether to retry the whole pipeline.
     """
     log = _bound_logger(reel_id)
     log.info("transcribe_audio start | path=%s", audio_path)
 
     if not os.path.exists(audio_path):
         log.error(
-            "transcribe failed | likely_cause=audio file vanished between "
+            "transcribe failed | likely_cause=audio file missing between "
             "Step 15 download and Step 16 (cleanup race or worker restart) "
-            "| path=%s",
-            audio_path,
+            "| path=%s", audio_path,
         )
         raise TranscriptionError(
             f"audio file not found: {audio_path}", is_retryable=False
@@ -87,41 +84,93 @@ def transcribe_audio(audio_path: str, reel_id: str) -> TranscriptionResult:
 
     if file_size == 0:
         log.error(
-            "transcribe failed | likely_cause=audio download wrote 0 bytes "
-            "(IG CDN returned empty response or DASH manifest gave a bad URL) "
-            "| path=%s",
+            "transcribe failed | likely_cause=audio download wrote 0 bytes | path=%s",
             audio_path,
         )
-        raise TranscriptionError(
-            "audio file is empty (0 bytes)", is_retryable=False
-        )
+        raise TranscriptionError("audio file is empty (0 bytes)", is_retryable=False)
+
     if file_size > _MAX_FILE_BYTES:
         log.error(
-            "transcribe failed | likely_cause=audio file exceeds Groq's 25MB "
-            "upload limit (transcoding to lower bitrate would be needed) "
-            "| bytes=%s | limit=%s",
-            file_size,
-            _MAX_FILE_BYTES,
+            "transcribe failed | likely_cause=exceeds Groq 25MB limit "
+            "| bytes=%s | limit=%s", file_size, _MAX_FILE_BYTES,
         )
         raise TranscriptionError(
-            f"audio file too large for Groq ({file_size} bytes > "
-            f"{_MAX_FILE_BYTES}); transcoding would be needed",
+            f"audio file too large for Groq ({file_size} bytes > {_MAX_FILE_BYTES})",
             is_retryable=False,
         )
 
     config = get_config()
     if not config.GROQ_API_KEY:
         log.error(
-            "transcribe failed | likely_cause=GROQ_API_KEY env var not set "
-            "(check backend/.env locally or Render env vars in production)"
+            "transcribe failed | likely_cause=GROQ_API_KEY not set"
         )
-        raise TranscriptionError(
-            "GROQ_API_KEY not configured", is_retryable=False
+        raise TranscriptionError("GROQ_API_KEY not configured", is_retryable=False)
+
+    from groq import Groq as _Groq
+    client = _Groq(api_key=config.GROQ_API_KEY)
+
+    try:
+        return _call_groq_whisper(client, audio_path, log)
+    except TranscriptionError as exc:
+        if exc.http_status != 400:
+            raise
+
+        # HTTP 400 often means Groq rejected the codec (e.g., raw DASH m4a).
+        # Transcode to MP3 and retry once.
+        log.warning(
+            "Groq HTTP 400 — attempting FFmpeg mp3 transcode fallback | path=%s",
+            audio_path,
         )
+        from services.ffmpeg_utils import FFmpegError, is_ffmpeg_available, transcode_to_mp3
 
-    client = Groq(api_key=config.GROQ_API_KEY)
+        if not is_ffmpeg_available():
+            log.warning(
+                "FFmpeg not available for transcode fallback — re-raising original error"
+            )
+            raise
 
-    log.info("calling Groq Whisper | model=%s", _WHISPER_MODEL)
+        mp3_path = os.path.splitext(audio_path)[0] + "_fallback.mp3"
+        try:
+            transcode_to_mp3(audio_path, mp3_path)
+            log.info("transcode done — retrying Groq | mp3=%s", mp3_path)
+            return _call_groq_whisper(client, mp3_path, log)
+        except FFmpegError as ffmpeg_exc:
+            log.error(
+                "FFmpeg transcode fallback failed | %s — raising original error",
+                ffmpeg_exc,
+            )
+            raise exc
+        finally:
+            if os.path.exists(mp3_path):
+                try:
+                    os.remove(mp3_path)
+                except OSError:
+                    pass
+
+
+def _attr(obj, name: str, default=None):
+    """Read ``name`` whether ``obj`` is a Pydantic model or a dict."""
+    if isinstance(obj, dict):
+        return obj.get(name, default)
+    return getattr(obj, name, default)
+
+
+def _bound_logger(reel_id: str) -> logging.LoggerAdapter:
+    return logging.LoggerAdapter(logger, {"reel_id": reel_id})
+
+
+def _call_groq_whisper(
+    client,
+    audio_path: str,
+    log: logging.LoggerAdapter,
+) -> TranscriptionResult:
+    """Make one Groq Whisper API call and return a TranscriptionResult.
+
+    Raises TranscriptionError (with is_retryable and http_status set) on any
+    Groq failure. Callers use http_status=400 to decide whether to attempt a
+    transcode fallback.
+    """
+    log.info("calling Groq Whisper | model=%s | path=%s", _WHISPER_MODEL, audio_path)
     try:
         with open(audio_path, "rb") as fh:
             response = client.audio.transcriptions.create(
@@ -133,36 +182,28 @@ def transcribe_audio(audio_path: str, reel_id: str) -> TranscriptionResult:
     except RateLimitError as exc:
         log.warning(
             "Groq error | status=429 | retryable=True | likely_cause=free-tier "
-            "rate limit hit, will back off | reason=%s",
-            exc,
+            "rate limit hit | reason=%s", exc,
         )
         raise TranscriptionError(
-            f"Groq rate limit (HTTP 429): {exc}", is_retryable=True
+            f"Groq rate limit (HTTP 429): {exc}", is_retryable=True, http_status=429
         ) from exc
     except APITimeoutError as exc:
         log.warning(
-            "Groq error | status=timeout | retryable=True | likely_cause=Groq "
-            "took too long to respond (server load or large audio) | reason=%s",
-            exc,
+            "Groq error | status=timeout | retryable=True | reason=%s", exc,
         )
         raise TranscriptionError(
             f"Groq timeout: {exc}", is_retryable=True
         ) from exc
     except APIConnectionError as exc:
         log.warning(
-            "Groq error | status=connection | retryable=True | likely_cause="
-            "network blip between worker and Groq (DNS, TLS, or socket reset) "
-            "| reason=%s",
-            exc,
+            "Groq error | status=connection | retryable=True | reason=%s", exc,
         )
         raise TranscriptionError(
             f"Groq connection error: {exc}", is_retryable=True
         ) from exc
     except APIError as exc:
-        # Groq raises APIError for HTTP 4xx/5xx. 5xx → retry, 4xx → don't.
         status = getattr(exc, "status_code", None)
         is_retryable = bool(status and status >= 500)
-        # Specific 4xx causes worth surfacing directly:
         if status == 401:
             cause = "invalid GROQ_API_KEY (regenerate at console.groq.com)"
         elif status == 400:
@@ -175,19 +216,14 @@ def transcribe_audio(audio_path: str, reel_id: str) -> TranscriptionResult:
             cause = "Groq client-side error, NOT retrying"
         log.error(
             "Groq error | status=%s | retryable=%s | likely_cause=%s | reason=%s",
-            status,
-            is_retryable,
-            cause,
-            exc,
+            status, is_retryable, cause, exc,
         )
         raise TranscriptionError(
             f"Groq API error (HTTP {status}): {cause}: {exc}",
             is_retryable=is_retryable,
+            http_status=status,
         ) from exc
 
-    # Extract fields from the verbose_json response. The Groq SDK returns
-    # an object with .text, .language, .duration; we tolerate dict shape too
-    # in case the SDK changes.
     text = _attr(response, "text", default="") or ""
     language = _attr(response, "language", default=None)
     duration = _attr(response, "duration", default=None)
@@ -198,13 +234,9 @@ def transcribe_audio(audio_path: str, reel_id: str) -> TranscriptionResult:
 
     transcript = text.strip()
     has_audio = bool(transcript)
-
     log.info(
         "transcription done | language=%s | duration=%ss | chars=%d | has_audio=%s",
-        language,
-        duration_seconds,
-        len(transcript),
-        has_audio,
+        language, duration_seconds, len(transcript), has_audio,
     )
     if not has_audio:
         log.info("Whisper returned empty text — treating as music-only / silent reel")
@@ -216,17 +248,6 @@ def transcribe_audio(audio_path: str, reel_id: str) -> TranscriptionResult:
         duration_seconds=duration_seconds,
         model=_WHISPER_MODEL,
     )
-
-
-def _attr(obj, name: str, default=None):
-    """Read ``name`` whether ``obj`` is a Pydantic model or a dict."""
-    if isinstance(obj, dict):
-        return obj.get(name, default)
-    return getattr(obj, name, default)
-
-
-def _bound_logger(reel_id: str) -> logging.LoggerAdapter:
-    return logging.LoggerAdapter(logger, {"reel_id": reel_id})
 
 
 # ---------------------------------------------------------------------------
