@@ -90,7 +90,7 @@ async def update_reel_category(
         .select("id, user_id, status, suggested_categories")
         .eq("id", reel_id)
         .eq("user_id", user_id)
-        .single()
+        .maybe_single()
         .execute()
     )
     if not reel_row.data:

@@ -21,7 +21,7 @@ def _make_supabase_patch_mock(reel_status="pending_category", category_id=None):
     """Mock supabase for the PATCH endpoint."""
     db = MagicMock()
 
-    # Reel fetch: .table("reels").select(...).eq(id).eq(user_id).single().execute()
+    # Reel fetch: .table("reels").select(...).eq(id).eq(user_id).maybe_single().execute()
     reel_row = {
         "id": REEL_ID,
         "user_id": "user-test-id",
@@ -33,7 +33,7 @@ def _make_supabase_patch_mock(reel_status="pending_category", category_id=None):
         .select.return_value
         .eq.return_value
         .eq.return_value
-        .single.return_value
+        .maybe_single.return_value
         .execute.return_value
         .data
     ) = reel_row
@@ -68,6 +68,13 @@ def test_assign_category_marks_ready(mock_get_supabase):
     assert resp.status_code == 200
     assert resp.json()["status"] == "ready"
     assert resp.json()["category"] == "Fitness"
+    # Verify the update payload (defensive against column-name typos)
+    update_calls = mock_get_supabase.return_value.table.return_value.update.call_args_list
+    final_update = update_calls[-1].args[0]
+    assert final_update["category_id"] == "cat-uuid-fitness"
+    assert final_update["confidence"] == 1.0
+    assert final_update["status"] == "ready"
+    assert final_update["suggested_categories"] == []
 
 
 @patch("api.v1.reels.get_supabase")
@@ -79,6 +86,10 @@ def test_null_category_name_marks_uncategorised(mock_get_supabase):
     )
     assert resp.status_code == 200
     assert resp.json()["status"] == "uncategorised"
+    update_calls = mock_get_supabase.return_value.table.return_value.update.call_args_list
+    final_update = update_calls[-1].args[0]
+    assert final_update["status"] == "uncategorised"
+    assert final_update["suggested_categories"] == []
 
 
 @patch("api.v1.reels.get_supabase")
@@ -99,7 +110,7 @@ def test_reel_not_found_returns_404(mock_get_supabase):
         .select.return_value
         .eq.return_value
         .eq.return_value
-        .single.return_value
+        .maybe_single.return_value
         .execute.return_value
         .data
     ) = None
