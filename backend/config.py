@@ -22,7 +22,10 @@ class Config:
     REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
     # Firebase
-    FCM_SERVER_KEY = os.getenv("FCM_SERVER_KEY")
+    FCM_SERVER_KEY = os.getenv("FCM_SERVER_KEY")  # legacy; unused — kept for now
+
+    # Firebase Admin SDK service account (base64-encoded JSON) — Step 22 FCM push
+    FIREBASE_SERVICE_ACCOUNT_JSON = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
 
     # Tavily API
     TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
