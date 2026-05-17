@@ -52,6 +52,16 @@ def _make_supabase_patch_mock(reel_status="pending_category", category_id=None):
         .data
     ) = cat_rows
 
+    # Profile fetch for FCM token (returns None — no token configured in tests)
+    (
+        db.table.return_value
+        .select.return_value
+        .eq.return_value
+        .maybe_single.return_value
+        .execute.return_value
+        .data
+    ) = {"fcm_token": None}
+
     db.table.return_value.update.return_value.eq.return_value.execute.return_value = None
     return db
 
@@ -61,10 +71,11 @@ def test_assign_category_marks_ready(mock_get_supabase):
     mock_get_supabase.return_value = _make_supabase_patch_mock(
         category_id="cat-uuid-fitness"
     )
-    resp = client.patch(
-        f"/api/v1/reels/{REEL_ID}/category",
-        json={"category_name": "Fitness"},
-    )
+    with patch("api.v1.reels.send_push_notification", return_value=False) as _push:
+        resp = client.patch(
+            f"/api/v1/reels/{REEL_ID}/category",
+            json={"category_name": "Fitness"},
+        )
     assert resp.status_code == 200
     assert resp.json()["status"] == "ready"
     assert resp.json()["category"] == "Fitness"
@@ -75,21 +86,28 @@ def test_assign_category_marks_ready(mock_get_supabase):
     assert final_update["confidence"] == 1.0
     assert final_update["status"] == "ready"
     assert final_update["suggested_categories"] == []
+    _push.assert_called_once()
+    push_kwargs = _push.call_args.kwargs
+    assert push_kwargs["title"] == "Reel categorised!"
 
 
 @patch("api.v1.reels.get_supabase")
 def test_null_category_name_marks_uncategorised(mock_get_supabase):
     mock_get_supabase.return_value = _make_supabase_patch_mock()
-    resp = client.patch(
-        f"/api/v1/reels/{REEL_ID}/category",
-        json={"category_name": None},
-    )
+    with patch("api.v1.reels.send_push_notification", return_value=False) as _push:
+        resp = client.patch(
+            f"/api/v1/reels/{REEL_ID}/category",
+            json={"category_name": None},
+        )
     assert resp.status_code == 200
     assert resp.json()["status"] == "uncategorised"
     update_calls = mock_get_supabase.return_value.table.return_value.update.call_args_list
     final_update = update_calls[-1].args[0]
     assert final_update["status"] == "uncategorised"
     assert final_update["suggested_categories"] == []
+    _push.assert_called_once()
+    push_kwargs = _push.call_args.kwargs
+    assert push_kwargs["title"] == "Reel saved"
 
 
 @patch("api.v1.reels.get_supabase")

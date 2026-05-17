@@ -242,16 +242,17 @@ def test_high_confidence_marks_ready():
     signal_mock.text = "Fitness content"
     signal_mock.source_summary = "transcript"
 
-    with patch("workers.tasks.get_supabase", return_value=mock_db):
-        with patch("workers.tasks.download_reel", return_value=_make_download_result()):
-            with patch("workers.tasks.transcribe_audio",
-                       return_value=MagicMock(text="workout", has_audio=True)):
-                with patch("workers.tasks.build_classification_signal",
-                           return_value=signal_mock):
-                    with patch("workers.tasks.classify_reel",
-                               return_value=_make_classification_result(confidence=0.92)):
-                        with patch("os.path.exists", return_value=False):
-                            result = process_reel.run.__func__(task_self, "reel-123")
+    with patch("workers.tasks.send_push_notification", return_value=False) as _push:
+        with patch("workers.tasks.get_supabase", return_value=mock_db):
+            with patch("workers.tasks.download_reel", return_value=_make_download_result()):
+                with patch("workers.tasks.transcribe_audio",
+                           return_value=MagicMock(text="workout", has_audio=True)):
+                    with patch("workers.tasks.build_classification_signal",
+                               return_value=signal_mock):
+                        with patch("workers.tasks.classify_reel",
+                                   return_value=_make_classification_result(confidence=0.92)):
+                            with patch("os.path.exists", return_value=False):
+                                result = process_reel.run.__func__(task_self, "reel-123")
 
     assert result["status"] == "ready"
     assert result["category"] == "Fitness"
@@ -263,6 +264,11 @@ def test_high_confidence_marks_ready():
     assert final_update["status"] == "ready"
     assert final_update["category_id"] == "cat-fitness"
     assert final_update["confidence"] == 0.92
+
+    _push.assert_called_once()
+    push_kwargs = _push.call_args.kwargs
+    assert push_kwargs["title"] == "Reel saved!"
+    assert "Fitness" in push_kwargs["body"]
 
 
 def test_low_confidence_marks_pending_category():
@@ -276,16 +282,17 @@ def test_low_confidence_marks_pending_category():
     signal_mock.text = "Ambiguous content"
     signal_mock.source_summary = "caption"
 
-    with patch("workers.tasks.get_supabase", return_value=mock_db):
-        with patch("workers.tasks.download_reel", return_value=_make_download_result()):
-            with patch("workers.tasks.transcribe_audio",
-                       return_value=MagicMock(text="", has_audio=False)):
-                with patch("workers.tasks.build_classification_signal",
-                           return_value=signal_mock):
-                    with patch("workers.tasks.classify_reel",
-                               return_value=_make_classification_result(confidence=0.55)):
-                        with patch("os.path.exists", return_value=False):
-                            result = process_reel.run.__func__(task_self, "reel-123")
+    with patch("workers.tasks.send_push_notification", return_value=False) as _push:
+        with patch("workers.tasks.get_supabase", return_value=mock_db):
+            with patch("workers.tasks.download_reel", return_value=_make_download_result()):
+                with patch("workers.tasks.transcribe_audio",
+                           return_value=MagicMock(text="", has_audio=False)):
+                    with patch("workers.tasks.build_classification_signal",
+                               return_value=signal_mock):
+                        with patch("workers.tasks.classify_reel",
+                                   return_value=_make_classification_result(confidence=0.55)):
+                            with patch("os.path.exists", return_value=False):
+                                result = process_reel.run.__func__(task_self, "reel-123")
 
     assert result["status"] == "pending_category"
     assert "suggestions" in result
@@ -297,6 +304,11 @@ def test_low_confidence_marks_pending_category():
     assert final_update["status"] == "pending_category"
     assert final_update["suggested_categories"] == ["Fitness", "Nutrition"]
     assert final_update["confidence"] == 0.55
+
+    _push.assert_called_once()
+    push_kwargs = _push.call_args.kwargs
+    assert push_kwargs["category_id"] == "CATEGORISE"
+    assert push_kwargs["title"] == "Help us categorise this reel"
 
 
 def test_classification_retryable_error_triggers_retry():
@@ -312,17 +324,18 @@ def test_classification_retryable_error_triggers_retry():
     signal_mock.text = "content"
     signal_mock.source_summary = "transcript"
 
-    with patch("workers.tasks.get_supabase", return_value=mock_db):
-        with patch("workers.tasks.download_reel", return_value=_make_download_result()):
-            with patch("workers.tasks.transcribe_audio",
-                       return_value=MagicMock(text="content", has_audio=True)):
-                with patch("workers.tasks.build_classification_signal",
-                           return_value=signal_mock):
-                    with patch("workers.tasks.classify_reel",
-                               side_effect=ClassificationError("rate limit", is_retryable=True)):
-                        with patch("os.path.exists", return_value=False):
-                            with pytest.raises(Retry):
-                                process_reel.run.__func__(task_self, "reel-123")
+    with patch("workers.tasks.send_push_notification", return_value=False):
+        with patch("workers.tasks.get_supabase", return_value=mock_db):
+            with patch("workers.tasks.download_reel", return_value=_make_download_result()):
+                with patch("workers.tasks.transcribe_audio",
+                           return_value=MagicMock(text="content", has_audio=True)):
+                    with patch("workers.tasks.build_classification_signal",
+                               return_value=signal_mock):
+                        with patch("workers.tasks.classify_reel",
+                                   side_effect=ClassificationError("rate limit", is_retryable=True)):
+                            with patch("os.path.exists", return_value=False):
+                                with pytest.raises(Retry):
+                                    process_reel.run.__func__(task_self, "reel-123")
 
 
 def test_classification_non_retryable_error_marks_failed():
@@ -337,15 +350,16 @@ def test_classification_non_retryable_error_marks_failed():
     signal_mock.text = "content"
     signal_mock.source_summary = "transcript"
 
-    with patch("workers.tasks.get_supabase", return_value=mock_db):
-        with patch("workers.tasks.download_reel", return_value=_make_download_result()):
-            with patch("workers.tasks.transcribe_audio",
-                       return_value=MagicMock(text="content", has_audio=True)):
-                with patch("workers.tasks.build_classification_signal",
-                           return_value=signal_mock):
-                    with patch("workers.tasks.classify_reel",
-                               side_effect=ClassificationError("bad schema", is_retryable=False)):
-                        with patch("os.path.exists", return_value=False):
-                            result = process_reel.run.__func__(task_self, "reel-123")
+    with patch("workers.tasks.send_push_notification", return_value=False):
+        with patch("workers.tasks.get_supabase", return_value=mock_db):
+            with patch("workers.tasks.download_reel", return_value=_make_download_result()):
+                with patch("workers.tasks.transcribe_audio",
+                           return_value=MagicMock(text="content", has_audio=True)):
+                    with patch("workers.tasks.build_classification_signal",
+                               return_value=signal_mock):
+                        with patch("workers.tasks.classify_reel",
+                                   side_effect=ClassificationError("bad schema", is_retryable=False)):
+                            with patch("os.path.exists", return_value=False):
+                                result = process_reel.run.__func__(task_self, "reel-123")
 
     assert result["status"] == "failed"

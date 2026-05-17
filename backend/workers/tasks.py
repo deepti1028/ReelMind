@@ -30,6 +30,7 @@ from services.downloader import (
 )
 from services.signal_builder import NoSignalError, build_classification_signal
 from services.classifier import ClassificationError, ClassificationResult, classify_reel
+from services.notifier import send_push_notification
 from services.transcriber import TranscriptionError, TranscriptionResult, transcribe_audio
 from supabase_client import get_supabase
 from workers.celery_app import celery_app
@@ -203,11 +204,12 @@ def process_reel(self, reel_id: str) -> dict:
             supabase.table("reels").update(
                 {"status": "uncategorised"}
             ).eq("id", reel_id).execute()
-            # TODO Step 22: FCM push — notify user this reel could not be categorised.
-            # Both status='uncategorised' (here) and status='ready' (Step 19) need
-            # an FCM notification with different message text:
-            #   uncategorised → "We couldn't categorise your reel — no text or audio found."
-            #   ready         → "Your reel has been saved and categorised!"
+            send_push_notification(
+                fcm_token=_fcm_token,
+                title="Reel saved",
+                body="We couldn't categorise it — no audio or caption found",
+                data={"reel_id": reel_id, "status": "uncategorised"},
+            )
             return {"reel_id": reel_id, "status": "uncategorised"}
 
         # ------------------------------------------------------------------
@@ -264,7 +266,12 @@ def process_reel(self, reel_id: str) -> dict:
                 "confidence": classification.confidence,
                 "status": "ready",
             }).eq("id", reel_id).execute()
-            # TODO Step 22: FCM push — "Your reel has been saved and categorised!"
+            send_push_notification(
+                fcm_token=_fcm_token,
+                title="Reel saved!",
+                body=f"Categorised as {classification.category}",
+                data={"reel_id": reel_id, "status": "ready"},
+            )
             log.info("step 19 | status=ready")
             return {
                 "reel_id": reel_id,
@@ -289,8 +296,17 @@ def process_reel(self, reel_id: str) -> dict:
                 "suggested_categories": suggestions,
                 "confidence": classification.confidence,
             }).eq("id", reel_id).execute()
-            # TODO Step 22: FCM push with buttons [suggestion1] [suggestion2]
-            #   [Choose in App] [Uncategorised]
+            import json as _json
+            send_push_notification(
+                fcm_token=_fcm_token,
+                title="Help us categorise this reel",
+                body="Your reel is saved — which fits best? Ignoring this saves it to Uncategorised.",
+                data={
+                    "reel_id": reel_id,
+                    "suggestions": _json.dumps(suggestions),
+                },
+                category_id="CATEGORISE",
+            )
             log.info("step 19 | status=pending_category")
             return {
                 "reel_id": reel_id,

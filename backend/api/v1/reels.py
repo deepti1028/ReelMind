@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from api.deps import get_current_user_id
 from schemas.reel import CategoryChoiceRequest, ReelCreate, ReelResponse
 from supabase_client import get_supabase
+from services.notifier import send_push_notification
 from workers.tasks import process_reel
 
 router = APIRouter()
@@ -103,13 +104,28 @@ async def update_reel_category(
             detail=f"Reel already resolved (status={reel['status']})",
         )
 
+    # Fetch FCM token for outgoing push (used by both Path A and Path B)
+    _profile = (
+        supabase.table("profiles")
+        .select("fcm_token")
+        .eq("id", user_id)
+        .maybe_single()
+        .execute()
+    )
+    fcm_token = (_profile.data or {}).get("fcm_token") if _profile.data else None
+
     # Path B — user tapped "Uncategorised"
     if payload.category_name is None:
         supabase.table("reels").update({
             "status": "uncategorised",
             "suggested_categories": [],
         }).eq("id", reel_id).execute()
-        # TODO Step 22: FCM push — "Saved to Uncategorised — you can move it anytime"
+        send_push_notification(
+            fcm_token=fcm_token,
+            title="Reel saved",
+            body="Added to Uncategorised — you can move it anytime",
+            data={"reel_id": reel_id, "status": "uncategorised"},
+        )
         return {"reel_id": reel_id, "status": "uncategorised"}
 
     # Path A — user picked a specific category
@@ -133,5 +149,10 @@ async def update_reel_category(
         "status": "ready",
         "suggested_categories": [],
     }).eq("id", reel_id).execute()
-    # TODO Step 22: FCM push — "Reel categorised!"
+    send_push_notification(
+        fcm_token=fcm_token,
+        title="Reel categorised!",
+        body=f"Moved to {payload.category_name}",
+        data={"reel_id": reel_id, "status": "ready"},
+    )
     return {"reel_id": reel_id, "status": "ready", "category": payload.category_name}

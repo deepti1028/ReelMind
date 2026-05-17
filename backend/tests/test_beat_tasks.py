@@ -3,8 +3,11 @@ from unittest.mock import MagicMock, patch
 
 
 def _make_supabase_mock(updated_rows: list[dict]):
-    """Supabase mock returning updated_rows for the bulk update execute()."""
+    """Supabase mock returning updated_rows for the bulk update execute(),
+    plus a per-user fcm_token fetch for each updated row."""
     mock_db = MagicMock()
+
+    # bulk update chain
     (
         mock_db.table.return_value
         .update.return_value
@@ -13,6 +16,17 @@ def _make_supabase_mock(updated_rows: list[dict]):
         .execute.return_value
         .data
     ) = updated_rows
+
+    # profile fetch chain (returns no fcm_token by default)
+    (
+        mock_db.table.return_value
+        .select.return_value
+        .eq.return_value
+        .maybe_single.return_value
+        .execute.return_value
+        .data
+    ) = {"fcm_token": None}
+
     return mock_db
 
 
@@ -26,11 +40,13 @@ def test_stale_reels_transitioned(mock_get_supabase):
     mock_get_supabase.return_value = mock_db
 
     from workers.beat_tasks import expire_pending_categories
-    result = expire_pending_categories()
+    with patch("workers.beat_tasks.send_push_notification", return_value=False) as _push:
+        result = expire_pending_categories()
 
     assert result["expired"] == 2
     assert "reel-1" in result["reel_ids"]
     assert "reel-2" in result["reel_ids"]
+    assert _push.call_count == 2  # one push per expired reel
 
 
 @patch("workers.beat_tasks.get_supabase")
@@ -40,10 +56,12 @@ def test_fresh_reels_not_touched(mock_get_supabase):
     mock_get_supabase.return_value = mock_db
 
     from workers.beat_tasks import expire_pending_categories
-    result = expire_pending_categories()
+    with patch("workers.beat_tasks.send_push_notification", return_value=False) as _push:
+        result = expire_pending_categories()
 
     assert result["expired"] == 0
     assert result["reel_ids"] == []
+    assert _push.call_count == 0
 
 
 @patch("workers.beat_tasks.get_supabase")
@@ -52,9 +70,11 @@ def test_returns_count_and_ids(mock_get_supabase):
     mock_get_supabase.return_value = mock_db
 
     from workers.beat_tasks import expire_pending_categories
-    result = expire_pending_categories()
+    with patch("workers.beat_tasks.send_push_notification", return_value=False) as _push:
+        result = expire_pending_categories()
 
     assert result == {"expired": 1, "reel_ids": ["reel-abc"]}
+    assert _push.call_count == 1
 
 
 @patch("workers.beat_tasks.get_supabase")
@@ -64,11 +84,13 @@ def test_update_uses_status_guard_against_race(mock_get_supabase):
     mock_get_supabase.return_value = mock_db
 
     from workers.beat_tasks import expire_pending_categories
-    expire_pending_categories()
+    with patch("workers.beat_tasks.send_push_notification", return_value=False) as _push:
+        expire_pending_categories()
 
     # Verify the update chain includes .eq("status", "pending_category")
     update_chain = mock_db.table.return_value.update.return_value
     update_chain.eq.assert_called_once_with("status", "pending_category")
+    assert _push.call_count == 0
 
 
 @patch("workers.beat_tasks.get_supabase")
@@ -78,8 +100,10 @@ def test_update_payload_is_correct(mock_get_supabase):
     mock_get_supabase.return_value = mock_db
 
     from workers.beat_tasks import expire_pending_categories
-    expire_pending_categories()
+    with patch("workers.beat_tasks.send_push_notification", return_value=False) as _push:
+        expire_pending_categories()
 
     payload = mock_db.table.return_value.update.call_args[0][0]
     assert payload["status"] == "uncategorised"
     assert payload["suggested_categories"] == []
+    assert _push.call_count == 0

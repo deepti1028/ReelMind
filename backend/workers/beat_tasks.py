@@ -5,6 +5,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from supabase_client import get_supabase
+from services.notifier import send_push_notification
 from workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
@@ -38,8 +39,23 @@ def expire_pending_categories() -> dict:
         .execute()
     )
 
-    expired_ids = [row["id"] for row in (result.data or [])]
-    # TODO Step 22: FCM push per expired reel — "Saved to Uncategorised — you can move it anytime"
-    #   Needs to fetch fcm_token per user_id for the rows in result.data.
+    expired_ids = []
+    for row in (result.data or []):
+        expired_ids.append(row["id"])
+        profile = (
+            supabase.table("profiles")
+            .select("fcm_token")
+            .eq("id", row["user_id"])
+            .maybe_single()
+            .execute()
+        )
+        fcm_token = (profile.data or {}).get("fcm_token") if profile.data else None
+        send_push_notification(
+            fcm_token=fcm_token,
+            title="Reel saved",
+            body="Added to Uncategorised — you can move it anytime",
+            data={"reel_id": row["id"], "status": "uncategorised"},
+        )
+
     logger.info("beat | expire_pending_categories done | expired=%d", len(expired_ids))
     return {"expired": len(expired_ids), "reel_ids": expired_ids}
