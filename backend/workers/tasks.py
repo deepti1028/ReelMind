@@ -11,7 +11,7 @@ that:
 Pipeline stages:
     Step 15 — download audio + metadata          (services/downloader.py)
     Step 16 — transcribe audio                   (services/transcriber.py)
-    Step 17 — caption fallback (TODO)
+    Step 17 — build classification signal        (services/signal_builder.py)
     Step 18 — Llama classification (TODO)
     Step 19 — confidence routing (TODO)
     Step 20 — chunk + embed (TODO)
@@ -28,7 +28,8 @@ from services.downloader import (
     DownloadResult,
     download_reel,
 )
-from services.transcriber import TranscriptionError, transcribe_audio
+from services.signal_builder import NoSignalError, build_classification_signal
+from services.transcriber import TranscriptionError, TranscriptionResult, transcribe_audio
 from supabase_client import get_supabase
 from workers.celery_app import celery_app
 
@@ -110,6 +111,7 @@ def process_reel(self, reel_id: str) -> dict:
         # ------------------------------------------------------------------
         # Step 16 — transcribe audio
         # ------------------------------------------------------------------
+        transcription: TranscriptionResult | None = None
         if download_result.audio_path:
             log.info("step 16 | transcribing audio")
             try:
@@ -161,21 +163,49 @@ def process_reel(self, reel_id: str) -> dict:
             ).execute()
 
         # ------------------------------------------------------------------
-        # Steps 17-22 — TODO (classification, embeddings, push)
+        # Step 17 — build classification signal
         # ------------------------------------------------------------------
-        # Until Step 18 lands, we leave the row in 'processing'. Once
-        # classification + confidence routing exist, we'll set 'ready' or
-        # 'uncategorised'. Marking 'ready' here would be a lie — the reel
-        # is not yet usable for category browsing or search.
+        _transcript_text = transcription.text if transcription is not None else None
 
-        log.info("process_reel done")
+        try:
+            signal = build_classification_signal(
+                transcript=_transcript_text,
+                caption=meta.caption,
+                hashtags=meta.hashtags,
+            )
+            log.info(
+                "step 17 | signal built | sources=%s | chars=%d",
+                signal.source_summary,
+                len(signal.text),
+            )
+        except NoSignalError:
+            log.warning(
+                "step 17 | no usable signal (transcript=None, caption=None, "
+                "hashtags=[]) — marking uncategorised"
+            )
+            supabase.table("reels").update(
+                {"status": "uncategorised"}
+            ).eq("id", reel_id).execute()
+            # TODO Step 22: FCM push — notify user this reel could not be categorised.
+            # Both status='uncategorised' (here) and status='ready' (Step 19) need
+            # an FCM notification with different message text:
+            #   uncategorised → "We couldn't categorise your reel — no text or audio found."
+            #   ready         → "Your reel has been saved and categorised!"
+            return {"reel_id": reel_id, "status": "uncategorised"}
+
+        # ------------------------------------------------------------------
+        # Steps 18-22 — TODO (Llama classification, confidence routing,
+        #               embeddings, FCM push)
+        # ------------------------------------------------------------------
+        # `signal` is available in-memory for Step 18. Until Step 18 lands,
+        # the row stays in 'processing'. Marking 'ready' here would be a
+        # lie — the reel is not yet categorised or searchable.
+
+        log.info("process_reel done — signal ready, awaiting Step 18")
         return {
             "reel_id": reel_id,
-            "status": "metadata_and_transcript_saved",
-            "has_audio": (
-                download_result.audio_path is not None
-                and os.path.exists(download_result.audio_path)
-            ),
+            "status": "processing",
+            "signal_sources": signal.source_summary,
         }
 
     finally:
