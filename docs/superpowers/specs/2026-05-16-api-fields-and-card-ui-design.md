@@ -55,8 +55,62 @@ class ReelResponse(BaseModel):
 
 ### `backend/api/v1/reels.py` — `create_reel`
 
-- Duplicate path: change `.select("id, status")` → `.select("*")` so all populated fields are returned.
-- Response: annotate the endpoint with `response_model=ReelResponse` and return the full reel dict. The `url` field in the response comes from the DB row (not the `url_str` local variable) to stay consistent.
+Five issues fixed together:
+
+1. **Exception as control flow** — replace `try/except APIError("23505")` with `upsert(ignore_duplicates=True)` and an empty `result.data` check. An expected duplicate is not an exception; `result.data == []` is a clean boolean branch.
+
+2. **Full row on all paths** — `upsert` returns the inserted row directly on fresh insert. The duplicate fallback `SELECT` uses `select("*")` instead of `select("id, status")`.
+
+3. **`url` from DB, not request** — response returns `reel["url"]` (the DB-stored value), not `url_str` (the Pydantic-normalized request string).
+
+4. **Typed response** — endpoint gets `response_model=ReelResponse` so FastAPI validates the output and OpenAPI docs are correct.
+
+5. **Correct HTTP status per case** — 202 only when a Celery task is actually dispatched (fresh insert). Duplicates return 200 OK (no work queued). FastAPI `Response` is injected to set the status conditionally.
+
+```python
+@router.post("", status_code=status.HTTP_202_ACCEPTED, response_model=ReelResponse)
+async def create_reel(
+    payload: ReelCreate,
+    user_id: str = Depends(get_current_user_id),
+    response: Response,
+):
+    supabase = get_supabase()
+    url_str = str(payload.url)
+
+    supabase.table("profiles").upsert(
+        {"id": user_id}, on_conflict="id", ignore_duplicates=True
+    ).execute()
+
+    result = (
+        supabase.table("reels")
+        .upsert(
+            {"user_id": user_id, "url": url_str, "status": "queued"},
+            on_conflict="user_id,url",
+            ignore_duplicates=True,
+        )
+        .execute()
+    )
+
+    if result.data:
+        reel = result.data[0]
+        process_reel.delay(reel["id"])
+        # response.status_code stays 202 (default)
+    else:
+        existing = (
+            supabase.table("reels")
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("url", url_str)
+            .single()
+            .execute()
+        )
+        reel = existing.data
+        response.status_code = status.HTTP_200_OK  # duplicate — nothing queued
+
+    return reel
+```
+
+Round-trip count is unchanged (2 for fresh insert, 3 for duplicate) but control flow is semantically correct throughout.
 
 ---
 
