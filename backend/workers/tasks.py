@@ -72,21 +72,27 @@ def process_reel(self, reel_id: str) -> dict:
         url = reel_data["url"]
         log.info("reel url loaded | url=%s | current_status=%s", url, reel_data.get("status"))
 
-        log.info("fetching FCM token for user=%s", reel_data["user_id"])
-        _profile = (
-            supabase.table("profiles")
-            .select("fcm_token")
-            .eq("id", reel_data["user_id"])
-            .single()
-            .execute()
-        )
-        _fcm_token: str | None = _profile.data.get("fcm_token")
-
         # Guard: if the reel is already in a terminal success state (e.g. from a
         # duplicate task dispatch), skip processing entirely.
         if reel_data.get("status") == "ready":
             log.info("reel already ready — skipping duplicate task dispatch")
             return {"reel_id": reel_id, "status": "already_ready"}
+
+        # FCM token — fetched once for Step 22 pushes. Non-critical: a fetch
+        # failure or missing profile row should not abort the pipeline.
+        _fcm_token: str | None = None
+        try:
+            _profile = (
+                supabase.table("profiles")
+                .select("fcm_token")
+                .eq("id", reel_data["user_id"])
+                .single()
+                .execute()
+            )
+            if _profile.data:
+                _fcm_token = _profile.data.get("fcm_token")
+        except Exception as exc:
+            log.warning("could not fetch fcm_token | %s", exc)
 
         # ------------------------------------------------------------------
         # Step 15 — download audio + metadata
@@ -246,14 +252,15 @@ def process_reel(self, reel_id: str) -> dict:
         # ------------------------------------------------------------------
         _CONFIDENCE_THRESHOLD = 0.70
 
-        if classification.confidence >= _CONFIDENCE_THRESHOLD:
+        resolved_category_id = category_db_map.get(classification.category)
+        if classification.confidence >= _CONFIDENCE_THRESHOLD and resolved_category_id:
             log.info(
                 "step 19 | auto-assigning | confidence=%.2f >= %.2f",
                 classification.confidence,
                 _CONFIDENCE_THRESHOLD,
             )
             supabase.table("reels").update({
-                "category_id": category_db_map[classification.category],
+                "category_id": resolved_category_id,
                 "confidence": classification.confidence,
                 "status": "ready",
             }).eq("id", reel_id).execute()
@@ -266,11 +273,17 @@ def process_reel(self, reel_id: str) -> dict:
             }
         else:
             suggestions = [classification.category] + classification.alternatives[:2]
-            log.info(
-                "step 19 | low confidence=%.2f — pending_category | suggestions=%s",
-                classification.confidence,
-                suggestions,
-            )
+            if resolved_category_id is None and classification.confidence >= _CONFIDENCE_THRESHOLD:
+                log.warning(
+                    "step 19 | category=%s not in DB map — routing to pending_category",
+                    classification.category,
+                )
+            else:
+                log.info(
+                    "step 19 | low confidence=%.2f — pending_category | suggestions=%s",
+                    classification.confidence,
+                    suggestions,
+                )
             supabase.table("reels").update({
                 "status": "pending_category",
                 "suggested_categories": suggestions,

@@ -256,6 +256,14 @@ def test_high_confidence_marks_ready():
     assert result["status"] == "ready"
     assert result["category"] == "Fitness"
 
+    # Verify the reels.update payload (defensive against column-name typos)
+    reels_mock = mock_db.table("reels")
+    update_payloads = [call.args[0] for call in reels_mock.update.call_args_list]
+    final_update = update_payloads[-1]
+    assert final_update["status"] == "ready"
+    assert final_update["category_id"] == "cat-fitness"
+    assert final_update["confidence"] == 0.92
+
 
 def test_low_confidence_marks_pending_category():
     """classify_reel returns <0.70 confidence → reel status set to pending_category."""
@@ -282,6 +290,13 @@ def test_low_confidence_marks_pending_category():
     assert result["status"] == "pending_category"
     assert "suggestions" in result
     assert "Fitness" in result["suggestions"]
+
+    reels_mock = mock_db.table("reels")
+    update_payloads = [call.args[0] for call in reels_mock.update.call_args_list]
+    final_update = update_payloads[-1]
+    assert final_update["status"] == "pending_category"
+    assert final_update["suggested_categories"] == ["Fitness", "Nutrition"]
+    assert final_update["confidence"] == 0.55
 
 
 def test_classification_retryable_error_triggers_retry():
