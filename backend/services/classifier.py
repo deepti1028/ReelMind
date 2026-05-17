@@ -22,6 +22,7 @@ from config import get_config
 logger = logging.getLogger(__name__)
 
 _MODEL = "llama-3.3-70b-versatile"
+_MAX_FIELD_CHARS = 4000
 
 
 @dataclass
@@ -62,8 +63,10 @@ def classify_reel(
     id_to_name: dict[int, str] = {i + 1: name for i, name in enumerate(categories)}
     category_list_str = "\n".join(f"{cid}: {name}" for cid, name in id_to_name.items())
 
-    transcript_text = transcript or "(none)"
-    caption_text = caption or "(none)"
+    # Cap caption/transcript at MAX_FIELD_CHARS each to bound prompt size and
+    # limit prompt-injection surface from user-supplied content.
+    transcript_text = (transcript or "(none)")[:_MAX_FIELD_CHARS]
+    caption_text = (caption or "(none)")[:_MAX_FIELD_CHARS]
     hashtag_text = " ".join(f"#{t}" for t in hashtags) if hashtags else "(none)"
 
     system_prompt = f"""You are a content classifier for a personal content library app.
@@ -99,6 +102,8 @@ Hashtags:
 {hashtag_text}"""
 
     cfg = get_config()
+    if not cfg.GROQ_API_KEY:
+        raise ClassificationError("GROQ_API_KEY not configured", is_retryable=False)
     client = Groq(api_key=cfg.GROQ_API_KEY)
 
     parsed: dict | None = None
