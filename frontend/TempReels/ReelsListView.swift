@@ -4,12 +4,6 @@ struct ReelsListView: View {
     let reels: [Reel]
     var onSearch: () -> Void = {}
 
-    private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d, HH:mm"
-        return f
-    }()
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             topBar
@@ -61,7 +55,40 @@ struct ReelsListView: View {
 private struct ReelCard: View {
     let reel: Reel
 
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, HH:mm"
+        return f
+    }()
+
+    private var hasMetadata: Bool {
+        reel.thumbnailUrl != nil ||
+        reel.creatorHandle != nil ||
+        !(reel.caption?.isEmpty ?? true) ||
+        !reel.hashtags.isEmpty
+    }
+
     var body: some View {
+        Group {
+            if hasMetadata {
+                fullCard
+            } else {
+                compactCard
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        )
+    }
+
+    // Full card — shown once pipeline has populated metadata fields.
+    private var fullCard: some View {
         HStack(alignment: .top, spacing: 12) {
             ThumbnailView(url: reel.thumbnailUrl)
 
@@ -77,19 +104,28 @@ private struct ReelCard: View {
                 if !reel.hashtags.isEmpty {
                     HashtagChips(tags: reel.hashtags)
                 }
+                if let categoryName = reel.categories?.name {
+                    CategoryChip(name: categoryName)
+                }
                 footerRow
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
-        )
+    }
+
+    // Compact card — shown while reel is queued and metadata is absent.
+    private var compactCard: some View {
+        HStack(spacing: 8) {
+            StatusPill(status: reel.status)
+            Text(URL(string: reel.url)?.host ?? reel.url)
+                .font(.system(size: 13))
+                .foregroundColor(ReelsTheme.mutedText)
+                .lineLimit(1)
+            Spacer()
+            Text(ReelCard.dateFormatter.string(from: reel.createdAt))
+                .font(.system(size: 11))
+                .foregroundColor(ReelsTheme.mutedText)
+        }
     }
 
     private var headerRow: some View {
@@ -105,17 +141,27 @@ private struct ReelCard: View {
 
     private var footerRow: some View {
         HStack(spacing: 8) {
-            Text(ReelsListView.dateFormatter.string(from: reel.createdAt))
+            Text(ReelCard.dateFormatter.string(from: reel.createdAt))
                 .font(.system(size: 11))
                 .foregroundColor(ReelsTheme.mutedText)
-            if let transcript = reel.transcript, !transcript.isEmpty {
+
+            if let hasAudio = reel.hasAudio {
                 Text("·")
                     .font(.system(size: 11))
                     .foregroundColor(ReelsTheme.mutedText)
-                Image(systemName: "waveform")
+                Image(systemName: hasAudio ? "waveform" : "doc.text")
                     .font(.system(size: 10))
                     .foregroundColor(ReelsTheme.mutedText)
-                Text("\(transcript.count) chars")
+                Text(hasAudio ? "transcript" : "caption-only")
+                    .font(.system(size: 11))
+                    .foregroundColor(ReelsTheme.mutedText)
+            }
+
+            if reel.status == "processing" || reel.status == "failed" {
+                Text("·")
+                    .font(.system(size: 11))
+                    .foregroundColor(ReelsTheme.mutedText)
+                Text("updated \(ReelCard.dateFormatter.string(from: reel.updatedAt))")
                     .font(.system(size: 11))
                     .foregroundColor(ReelsTheme.mutedText)
             }
@@ -202,6 +248,23 @@ private struct StatusPill: View {
         case "failed":         return Color.red
         default:               return Color.gray
         }
+    }
+}
+
+// MARK: - Category chip
+
+private struct CategoryChip: View {
+    let name: String
+
+    var body: some View {
+        Text(name)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(.gray)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(Color.gray.opacity(0.12))
+            .clipShape(Capsule())
+            .lineLimit(1)
     }
 }
 
