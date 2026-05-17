@@ -36,3 +36,8 @@ class CategoryChoiceRequest(BaseModel):
     category_name: null → skips to uncategorised immediately.
     """
     category_name: Optional[str] = None
+
+
+class FCMTokenRequest(BaseModel):
+    """Body for PATCH /api/v1/profiles/fcm-token."""
+    fcm_token: str
