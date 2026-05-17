@@ -18,6 +18,12 @@ class ReelResponse(BaseModel):
     category_id: Optional[UUID] = None
     creator_handle: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    transcript: Optional[str] = None
+    caption: Optional[str] = None
+    hashtags: list[str] = []
     summary: Optional[str] = None
     confidence: Optional[float] = None
+    has_audio: Optional[bool] = None
+    retry_count: Optional[int] = None
     created_at: datetime
+    updated_at: datetime
