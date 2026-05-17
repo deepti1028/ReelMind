@@ -9,6 +9,10 @@ enum AppConfig {
     // Supabase Dashboard → Project Settings → API → Project API keys → "anon public"
     static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwZHFuZmhmcmhuemlmZ2Ztc2JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Nzk1NzUsImV4cCI6MjA5MzE1NTU3NX0.I4g18tsh3-RN7XjsECWsLBZlFDgCnJBnFMEoLZ_Ii6o"
 
+    // Backend base URL — must match the URL hardcoded in URL Sharing module/Constants.swift.
+    // Update both places when the Render URL changes.
+    static let backendBaseURL = URL(string: "https://beaulah-insuperable-accentually.ngrok-free.dev")!
+
     // App Group identifier — must match what's in BOTH:
     //   1. Main app target's Signing & Capabilities → App Groups
     //   2. URL Sharing module target's Signing & Capabilities → App Groups
