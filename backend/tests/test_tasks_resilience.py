@@ -50,22 +50,27 @@ def test_transcription_failure_does_not_mark_reel_failed():
     from workers.tasks import process_reel
 
     task_self = _make_task_self(retries=3, max_retries=3)  # retries exhausted
-    mock_db = _make_supabase_mock()
+    # Use the step18-aware mock so the classifier step finds categories and
+    # the routing update can resolve category_id from the name map.
+    mock_db = _make_step18_supabase_mock()
 
     with patch("workers.tasks.get_supabase", return_value=mock_db):
         with patch("workers.tasks.download_reel", return_value=_make_download_result()):
             with patch("workers.tasks.transcribe_audio",
                        side_effect=TranscriptionError("bad codec", is_retryable=False)):
-                with patch("os.path.exists", return_value=False):
-                    result = process_reel.run.__func__(task_self, "reel-123")
+                with patch("workers.tasks.classify_reel",
+                           return_value=_make_classification_result(confidence=0.92)):
+                    with patch("os.path.exists", return_value=False):
+                        result = process_reel.run.__func__(task_self, "reel-123")
 
     # Should NOT return status=failed
     assert result.get("status") != "failed"
 
-    # Verify "failed" was never set via DB update
+    # Verify "failed" was never set via DB update on the reels table
+    reels_table = mock_db.table("reels")
     all_update_dicts = [
         c[0][0]
-        for c in mock_db.table.return_value.update.call_args_list
+        for c in reels_table.update.call_args_list
     ]
     assert not any(d.get("status") == "failed" for d in all_update_dicts), (
         f"Expected no status=failed update, but got: {all_update_dicts}"
@@ -142,5 +147,190 @@ def test_download_failure_still_marks_reel_failed():
                    side_effect=DownloadError("404 deleted", is_retryable=False)):
             with patch("os.path.exists", return_value=False):
                 result = process_reel.run.__func__(task_self, "reel-123")
+
+    assert result["status"] == "failed"
+
+
+# ---------------------------------------------------------------------------
+# Helpers for Step 18+19 tests
+# ---------------------------------------------------------------------------
+
+def _make_step18_supabase_mock(
+    fcm_token=None,
+    categories=None,
+    reel_status="queued",
+):
+    """Supabase mock that routes table() calls by table name."""
+    if categories is None:
+        categories = [
+            {"id": "cat-fitness", "name": "Fitness"},
+            {"id": "cat-nutrition", "name": "Nutrition"},
+        ]
+
+    reels_mock = MagicMock()
+    profiles_mock = MagicMock()
+    categories_mock = MagicMock()
+
+    # Reels: select chain (single row fetch)
+    reel_row = {
+        "url": "https://instagram.com/reel/ABC/",
+        "user_id": "user-1",
+        "status": reel_status,
+    }
+    (
+        reels_mock.select.return_value
+        .eq.return_value
+        .single.return_value
+        .execute.return_value
+        .data
+    ) = reel_row
+    reels_mock.update.return_value.eq.return_value.execute.return_value = None
+
+    # Profiles: fcm_token fetch
+    (
+        profiles_mock.select.return_value
+        .eq.return_value
+        .single.return_value
+        .execute.return_value
+        .data
+    ) = {"fcm_token": fcm_token}
+
+    # Categories: select + or_ chain
+    (
+        categories_mock.select.return_value
+        .or_.return_value
+        .execute.return_value
+        .data
+    ) = categories
+
+    db_mock = MagicMock()
+
+    def _table(name):
+        if name == "reels":
+            return reels_mock
+        if name == "profiles":
+            return profiles_mock
+        if name == "categories":
+            return categories_mock
+        return MagicMock()
+
+    db_mock.table.side_effect = _table
+    return db_mock
+
+
+def _make_classification_result(category="Fitness", confidence=0.92, alternatives=None):
+    from services.classifier import ClassificationResult
+    return ClassificationResult(
+        category=category,
+        confidence=confidence,
+        alternatives=alternatives or ["Nutrition"],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Step 18+19 routing tests
+# ---------------------------------------------------------------------------
+
+def test_high_confidence_marks_ready():
+    """classify_reel returns ≥0.70 confidence → reel status set to ready."""
+    from workers.tasks import process_reel
+
+    task_self = _make_task_self()
+    mock_db = _make_step18_supabase_mock()
+
+    signal_mock = MagicMock()
+    signal_mock.text = "Fitness content"
+    signal_mock.source_summary = "transcript"
+
+    with patch("workers.tasks.get_supabase", return_value=mock_db):
+        with patch("workers.tasks.download_reel", return_value=_make_download_result()):
+            with patch("workers.tasks.transcribe_audio",
+                       return_value=MagicMock(text="workout", has_audio=True)):
+                with patch("workers.tasks.build_classification_signal",
+                           return_value=signal_mock):
+                    with patch("workers.tasks.classify_reel",
+                               return_value=_make_classification_result(confidence=0.92)):
+                        with patch("os.path.exists", return_value=False):
+                            result = process_reel.run.__func__(task_self, "reel-123")
+
+    assert result["status"] == "ready"
+    assert result["category"] == "Fitness"
+
+
+def test_low_confidence_marks_pending_category():
+    """classify_reel returns <0.70 confidence → reel status set to pending_category."""
+    from workers.tasks import process_reel
+
+    task_self = _make_task_self()
+    mock_db = _make_step18_supabase_mock()
+
+    signal_mock = MagicMock()
+    signal_mock.text = "Ambiguous content"
+    signal_mock.source_summary = "caption"
+
+    with patch("workers.tasks.get_supabase", return_value=mock_db):
+        with patch("workers.tasks.download_reel", return_value=_make_download_result()):
+            with patch("workers.tasks.transcribe_audio",
+                       return_value=MagicMock(text="", has_audio=False)):
+                with patch("workers.tasks.build_classification_signal",
+                           return_value=signal_mock):
+                    with patch("workers.tasks.classify_reel",
+                               return_value=_make_classification_result(confidence=0.55)):
+                        with patch("os.path.exists", return_value=False):
+                            result = process_reel.run.__func__(task_self, "reel-123")
+
+    assert result["status"] == "pending_category"
+    assert "suggestions" in result
+    assert "Fitness" in result["suggestions"]
+
+
+def test_classification_retryable_error_triggers_retry():
+    """ClassificationError(is_retryable=True) → Celery retry raised."""
+    from celery.exceptions import Retry
+    from services.classifier import ClassificationError
+    from workers.tasks import process_reel
+
+    task_self = _make_task_self(retries=0, max_retries=3)
+    mock_db = _make_step18_supabase_mock()
+
+    signal_mock = MagicMock()
+    signal_mock.text = "content"
+    signal_mock.source_summary = "transcript"
+
+    with patch("workers.tasks.get_supabase", return_value=mock_db):
+        with patch("workers.tasks.download_reel", return_value=_make_download_result()):
+            with patch("workers.tasks.transcribe_audio",
+                       return_value=MagicMock(text="content", has_audio=True)):
+                with patch("workers.tasks.build_classification_signal",
+                           return_value=signal_mock):
+                    with patch("workers.tasks.classify_reel",
+                               side_effect=ClassificationError("rate limit", is_retryable=True)):
+                        with patch("os.path.exists", return_value=False):
+                            with pytest.raises(Retry):
+                                process_reel.run.__func__(task_self, "reel-123")
+
+
+def test_classification_non_retryable_error_marks_failed():
+    """ClassificationError(is_retryable=False) → reel marked failed."""
+    from services.classifier import ClassificationError
+    from workers.tasks import process_reel
+
+    task_self = _make_task_self()
+    mock_db = _make_step18_supabase_mock()
+
+    signal_mock = MagicMock()
+    signal_mock.text = "content"
+    signal_mock.source_summary = "transcript"
+
+    with patch("workers.tasks.get_supabase", return_value=mock_db):
+        with patch("workers.tasks.download_reel", return_value=_make_download_result()):
+            with patch("workers.tasks.transcribe_audio",
+                       return_value=MagicMock(text="content", has_audio=True)):
+                with patch("workers.tasks.build_classification_signal",
+                           return_value=signal_mock):
+                    with patch("workers.tasks.classify_reel",
+                               side_effect=ClassificationError("bad schema", is_retryable=False)):
+                        with patch("os.path.exists", return_value=False):
+                            result = process_reel.run.__func__(task_self, "reel-123")
 
     assert result["status"] == "failed"

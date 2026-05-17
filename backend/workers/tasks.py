@@ -29,6 +29,7 @@ from services.downloader import (
     download_reel,
 )
 from services.signal_builder import NoSignalError, build_classification_signal
+from services.classifier import ClassificationError, ClassificationResult, classify_reel
 from services.transcriber import TranscriptionError, TranscriptionResult, transcribe_audio
 from supabase_client import get_supabase
 from workers.celery_app import celery_app
@@ -70,6 +71,16 @@ def process_reel(self, reel_id: str) -> dict:
         reel_data = row.data
         url = reel_data["url"]
         log.info("reel url loaded | url=%s | current_status=%s", url, reel_data.get("status"))
+
+        log.info("fetching FCM token for user=%s", reel_data["user_id"])
+        _profile = (
+            supabase.table("profiles")
+            .select("fcm_token")
+            .eq("id", reel_data["user_id"])
+            .single()
+            .execute()
+        )
+        _fcm_token: str | None = _profile.data.get("fcm_token")
 
         # Guard: if the reel is already in a terminal success state (e.g. from a
         # duplicate task dispatch), skip processing entirely.
@@ -194,19 +205,85 @@ def process_reel(self, reel_id: str) -> dict:
             return {"reel_id": reel_id, "status": "uncategorised"}
 
         # ------------------------------------------------------------------
-        # Steps 18-22 — TODO (Llama classification, confidence routing,
-        #               embeddings, FCM push)
+        # Step 18 — fetch categories + call Llama classifier
         # ------------------------------------------------------------------
-        # `signal` is available in-memory for Step 18. Until Step 18 lands,
-        # the row stays in 'processing'. Marking 'ready' here would be a
-        # lie — the reel is not yet categorised or searchable.
+        log.info("step 18 | fetching categories for user=%s", reel_data["user_id"])
+        _cat_rows = (
+            supabase.table("categories")
+            .select("id, name")
+            .or_(f"user_id.eq.{reel_data['user_id']},user_id.is.null")
+            .execute()
+        )
+        category_db_map = {row["name"]: row["id"] for row in _cat_rows.data}
+        category_names = list(category_db_map.keys())
 
-        log.info("process_reel done — signal ready, awaiting Step 18")
-        return {
-            "reel_id": reel_id,
-            "status": "processing",
-            "signal_sources": signal.source_summary,
-        }
+        log.info("step 18 | classifying | categories=%d", len(category_names))
+        try:
+            classification = classify_reel(
+                transcript=_transcript_text,
+                caption=meta.caption,
+                hashtags=meta.hashtags,
+                categories=category_names,
+            )
+            log.info(
+                "step 18 | done | category=%s | confidence=%.2f | alternatives=%s",
+                classification.category,
+                classification.confidence,
+                classification.alternatives,
+            )
+        except ClassificationError as exc:
+            log.warning(
+                "step 18 | classification error | retryable=%s | %s",
+                exc.is_retryable,
+                exc,
+            )
+            return _handle_pipeline_error(
+                self, supabase, reel_id, exc, exc.is_retryable, log
+            )
+
+        # ------------------------------------------------------------------
+        # Step 19 — confidence routing
+        # ------------------------------------------------------------------
+        _CONFIDENCE_THRESHOLD = 0.70
+
+        if classification.confidence >= _CONFIDENCE_THRESHOLD:
+            log.info(
+                "step 19 | auto-assigning | confidence=%.2f >= %.2f",
+                classification.confidence,
+                _CONFIDENCE_THRESHOLD,
+            )
+            supabase.table("reels").update({
+                "category_id": category_db_map[classification.category],
+                "confidence": classification.confidence,
+                "status": "ready",
+            }).eq("id", reel_id).execute()
+            # TODO Step 22: FCM push — "Your reel has been saved and categorised!"
+            log.info("step 19 | status=ready")
+            return {
+                "reel_id": reel_id,
+                "status": "ready",
+                "category": classification.category,
+            }
+        else:
+            suggestions = [classification.category] + classification.alternatives[:2]
+            log.info(
+                "step 19 | low confidence=%.2f — pending_category | suggestions=%s",
+                classification.confidence,
+                suggestions,
+            )
+            supabase.table("reels").update({
+                "status": "pending_category",
+                "suggested_categories": suggestions,
+                "confidence": classification.confidence,
+            }).eq("id", reel_id).execute()
+            # TODO Step 22: FCM push with buttons [suggestion1] [suggestion2]
+            #   [Choose in App] [Uncategorised]
+            log.info("step 19 | status=pending_category")
+            return {
+                "reel_id": reel_id,
+                "status": "pending_category",
+                "suggestions": suggestions,
+            }
 
     finally:
         if download_result is not None:
