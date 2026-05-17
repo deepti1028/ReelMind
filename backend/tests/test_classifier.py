@@ -171,7 +171,24 @@ def test_groq_400_not_retryable(mock_groq_cls):
 
 
 @patch("services.classifier.Groq")
-def test_temperature_is_zero(mock_groq_cls):
+def test_groq_5xx_is_retryable(mock_groq_cls):
+    from groq import APIStatusError
+    mock_response = MagicMock()
+    mock_response.status_code = 503
+    mock_groq_cls.return_value.chat.completions.create.side_effect = APIStatusError(
+        message="service unavailable",
+        response=mock_response,
+        body={},
+    )
+    from services.classifier import classify_reel, ClassificationError
+    with pytest.raises(ClassificationError) as exc_info:
+        classify_reel(None, "caption", [], CATEGORIES)
+    assert exc_info.value.is_retryable is True
+
+
+@patch("services.classifier.Groq")
+def test_groq_call_uses_correct_model_and_params(mock_groq_cls):
+    """Locks in model, temperature, and response_format on the Groq call."""
     mock_groq_cls.return_value.chat.completions.create.return_value = (
         _make_groq_response(1, 0.9, [])
     )
@@ -179,3 +196,5 @@ def test_temperature_is_zero(mock_groq_cls):
     classify_reel(None, "caption", [], CATEGORIES)
     kwargs = mock_groq_cls.return_value.chat.completions.create.call_args.kwargs
     assert kwargs["temperature"] == 0
+    assert kwargs["model"] == "llama-3.3-70b-versatile"
+    assert kwargs["response_format"] == {"type": "json_object"}
