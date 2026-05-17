@@ -14,7 +14,7 @@ struct ReelsService {
         let userId = try await client.auth.session.user.id
         return try await client
             .from("reels")
-            .select()
+            .select("*, categories(name)")
             .eq("user_id", value: userId)
             .is("deleted_at", value: nil)
             .order("created_at", ascending: false)
