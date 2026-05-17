@@ -27,3 +27,12 @@ class ReelResponse(BaseModel):
     retry_count: Optional[int] = None
     created_at: datetime
     updated_at: datetime
+
+
+class CategoryChoiceRequest(BaseModel):
+    """Body for PATCH /reels/{reel_id}/category.
+
+    category_name: exact category name (string) → assigns category, marks ready.
+    category_name: null → skips to uncategorised immediately.
+    """
+    category_name: Optional[str] = None

@@ -1,9 +1,9 @@
 """Reels endpoints — capture and processing pipeline entry."""
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from api.deps import get_current_user_id
-from schemas.reel import ReelCreate, ReelResponse
+from schemas.reel import CategoryChoiceRequest, ReelCreate, ReelResponse
 from supabase_client import get_supabase
 from workers.tasks import process_reel
 
@@ -65,3 +65,73 @@ async def create_reel(
         response.status_code = status.HTTP_200_OK
 
     return reel
+
+
+@router.patch("/{reel_id}/category", status_code=status.HTTP_200_OK)
+async def update_reel_category(
+    reel_id: str,
+    payload: CategoryChoiceRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Handle user's category choice from an FCM notification button tap.
+
+    Path A (category_name is a string): assigns the category, marks reel ready.
+    Path B (category_name is null): moves reel to uncategorised immediately.
+
+    Returns 409 if the reel is already resolved (idempotent guard).
+    Returns 404 if the reel does not belong to this user.
+    Returns 422 if category_name is not in the user's categories.
+    """
+    supabase = get_supabase()
+
+    # Fetch and validate reel ownership
+    reel_row = (
+        supabase.table("reels")
+        .select("id, user_id, status, suggested_categories")
+        .eq("id", reel_id)
+        .eq("user_id", user_id)
+        .single()
+        .execute()
+    )
+    if not reel_row.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reel not found")
+
+    reel = reel_row.data
+    if reel["status"] != "pending_category":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Reel already resolved (status={reel['status']})",
+        )
+
+    # Path B — user tapped "Uncategorised"
+    if payload.category_name is None:
+        supabase.table("reels").update({
+            "status": "uncategorised",
+            "suggested_categories": [],
+        }).eq("id", reel_id).execute()
+        # TODO Step 22: FCM push — "Saved to Uncategorised — you can move it anytime"
+        return {"reel_id": reel_id, "status": "uncategorised"}
+
+    # Path A — user picked a specific category
+    cat_rows = (
+        supabase.table("categories")
+        .select("id, name")
+        .eq("name", payload.category_name)
+        .or_(f"user_id.eq.{user_id},user_id.is.null")
+        .execute()
+    )
+    if not cat_rows.data:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Category '{payload.category_name}' not found for this user",
+        )
+
+    category_id = cat_rows.data[0]["id"]
+    supabase.table("reels").update({
+        "category_id": category_id,
+        "confidence": 1.0,
+        "status": "ready",
+        "suggested_categories": [],
+    }).eq("id", reel_id).execute()
+    # TODO Step 22: FCM push — "Reel categorised!"
+    return {"reel_id": reel_id, "status": "ready", "category": payload.category_name}
