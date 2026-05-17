@@ -60,8 +60,9 @@ def test_transcription_failure_does_not_mark_reel_failed():
                        side_effect=TranscriptionError("bad codec", is_retryable=False)):
                 with patch("workers.tasks.classify_reel",
                            return_value=_make_classification_result(confidence=0.92)):
-                    with patch("os.path.exists", return_value=False):
-                        result = process_reel.run.__func__(task_self, "reel-123")
+                    with patch("workers.tasks.build_chunk_text", return_value=None):
+                        with patch("os.path.exists", return_value=False):
+                            result = process_reel.run.__func__(task_self, "reel-123")
 
     # Should NOT return status=failed
     assert result.get("status") != "failed"
@@ -89,8 +90,9 @@ def test_transcription_failure_sets_has_audio_false():
         with patch("workers.tasks.download_reel", return_value=_make_download_result()):
             with patch("workers.tasks.transcribe_audio",
                        side_effect=TranscriptionError("codec", is_retryable=False)):
-                with patch("os.path.exists", return_value=False):
-                    process_reel.run.__func__(task_self, "reel-123")
+                with patch("workers.tasks.build_chunk_text", return_value=None):
+                    with patch("os.path.exists", return_value=False):
+                        process_reel.run.__func__(task_self, "reel-123")
 
     all_update_dicts = [
         c[0][0]
@@ -251,8 +253,9 @@ def test_high_confidence_marks_ready():
                                return_value=signal_mock):
                         with patch("workers.tasks.classify_reel",
                                    return_value=_make_classification_result(confidence=0.92)):
-                            with patch("os.path.exists", return_value=False):
-                                result = process_reel.run.__func__(task_self, "reel-123")
+                            with patch("workers.tasks.build_chunk_text", return_value=None):
+                                with patch("os.path.exists", return_value=False):
+                                    result = process_reel.run.__func__(task_self, "reel-123")
 
     assert result["status"] == "ready"
     assert result["category"] == "Fitness"
@@ -291,8 +294,9 @@ def test_low_confidence_marks_pending_category():
                                return_value=signal_mock):
                         with patch("workers.tasks.classify_reel",
                                    return_value=_make_classification_result(confidence=0.55)):
-                            with patch("os.path.exists", return_value=False):
-                                result = process_reel.run.__func__(task_self, "reel-123")
+                            with patch("workers.tasks.build_chunk_text", return_value=None):
+                                with patch("os.path.exists", return_value=False):
+                                    result = process_reel.run.__func__(task_self, "reel-123")
 
     assert result["status"] == "pending_category"
     assert "suggestions" in result
@@ -333,9 +337,10 @@ def test_classification_retryable_error_triggers_retry():
                                return_value=signal_mock):
                         with patch("workers.tasks.classify_reel",
                                    side_effect=ClassificationError("rate limit", is_retryable=True)):
-                            with patch("os.path.exists", return_value=False):
-                                with pytest.raises(Retry):
-                                    process_reel.run.__func__(task_self, "reel-123")
+                            with patch("workers.tasks.build_chunk_text", return_value=None):
+                                with patch("os.path.exists", return_value=False):
+                                    with pytest.raises(Retry):
+                                        process_reel.run.__func__(task_self, "reel-123")
 
 
 def test_classification_non_retryable_error_marks_failed():
@@ -359,7 +364,79 @@ def test_classification_non_retryable_error_marks_failed():
                                return_value=signal_mock):
                         with patch("workers.tasks.classify_reel",
                                    side_effect=ClassificationError("bad schema", is_retryable=False)):
-                            with patch("os.path.exists", return_value=False):
-                                result = process_reel.run.__func__(task_self, "reel-123")
+                            with patch("workers.tasks.build_chunk_text", return_value=None):
+                                with patch("os.path.exists", return_value=False):
+                                    result = process_reel.run.__func__(task_self, "reel-123")
 
     assert result["status"] == "failed"
+
+
+# ---------------------------------------------------------------------------
+# Step 20 — embed + store chunk
+# ---------------------------------------------------------------------------
+
+def test_step20_builds_enriched_text_and_stores_embedding():
+    """Step 20 calls build_chunk_text + embed_document and upserts into reel_chunks."""
+    from workers.tasks import process_reel
+
+    task_self = _make_task_self()
+    mock_db = _make_step18_supabase_mock()
+
+    signal_mock = MagicMock()
+    signal_mock.text = "Fitness content"
+    signal_mock.source_summary = "transcript"
+
+    fake_embedding = [0.1] * 384
+
+    with patch("workers.tasks.send_push_notification"):
+        with patch("workers.tasks.get_supabase", return_value=mock_db):
+            with patch("workers.tasks.download_reel", return_value=_make_download_result()):
+                with patch("workers.tasks.transcribe_audio",
+                           return_value=MagicMock(text="workout content", has_audio=True)):
+                    with patch("workers.tasks.build_classification_signal",
+                               return_value=signal_mock):
+                        with patch("workers.tasks.classify_reel",
+                                   return_value=_make_classification_result(confidence=0.92)):
+                            with patch("workers.tasks.embed_document",
+                                       return_value=fake_embedding) as mock_embed:
+                                with patch("workers.tasks.build_chunk_text",
+                                           return_value="enriched text") as mock_build:
+                                    with patch("os.path.exists", return_value=False):
+                                        process_reel.run.__func__(task_self, "reel-123")
+
+    mock_build.assert_called_once_with(
+        transcript="workout content",
+        caption="Test caption #tag1",
+        hashtags=["tag1"],
+    )
+    mock_embed.assert_called_once_with("enriched text")
+    table_calls = [c[0][0] for c in mock_db.table.call_args_list]
+    assert "reel_chunks" in table_calls
+
+
+def test_step20_skipped_when_no_content():
+    """Step 20 does not call embed_document when build_chunk_text returns None."""
+    from workers.tasks import process_reel
+
+    task_self = _make_task_self()
+    mock_db = _make_step18_supabase_mock()
+
+    signal_mock = MagicMock()
+    signal_mock.text = "Fitness content"
+    signal_mock.source_summary = "transcript"
+
+    with patch("workers.tasks.send_push_notification"):
+        with patch("workers.tasks.get_supabase", return_value=mock_db):
+            with patch("workers.tasks.download_reel", return_value=_make_download_result()):
+                with patch("workers.tasks.transcribe_audio",
+                           return_value=MagicMock(text="workout content", has_audio=True)):
+                    with patch("workers.tasks.build_classification_signal",
+                               return_value=signal_mock):
+                        with patch("workers.tasks.classify_reel",
+                                   return_value=_make_classification_result(confidence=0.92)):
+                            with patch("workers.tasks.build_chunk_text", return_value=None):
+                                with patch("workers.tasks.embed_document") as mock_embed:
+                                    with patch("os.path.exists", return_value=False):
+                                        process_reel.run.__func__(task_self, "reel-123")
+
+    mock_embed.assert_not_called()

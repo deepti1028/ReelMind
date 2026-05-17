@@ -28,6 +28,7 @@ from services.downloader import (
     DownloadResult,
     download_reel,
 )
+from services.embedder import build_chunk_text, embed_document
 from services.signal_builder import NoSignalError, build_classification_signal
 from services.classifier import ClassificationError, ClassificationResult, classify_reel
 from services.notifier import send_push_notification
@@ -211,6 +212,28 @@ def process_reel(self, reel_id: str) -> dict:
                 data={"reel_id": reel_id, "status": "uncategorised"},
             )
             return {"reel_id": reel_id, "status": "uncategorised"}
+
+        # ------------------------------------------------------------------
+        # Step 20 — embed reel content + store chunk
+        # ------------------------------------------------------------------
+        _chunk_text = build_chunk_text(
+            transcript=_transcript_text,
+            caption=meta.caption,
+            hashtags=meta.hashtags,
+        )
+        if _chunk_text:
+            log.info("step 20 | embedding | chars=%d", len(_chunk_text))
+            _embedding = embed_document(_chunk_text)
+            supabase.table("reel_chunks").upsert({
+                "reel_id": reel_id,
+                "user_id": reel_data["user_id"],
+                "chunk_index": 0,
+                "content": _chunk_text,
+                "embedding": _embedding,
+            }).execute()
+            log.info("step 20 | chunk stored")
+        else:
+            log.warning("step 20 | no content to embed — skipping")
 
         # ------------------------------------------------------------------
         # Step 18 — fetch categories + call Llama classifier
