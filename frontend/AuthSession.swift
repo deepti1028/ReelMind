@@ -46,6 +46,11 @@ final class AuthSession: ObservableObject {
         if let token = token {
             defaults.set(token, forKey: AppConfig.authTokenKey)
             print("[AuthSession] token synced to App Group (\(token.count) chars)")
+
+            // If an FCM token was cached before login, push it to the backend now.
+            if let fcmToken = UserDefaults.standard.string(forKey: "fcmToken") {
+                ProfileAPI.uploadFCMToken(fcmToken)
+            }
         } else {
             defaults.removeObject(forKey: AppConfig.authTokenKey)
             print("[AuthSession] token cleared from App Group")
