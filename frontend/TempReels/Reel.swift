@@ -1,5 +1,9 @@
 import Foundation
 
+struct CategoryInfo: Decodable, Hashable {
+    let name: String
+}
+
 struct Reel: Identifiable, Decodable, Hashable {
     let id: UUID
     let userId: UUID
@@ -12,11 +16,13 @@ struct Reel: Identifiable, Decodable, Hashable {
     let hashtags: [String]
     let summary: String?
     let confidence: Float?
+    let hasAudio: Bool?
     let status: String
     let retryCount: Int?
     let deletedAt: Date?
     let createdAt: Date
     let updatedAt: Date
+    let categories: CategoryInfo?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -30,10 +36,12 @@ struct Reel: Identifiable, Decodable, Hashable {
         case hashtags
         case summary
         case confidence
+        case hasAudio = "has_audio"
         case status
         case retryCount = "retry_count"
         case deletedAt = "deleted_at"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case categories
     }
 }
