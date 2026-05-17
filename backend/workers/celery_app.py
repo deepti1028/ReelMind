@@ -14,7 +14,7 @@ celery_app = Celery(
     "reelmind",
     broker=config.REDIS_URL,
     backend=config.REDIS_URL,
-    include=["workers.tasks"],
+    include=["workers.tasks", "workers.beat_tasks"],
 )
 
 celery_app.conf.update(
@@ -29,3 +29,10 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_acks_late=True,
 )
+
+celery_app.conf.beat_schedule = {
+    "expire-pending-categories": {
+        "task": "workers.beat_tasks.expire_pending_categories",
+        "schedule": 30 * 60,  # every 30 minutes
+    },
+}
