@@ -1,3 +1,4 @@
+import Auth
 import Foundation
 
 struct ReelSource: Decodable, Identifiable {
