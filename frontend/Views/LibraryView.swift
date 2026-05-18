@@ -1,3 +1,4 @@
+import Auth
 import SwiftUI
 
 struct LibraryView: View {
