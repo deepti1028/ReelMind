@@ -90,7 +90,7 @@ private struct ReelCard: View {
     // Full card — shown once pipeline has populated metadata fields.
     private var fullCard: some View {
         HStack(alignment: .top, spacing: 12) {
-            ThumbnailView(url: reel.thumbnailUrl)
+            ReelsListThumbnailView(url: reel.thumbnailUrl)
 
             VStack(alignment: .leading, spacing: 6) {
                 headerRow
@@ -172,7 +172,7 @@ private struct ReelCard: View {
 
 // MARK: - Thumbnail
 
-private struct ThumbnailView: View {
+private struct ReelsListThumbnailView: View {
     let url: String?
 
     var body: some View {
