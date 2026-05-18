@@ -1,9 +1,10 @@
 import SwiftUI
+import Combine
 
 @MainActor
 private final class ChatViewModel: ObservableObject {
-    @Published private(set) var messages: [ChatMessage] = []
-    @Published private(set) var isLoading = false
+    @Published var messages: [ChatMessage] = []
+    @Published var isLoading = false
     @Published var inputText = ""
     private var sessionId: String?
 
