@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Screen — Your Library</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+    gap: 60px;
+    flex-wrap: wrap;
+  }
+
+  .label {
+    color: #888;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  /* Phone shell */
+  .phone {
+    width: 320px;
+    background: #1a1a1a;
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px #333, 0 30px 80px rgba(0,0,0,0.6);
+    position: relative;
+  }
+  .phone-inner {
+    padding: 0;
+    height: 640px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px 6px;
+    font-size: 12px;
+    color: #fff;
+    font-weight: 600;
+  }
+  .status-icons { display: flex; gap: 5px; align-items: center; }
+  .status-icons span { font-size: 11px; }
+
+  /* Top bar */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px 10px;
+  }
+  .title-block {}
+  .title-block .app-name {
+    font-size: 13px;
+    color: #888;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .title-block h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.1;
+  }
+  .title-block .count {
+    display: inline-block;
+    background: #2a2a2a;
+    color: #aaa;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 3px;
+  }
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2dd4a0, #1a7a5a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    border: 2px solid #333;
+  }
+
+  /* Needs category banner */
+  .banner {
+    margin: 0 16px 12px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .banner-left { display: flex; align-items: center; gap: 10px; }
+  .banner-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #2dd4a0;
+    flex-shrink: 0;
+  }
+  .banner-text { font-size: 13px; color: #ddd; font-weight: 500; }
+  .banner-text span { color: #2dd4a0; }
+  .banner-arrow { color: #666; font-size: 14px; }
+
+  /* Collections grid */
+  .section-label {
+    padding: 0 20px 8px;
+    font-size: 11px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 16px;
+    overflow-y: auto;
+    flex: 1;
+    padding-bottom: 12px;
+  }
+  .cat-card {
+    background: #242424;
+    border-radius: 18px;
+    padding: 18px 16px 14px;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    border: 1px solid #2e2e2e;
+  }
+  .cat-card .cat-count {
+    font-size: 36px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+  }
+  .cat-card-bottom {}
+  .cat-card .cat-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ddd;
+    margin-bottom: 2px;
+  }
+  .cat-card .cat-sub {
+    font-size: 11px;
+    color: #555;
+  }
+
+  /* Footer */
+  .footer {
+    display: flex;
+    background: #1a1a1a;
+    border-top: 1px solid #252525;
+    padding: 10px 0 20px;
+  }
+  .footer-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  .footer-icon { font-size: 20px; }
+  .footer-label { font-size: 10px; color: #666; font-weight: 500; }
+  .footer-item.active .footer-label { color: #2dd4a0; }
+  .footer-item.active .footer-icon { filter: none; }
+  .footer-badge {
+    position: relative;
+    display: inline-block;
+  }
+  .footer-badge::after {
+    content: '3';
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    background: #2dd4a0;
+    color: #111;
+    font-size: 9px;
+    font-weight: 800;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 15px;
+    text-align: center;
+  }
+
+  /* Annotation */
+  .annotation {
+    background: #1e1e1e;
+    border: 1px solid #2e2e2e;
+    border-radius: 12px;
+    padding: 16px;
+    max-width: 320px;
+    align-self: flex-start;
+    margin-top: 30px;
+  }
+  .annotation h3 { color: #2dd4a0; font-size: 13px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .annotation ul { list-style: none; padding: 0; }
+  .annotation li {
+    color: #aaa;
+    font-size: 12px;
+    padding: 5px 0;
+    border-bottom: 1px solid #2a2a2a;
+    padding-left: 12px;
+    position: relative;
+    line-height: 1.4;
+  }
+  .annotation li::before { content: '✓'; position: absolute; left: 0; color: #2dd4a0; font-size: 10px; }
+  .annotation li:last-child { border-bottom: none; }
+  .annotation li.removed::before { content: '✕'; color: #ff5f5f; }
+  .annotation li.removed { text-decoration: line-through; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="label">Screen 1 — Home (Library tab)</div>
+  <div class="phone">
+    <div class="phone-inner">
+      <!-- Status bar -->
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <span>●●●</span>
+          <span>WiFi</span>
+          <span>100%</span>
+        </div>
+      </div>
+
+      <!-- Top bar -->
+      <div class="top-bar">
+        <div class="title-block">
+          <div class="app-name">ReelMind</div>
+          <h1>Your library</h1>
+          <span class="count">42 reels</span>
+        </div>
+        <div class="avatar">D</div>
+      </div>
+
+      <!-- Needs category banner — AT TOP per spec -->
+      <div class="banner">
+        <div class="banner-left">
+          <div class="banner-dot"></div>
+          <div class="banner-text"><span>3 reels</span> need a category</div>
+        </div>
+        <div class="banner-arrow">›</div>
+      </div>
+
+      <!-- Section label -->
+      <div class="section-label">Collections</div>
+
+      <!-- n×2 category grid -->
+      <div class="grid">
+        <div class="cat-card">
+          <div class="cat-count">24</div>
+          <div class="cat-card-bottom">
+            <div class="cat-name">Skincare</div>
+            <div class="cat-sub">Updated 2h ago</div>
+          </div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-count">11</div>
+          <div class="cat-card-bottom">
+            <div class="cat-name">Haircare</div>
+            <div class="cat-sub">Updated 1d ago</div>
+          </div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-count">7</div>
+          <div class="cat-card-bottom">
+            <div class="cat-name">Bodycare</div>
+            <div class="cat-sub">Updated 3d ago</div>
+          </div>
+        </div>
+        <div class="cat-card">
+          <div class="cat-count">5</div>
+          <div class="cat-card-bottom">
+            <div class="cat-name">Fashion</div>
+            <div class="cat-sub">Updated 5d ago</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div class="footer-item active">
+          <div class="footer-icon">⊞</div>
+          <div class="footer-label" style="color:#2dd4a0">Library</div>
+        </div>
+        <div class="footer-item">
+          <div class="footer-badge">
+            <div class="footer-icon">📥</div>
+          </div>
+          <div class="footer-label">Inbox</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Annotations -->
+<div class="annotation">
+  <h3>Changes from PDF</h3>
+  <ul>
+    <li>Profile avatar (round, top-right) replaces settings icon</li>
+    <li>"X reels need a category" banner moved to top</li>
+    <li>Collections grid changed to n×2 (2 columns)</li>
+    <li>Footer reduced to Library + Inbox only</li>
+    <li>Inbox tab shows badge count of uncategorised reels</li>
+    <li class="removed">Global "Ask your library" chat button removed</li>
+    <li class="removed">Settings icon removed</li>
+    <li class="removed">Recently saved / inbox section from home removed</li>
+  </ul>
+</div>
+
+</body>
+</html>

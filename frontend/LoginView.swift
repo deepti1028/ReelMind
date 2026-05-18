@@ -11,14 +11,14 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            OnboardingTheme.background.ignoresSafeArea()
+            AppTheme.background.ignoresSafeArea()
 
             VStack(spacing: 24) {
                 Spacer()
 
                 Text("Login")
                     .font(.system(size: 36, weight: .bold, design: .serif))
-                    .foregroundColor(OnboardingTheme.textPrimary)
+                    .foregroundColor(AppTheme.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(spacing: 16) {
@@ -28,28 +28,28 @@ struct LoginView: View {
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                         .padding()
-                        .background(OnboardingTheme.cardSurface)
+                        .background(AppTheme.surface)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(OnboardingTheme.divider, lineWidth: 0.5)
+                                .stroke(AppTheme.border, lineWidth: 0.5)
                         )
 
                     SecureField("Password", text: $password)
                         .textContentType(.password)
                         .padding()
-                        .background(OnboardingTheme.cardSurface)
+                        .background(AppTheme.surface)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(OnboardingTheme.divider, lineWidth: 0.5)
+                                .stroke(AppTheme.border, lineWidth: 0.5)
                         )
                 }
 
                 if let errorMessage = errorMessage {
                     Text(errorMessage)
                         .font(.footnote)
-                        .foregroundColor(.red)
+                        .foregroundColor(AppTheme.destructive)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
@@ -66,17 +66,17 @@ struct LoginView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(OnboardingTheme.primary)
+                    .background(AppTheme.accentDark)
                     .clipShape(Capsule())
-                    .shadow(color: OnboardingTheme.primary.opacity(0.25), radius: 10, x: 0, y: 5)
+                    .shadow(color: AppTheme.accentDark.opacity(0.25), radius: 10, x: 0, y: 5)
                 }
                 .disabled(isSubmitting || !canSubmit)
 
                 HStack {
                     Text("Don't have an account?")
-                        .foregroundColor(OnboardingTheme.textMuted)
+                        .foregroundColor(AppTheme.textMuted)
                     Button("Sign Up") { showSignup = true }
-                        .foregroundColor(OnboardingTheme.primary)
+                        .foregroundColor(AppTheme.accentDark)
                         .fontWeight(.semibold)
                 }
                 .font(.footnote)

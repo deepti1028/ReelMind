@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReelMind Phase 3 — All Screens</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #110f0c;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    padding: 40px 20px;
+    color: #ccc;
+  }
+  h1 { font-size: 22px; font-weight: 700; color: #d4a373; margin-bottom: 8px; }
+  .sub { font-size: 13px; color: #888; margin-bottom: 32px; }
+  .palette {
+    display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap;
+  }
+  .swatch {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .swatch-box {
+    width: 48px; height: 48px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .swatch-label { font-size: 10px; color: #888; }
+  .links { display: flex; flex-direction: column; gap: 12px; }
+  .link-card {
+    background: #1e1c16; border: 1px solid #2e2820; border-radius: 12px;
+    padding: 14px 18px; text-decoration: none;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: border-color 0.2s;
+  }
+  .link-card:hover { border-color: #d4a373; }
+  .link-title { font-size: 14px; font-weight: 600; color: #e9edc9; }
+  .link-desc { font-size: 11px; color: #888; margin-top: 3px; }
+  .link-arrow { color: #d4a373; font-size: 18px; }
+</style>
+</head>
+<body>
+  <h1>ReelMind — Phase 3 UI</h1>
+  <div class="sub">Warm earth palette · All screens</div>
+
+  <div class="palette">
+    <div class="swatch"><div class="swatch-box" style="background:#ccd5ae"></div><div class="swatch-label">#ccd5ae</div></div>
+    <div class="swatch"><div class="swatch-box" style="background:#e9edc9"></div><div class="swatch-label">#e9edc9</div></div>
+    <div class="swatch"><div class="swatch-box" style="background:#fefae0"></div><div class="swatch-label">#fefae0</div></div>
+    <div class="swatch"><div class="swatch-box" style="background:#faedcd"></div><div class="swatch-label">#faedcd</div></div>
+    <div class="swatch"><div class="swatch-box" style="background:#d4a373"></div><div class="swatch-label">#d4a373</div></div>
+  </div>
+
+  <div class="links">
+    <a class="link-card" href="screen-home-v3.html" target="_blank">
+      <div>
+        <div class="link-title">Screens 1 + 2 — Home & Inbox</div>
+        <div class="link-desc">Library grid · Category cards · Inbox reel list</div>
+      </div>
+      <div class="link-arrow">›</div>
+    </a>
+    <a class="link-card" href="screen-category-detail.html" target="_blank">
+      <div>
+        <div class="link-title">Screen 3 — Category Detail</div>
+        <div class="link-desc">Reel cards · Floating chat FAB</div>
+      </div>
+      <div class="link-arrow">›</div>
+    </a>
+    <a class="link-card" href="screen-chat.html" target="_blank">
+      <div>
+        <div class="link-title">Screens 4a + 4b — Chat</div>
+        <div class="link-desc">Empty state · Active conversation with inline reel cards</div>
+      </div>
+      <div class="link-arrow">›</div>
+    </a>
+    <a class="link-card" href="screen-settings.html" target="_blank">
+      <div>
+        <div class="link-title">Screen 5 — Settings</div>
+        <div class="link-desc">Profile card · Library & Saving toggles · Privacy</div>
+      </div>
+      <div class="link-arrow">›</div>
+    </a>
+  </div>
+</body>
+</html>

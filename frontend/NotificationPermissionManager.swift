@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import UIKit
 import UserNotifications
@@ -43,7 +44,7 @@ final class NotificationPermissionManager: ObservableObject {
             }
         case .denied:
             if let url = URL(string: UIApplication.openSettingsURLString) {
-                UIApplication.shared.open(url)
+                await UIApplication.shared.open(url)
             }
         case .authorized:
             break

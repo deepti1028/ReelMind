@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home + Inbox Screens</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #110f0c;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .screen-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .label {
+    color: #888; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 12px; text-align: center;
+  }
+  .phone {
+    width: 300px;
+    background: #fefae0;
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow: 0 0 0 2px #d4a373, 0 30px 80px rgba(0,0,0,0.6);
+  }
+  .phone-inner {
+    height: 620px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 24px 4px; font-size: 11px; color: #2c1f0e; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .status-icons { display: flex; gap: 4px; align-items: center; }
+
+  /* ── SHARED FOOTER ── */
+  .footer {
+    display: flex;
+    background: #fefae0;
+    border-top: 1px solid #e9edc9;
+    padding: 8px 0 20px;
+    flex-shrink: 0;
+  }
+  .footer-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .footer-label { font-size: 10px; color: #b8956a; font-weight: 500; }
+  .footer-item.active .footer-label { color: #d4a373; }
+  .footer-icon-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+  .badge {
+    position: absolute; top: -4px; right: -9px;
+    background: #d4a373; color: #fff;
+    font-size: 9px; font-weight: 800;
+    width: 15px; height: 15px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── HOME SCREEN ── */
+  .top-bar {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 6px 20px 12px; flex-shrink: 0;
+  }
+  .title-block h1 { font-size: 28px; font-weight: 700; color: #2c1f0e; line-height: 1.1; }
+  .reel-count { font-size: 13px; color: #b8956a; font-weight: 500; margin-top: 4px; }
+  .reel-count span { color: #d4a373; font-weight: 700; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #d4a373, #9a6a35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #fff;
+    border: 2px solid #e9edc9; margin-top: 4px; flex-shrink: 0;
+  }
+  .banner {
+    margin: 0 14px 12px;
+    background: #faedcd; border: 1px solid #e5d5b8;
+    border-radius: 13px; padding: 10px 13px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .banner-left { display: flex; align-items: center; gap: 8px; }
+  .banner-dot { width: 7px; height: 7px; border-radius: 50%; background: #d4a373; }
+  .banner-text { font-size: 12px; color: #7a5c3a; }
+  .banner-text span { color: #d4a373; font-weight: 700; }
+  .banner-arrow { color: #b8956a; font-size: 14px; }
+  .section-label {
+    padding: 0 20px 8px; font-size: 10px; color: #b8956a;
+    text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; flex-shrink: 0;
+  }
+  .grid-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 14px 10px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; width: 100%; }
+  .cat-card {
+    background: #faedcd; border-radius: 16px; padding: 14px 13px 12px;
+    aspect-ratio: 1; display: flex; flex-direction: column;
+    justify-content: space-between; border: 1px solid #e5d5b8; min-width: 0;
+  }
+  .cat-count { font-size: 34px; font-weight: 800; color: #2c1f0e; line-height: 1; }
+  .cat-name { font-size: 12px; font-weight: 600; color: #5a3e28; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cat-sub { font-size: 10px; color: #c4a882; }
+
+  /* ── INBOX SCREEN ── */
+  .inbox-header {
+    padding: 8px 20px 14px; flex-shrink: 0;
+  }
+  .inbox-header h1 { font-size: 26px; font-weight: 700; color: #2c1f0e; line-height: 1.1; }
+  .inbox-header .subtitle { font-size: 12px; color: #9a7654; margin-top: 5px; line-height: 1.4; }
+  .reel-list { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 14px 10px; }
+  .reel-card {
+    background: #faedcd; border-radius: 14px;
+    margin-bottom: 10px; overflow: hidden;
+    border: 1px solid #e5d5b8;
+  }
+  .reel-card-top {
+    display: flex; align-items: flex-start; gap: 10px; padding: 11px 12px 0;
+  }
+  .reel-thumb {
+    width: 54px; height: 80px; border-radius: 8px;
+    background: #e9edc9; flex-shrink: 0; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .reel-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .reel-thumb-placeholder {
+    width: 100%; height: 100%; background: linear-gradient(160deg, #e9edc9, #ccd5ae);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .reel-meta { flex: 1; min-width: 0; }
+  .reel-creator-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .reel-creator { font-size: 12px; font-weight: 600; color: #d4a373; }
+  .trash-btn {
+    background: none; border: none; cursor: pointer; padding: 2px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .reel-caption {
+    font-size: 11px; color: #9a7654; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .cat-chips {
+    display: flex; gap: 6px; padding: 9px 12px 11px; flex-wrap: wrap;
+  }
+  .chip {
+    background: #e9edc9; border: 1px solid #ccd5ae; border-radius: 20px;
+    padding: 4px 10px; font-size: 11px; color: #5a3e28; font-weight: 500; cursor: pointer;
+  }
+  .chip.more { color: #b8956a; border-color: #e9edc9; }
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: HOME -->
+<div class="screen-wrap">
+  <div class="label">Screen 1 — Home (Library tab)</div>
+  <div class="phone">
+    <div class="phone-inner">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+      </div>
+      <div class="top-bar">
+        <div class="title-block">
+          <h1>Your library</h1>
+          <div class="reel-count"><span>42</span> reels saved</div>
+        </div>
+        <div class="avatar">D</div>
+      </div>
+      <div class="banner">
+        <div class="banner-left">
+          <div class="banner-dot"></div>
+          <div class="banner-text"><span>3 reels</span> need a category</div>
+        </div>
+        <div class="banner-arrow">›</div>
+      </div>
+      <div class="section-label">Collections</div>
+      <div class="grid-scroll">
+        <div class="grid">
+          <div class="cat-card"><div class="cat-count">24</div><div><div class="cat-name">Skincare</div><div class="cat-sub">Updated 2h ago</div></div></div>
+          <div class="cat-card"><div class="cat-count">11</div><div><div class="cat-name">Haircare</div><div class="cat-sub">Updated 1d ago</div></div></div>
+          <div class="cat-card"><div class="cat-count">7</div><div><div class="cat-name">Bodycare</div><div class="cat-sub">Updated 3d ago</div></div></div>
+          <div class="cat-card"><div class="cat-count">5</div><div><div class="cat-name">Fashion</div><div class="cat-sub">Updated 5d ago</div></div></div>
+          <div class="cat-card"><div class="cat-count">3</div><div><div class="cat-name">Travel</div><div class="cat-sub">Updated 1w ago</div></div></div>
+          <div class="cat-card"><div class="cat-count">2</div><div><div class="cat-name">Fitness</div><div class="cat-sub">Updated 2w ago</div></div></div>
+        </div>
+      </div>
+      <div class="footer">
+        <div class="footer-item active">
+          <div class="footer-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <rect x="2" y="2" width="8" height="8" rx="2" fill="#d4a373"/>
+              <rect x="12" y="2" width="8" height="8" rx="2" fill="#d4a373"/>
+              <rect x="2" y="12" width="8" height="8" rx="2" fill="#d4a373"/>
+              <rect x="12" y="12" width="8" height="8" rx="2" fill="#d4a373"/>
+            </svg>
+          </div>
+          <div class="footer-label" style="color:#d4a373">Library</div>
+        </div>
+        <div class="footer-item">
+          <div class="footer-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M3 14h2.5l1.5 3h10l1.5-3H21v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4z" stroke="#c4a882" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+              <path d="M12 3v9m0 0l-3-3m3 3l3-3" stroke="#c4a882" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="badge">3</div>
+          </div>
+          <div class="footer-label">Inbox</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: INBOX -->
+<div class="screen-wrap">
+  <div class="label">Screen 2 — Inbox tab</div>
+  <div class="phone">
+    <div class="phone-inner">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+      </div>
+      <div class="inbox-header">
+        <h1>Needs a category</h1>
+        <div class="subtitle">The AI wasn't confident about these 3 reels. Pick a home for them.</div>
+      </div>
+      <div class="reel-list">
+
+        <div class="reel-card">
+          <div class="reel-card-top">
+            <div class="reel-thumb"><div class="reel-thumb-placeholder">🎬</div></div>
+            <div class="reel-meta">
+              <div class="reel-creator-row">
+                <div class="reel-creator">@dr.aanchal</div>
+                <button class="trash-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M10 11v5M14 11v5" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="reel-caption">Tokyo cafe tour — five quiet spots in Shibuya for solo afternoons. Hidden gems only locals know about.</div>
+            </div>
+          </div>
+          <div class="cat-chips">
+            <div class="chip">Skincare</div>
+            <div class="chip">Haircare</div>
+            <div class="chip">Bodycare</div>
+            <div class="chip more">+1</div>
+          </div>
+        </div>
+
+        <div class="reel-card">
+          <div class="reel-card-top">
+            <div class="reel-thumb"><div class="reel-thumb-placeholder">🎬</div></div>
+            <div class="reel-meta">
+              <div class="reel-creator-row">
+                <div class="reel-creator">@homecreator</div>
+                <button class="trash-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M10 11v5M14 11v5" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="reel-caption">Minimalist studio apartment makeover — ₹40k budget, IKEA finds and thrift flips.</div>
+            </div>
+          </div>
+          <div class="cat-chips">
+            <div class="chip">Fashion</div>
+            <div class="chip">Travel</div>
+            <div class="chip">Fitness</div>
+          </div>
+        </div>
+
+        <div class="reel-card">
+          <div class="reel-card-top">
+            <div class="reel-thumb"><div class="reel-thumb-placeholder">🎬</div></div>
+            <div class="reel-meta">
+              <div class="reel-creator-row">
+                <div class="reel-creator">@skinwithkrina</div>
+                <button class="trash-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M10 11v5M14 11v5" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="reel-caption">Niacinamide at 2%, vitamin C can actually be layered. The myth is finally busted.</div>
+            </div>
+          </div>
+          <div class="cat-chips">
+            <div class="chip">Skincare</div>
+            <div class="chip">Bodycare</div>
+          </div>
+        </div>
+
+      </div>
+      <div class="footer">
+        <div class="footer-item">
+          <div class="footer-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <rect x="2" y="2" width="8" height="8" rx="2" fill="#c4a882"/>
+              <rect x="12" y="2" width="8" height="8" rx="2" fill="#c4a882"/>
+              <rect x="2" y="12" width="8" height="8" rx="2" fill="#c4a882"/>
+              <rect x="12" y="12" width="8" height="8" rx="2" fill="#c4a882"/>
+            </svg>
+          </div>
+          <div class="footer-label">Library</div>
+        </div>
+        <div class="footer-item active">
+          <div class="footer-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M3 14h2.5l1.5 3h10l1.5-3H21v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4z" stroke="#d4a373" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+              <path d="M12 3v9m0 0l-3-3m3 3l3-3" stroke="#d4a373" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="footer-label" style="color:#d4a373">Inbox</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
-import SwiftUI
 import Combine
+import SwiftUI
+import UIKit
 
 @MainActor
 private final class CategoryDetailViewModel: ObservableObject {

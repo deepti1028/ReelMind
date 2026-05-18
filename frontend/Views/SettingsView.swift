@@ -1,5 +1,6 @@
 import Auth
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @EnvironmentObject private var auth: AuthSession

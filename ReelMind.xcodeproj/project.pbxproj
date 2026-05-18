@@ -8,6 +8,48 @@
 
 /* Begin PBXBuildFile section */
 		C6CE218630ECEC5D2366EE03 /* Pods_ReelMind.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 408B929B51002F4186F29C60 /* Pods_ReelMind.framework */; };
+		DE0E6A142FBB4F5D00CFD088 /* OnboardingHowItWorksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A062FBB4F5D00CFD088 /* OnboardingHowItWorksView.swift */; };
+		DE0E6A152FBB4F5D00CFD088 /* ProfileAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A0C2FBB4F5D00CFD088 /* ProfileAPI.swift */; };
+		DE0E6A162FBB4F5D00CFD088 /* OnboardingFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A052FBB4F5D00CFD088 /* OnboardingFlow.swift */; };
+		DE0E6A172FBB4F5D00CFD088 /* ThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69F52FBB4F5D00CFD088 /* ThumbnailView.swift */; };
+		DE0E6A182FBB4F5D00CFD088 /* EmptyReelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69E62FBB4F5D00CFD088 /* EmptyReelsView.swift */; };
+		DE0E6A192FBB4F5D00CFD088 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69E12FBB4F5D00CFD088 /* Category.swift */; };
+		DE0E6A1A2FBB4F5D00CFD088 /* ShareSheetPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A102FBB4F5D00CFD088 /* ShareSheetPresenter.swift */; };
+		DE0E6A1B2FBB4F5D00CFD088 /* Reel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69E72FBB4F5D00CFD088 /* Reel.swift */; };
+		DE0E6A1C2FBB4F5D00CFD088 /* SignupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A112FBB4F5D00CFD088 /* SignupView.swift */; };
+		DE0E6A1D2FBB4F5D00CFD088 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A002FBB4F5D00CFD088 /* ContentView.swift */; };
+		DE0E6A1E2FBB4F5D00CFD088 /* ReelsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69EA2FBB4F5D00CFD088 /* ReelsService.swift */; };
+		DE0E6A1F2FBB4F5D00CFD088 /* AuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69FE2FBB4F5D00CFD088 /* AuthSession.swift */; };
+		DE0E6A202FBB4F5D00CFD088 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A0F2FBB4F5D00CFD088 /* RootView.swift */; };
+		DE0E6A212FBB4F5D00CFD088 /* OnboardingShareTutorialView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A092FBB4F5D00CFD088 /* OnboardingShareTutorialView.swift */; };
+		DE0E6A222FBB4F5D00CFD088 /* OnboardingCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A042FBB4F5D00CFD088 /* OnboardingCompleteView.swift */; };
+		DE0E6A232FBB4F5D00CFD088 /* FooterTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69F32FBB4F5D00CFD088 /* FooterTabBar.swift */; };
+		DE0E6A242FBB4F5D00CFD088 /* OnboardingSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A0A2FBB4F5D00CFD088 /* OnboardingSplashView.swift */; };
+		DE0E6A252FBB4F5D00CFD088 /* ReelCategoryAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A0D2FBB4F5D00CFD088 /* ReelCategoryAPI.swift */; };
+		DE0E6A262FBB4F5D00CFD088 /* ReelMindApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A0E2FBB4F5D00CFD088 /* ReelMindApp.swift */; };
+		DE0E6A272FBB4F5D00CFD088 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69ED2FBB4F5D00CFD088 /* AppTheme.swift */; };
+		DE0E6A282FBB4F5D00CFD088 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69EF2FBB4F5D00CFD088 /* Extensions.swift */; };
+		DE0E6A292FBB4F5D00CFD088 /* CategoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69F72FBB4F5D00CFD088 /* CategoryDetailView.swift */; };
+		DE0E6A2A2FBB4F5D00CFD088 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69F82FBB4F5D00CFD088 /* ChatView.swift */; };
+		DE0E6A2B2FBB4F5D00CFD088 /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69E32FBB4F5D00CFD088 /* ChatService.swift */; };
+		DE0E6A2C2FBB4F5D00CFD088 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69F12FBB4F5D00CFD088 /* AppViewModel.swift */; };
+		DE0E6A2D2FBB4F5D00CFD088 /* ReelsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69E92FBB4F5D00CFD088 /* ReelsListView.swift */; };
+		DE0E6A2E2FBB4F5D00CFD088 /* OnboardingTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A0B2FBB4F5D00CFD088 /* OnboardingTheme.swift */; };
+		DE0E6A2F2FBB4F5D00CFD088 /* LibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69E42FBB4F5D00CFD088 /* LibraryService.swift */; };
+		DE0E6A302FBB4F5D00CFD088 /* NotificationPermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A032FBB4F5D00CFD088 /* NotificationPermissionManager.swift */; };
+		DE0E6A312FBB4F5D00CFD088 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69FA2FBB4F5D00CFD088 /* LibraryView.swift */; };
+		DE0E6A322FBB4F5D00CFD088 /* OnboardingPermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A082FBB4F5D00CFD088 /* OnboardingPermissionsView.swift */; };
+		DE0E6A332FBB4F5D00CFD088 /* OnboardingOrganizingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A072FBB4F5D00CFD088 /* OnboardingOrganizingView.swift */; };
+		DE0E6A342FBB4F5D00CFD088 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69FB2FBB4F5D00CFD088 /* SettingsView.swift */; };
+		DE0E6A352FBB4F5D00CFD088 /* CategoriseReelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69FF2FBB4F5D00CFD088 /* CategoriseReelView.swift */; };
+		DE0E6A362FBB4F5D00CFD088 /* ReelCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69F42FBB4F5D00CFD088 /* ReelCardView.swift */; };
+		DE0E6A372FBB4F5D00CFD088 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A022FBB4F5D00CFD088 /* LoginView.swift */; };
+		DE0E6A382FBB4F5D00CFD088 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6A122FBB4F5D00CFD088 /* SupabaseManager.swift */; };
+		DE0E6A392FBB4F5D00CFD088 /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69F92FBB4F5D00CFD088 /* InboxView.swift */; };
+		DE0E6A3A2FBB4F5D00CFD088 /* ReelsTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69EB2FBB4F5D00CFD088 /* ReelsTheme.swift */; };
+		DE0E6A3B2FBB4F5D00CFD088 /* ReelsHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69E82FBB4F5D00CFD088 /* ReelsHomeView.swift */; };
+		DE0E6A3C2FBB4F5D00CFD088 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DE0E69FD2FBB4F5D00CFD088 /* Assets.xcassets */; };
+		DE0E6A3D2FBB4F5D00CFD088 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DE0E6A012FBB4F5D00CFD088 /* GoogleService-Info.plist */; };
 		DE4AACD02FAE2D9700C72FB2 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACCF2FAE2D9700C72FB2 /* Auth */; };
 		DE4AACD22FAE2D9700C72FB2 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACD12FAE2D9700C72FB2 /* Functions */; };
 		DE4AACD42FAE2D9700C72FB2 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACD32FAE2D9700C72FB2 /* PostgREST */; };
@@ -15,6 +57,48 @@
 		DE4AACD82FAE2D9700C72FB2 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACD72FAE2D9700C72FB2 /* Storage */; };
 		DE4AACE42FAE332900C72FB2 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACE32FAE332900C72FB2 /* Supabase */; };
 		DE4FFF112FA4C0F7009193DB /* URL Sharing module.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DE4FFF072FA4C0F7009193DB /* URL Sharing module.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		DE7911B52FBB5060002C0A28 /* SignupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911B22FBB5060002C0A28 /* SignupView.swift */; };
+		DE7911B62FBB5060002C0A28 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911A12FBB5060002C0A28 /* ContentView.swift */; };
+		DE7911B72FBB5060002C0A28 /* OnboardingTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911AC2FBB5060002C0A28 /* OnboardingTheme.swift */; };
+		DE7911B82FBB5060002C0A28 /* ReelCategoryAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911AE2FBB5060002C0A28 /* ReelCategoryAPI.swift */; };
+		DE7911B92FBB5060002C0A28 /* ChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911842FBB5060002C0A28 /* ChatService.swift */; };
+		DE7911BA2FBB5060002C0A28 /* ReelsTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE79118C2FBB5060002C0A28 /* ReelsTheme.swift */; };
+		DE7911BB2FBB5060002C0A28 /* ProfileAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911AD2FBB5060002C0A28 /* ProfileAPI.swift */; };
+		DE7911BC2FBB5060002C0A28 /* ThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911962FBB5060002C0A28 /* ThumbnailView.swift */; };
+		DE7911BD2FBB5060002C0A28 /* OnboardingShareTutorialView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911AA2FBB5060002C0A28 /* OnboardingShareTutorialView.swift */; };
+		DE7911BE2FBB5060002C0A28 /* Reel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911882FBB5060002C0A28 /* Reel.swift */; };
+		DE7911BF2FBB5060002C0A28 /* ReelCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911952FBB5060002C0A28 /* ReelCardView.swift */; };
+		DE7911C02FBB5060002C0A28 /* ReelsHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911892FBB5060002C0A28 /* ReelsHomeView.swift */; };
+		DE7911C12FBB5060002C0A28 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911992FBB5060002C0A28 /* ChatView.swift */; };
+		DE7911C22FBB5060002C0A28 /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE79119A2FBB5060002C0A28 /* InboxView.swift */; };
+		DE7911C32FBB5060002C0A28 /* EmptyReelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911872FBB5060002C0A28 /* EmptyReelsView.swift */; };
+		DE7911C42FBB5060002C0A28 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911B02FBB5060002C0A28 /* RootView.swift */; };
+		DE7911C52FBB5060002C0A28 /* NotificationPermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911A42FBB5060002C0A28 /* NotificationPermissionManager.swift */; };
+		DE7911C62FBB5060002C0A28 /* CategoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911982FBB5060002C0A28 /* CategoryDetailView.swift */; };
+		DE7911C72FBB5060002C0A28 /* CategoriseReelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911A02FBB5060002C0A28 /* CategoriseReelView.swift */; };
+		DE7911C82FBB5060002C0A28 /* OnboardingOrganizingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911A82FBB5060002C0A28 /* OnboardingOrganizingView.swift */; };
+		DE7911C92FBB5060002C0A28 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE79118E2FBB5060002C0A28 /* AppTheme.swift */; };
+		DE7911CA2FBB5060002C0A28 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911902FBB5060002C0A28 /* Extensions.swift */; };
+		DE7911CB2FBB5060002C0A28 /* OnboardingSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911AB2FBB5060002C0A28 /* OnboardingSplashView.swift */; };
+		DE7911CC2FBB5060002C0A28 /* FooterTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911942FBB5060002C0A28 /* FooterTabBar.swift */; };
+		DE7911CD2FBB5060002C0A28 /* ShareSheetPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911B12FBB5060002C0A28 /* ShareSheetPresenter.swift */; };
+		DE7911CE2FBB5060002C0A28 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911822FBB5060002C0A28 /* Category.swift */; };
+		DE7911CF2FBB5060002C0A28 /* ReelMindApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911AF2FBB5060002C0A28 /* ReelMindApp.swift */; };
+		DE7911D02FBB5060002C0A28 /* OnboardingFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911A62FBB5060002C0A28 /* OnboardingFlow.swift */; };
+		DE7911D12FBB5060002C0A28 /* ReelsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE79118B2FBB5060002C0A28 /* ReelsService.swift */; };
+		DE7911D22FBB5060002C0A28 /* OnboardingCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911A52FBB5060002C0A28 /* OnboardingCompleteView.swift */; };
+		DE7911D32FBB5060002C0A28 /* ReelsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE79118A2FBB5060002C0A28 /* ReelsListView.swift */; };
+		DE7911D42FBB5060002C0A28 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE79119B2FBB5060002C0A28 /* LibraryView.swift */; };
+		DE7911D52FBB5060002C0A28 /* OnboardingPermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911A92FBB5060002C0A28 /* OnboardingPermissionsView.swift */; };
+		DE7911D62FBB5060002C0A28 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911922FBB5060002C0A28 /* AppViewModel.swift */; };
+		DE7911D72FBB5060002C0A28 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE79119C2FBB5060002C0A28 /* SettingsView.swift */; };
+		DE7911D82FBB5060002C0A28 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911A32FBB5060002C0A28 /* LoginView.swift */; };
+		DE7911D92FBB5060002C0A28 /* AuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE79119F2FBB5060002C0A28 /* AuthSession.swift */; };
+		DE7911DA2FBB5060002C0A28 /* OnboardingHowItWorksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911A72FBB5060002C0A28 /* OnboardingHowItWorksView.swift */; };
+		DE7911DB2FBB5060002C0A28 /* LibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911852FBB5060002C0A28 /* LibraryService.swift */; };
+		DE7911DC2FBB5060002C0A28 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911B32FBB5060002C0A28 /* SupabaseManager.swift */; };
+		DE7911DD2FBB5060002C0A28 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DE79119E2FBB5060002C0A28 /* Assets.xcassets */; };
+		DE7911DE2FBB5060002C0A28 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DE7911A22FBB5060002C0A28 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,10 +129,94 @@
 		408B929B51002F4186F29C60 /* Pods_ReelMind.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ReelMind.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F0371F9ED165EF2E2D1B549 /* Pods-ReelMind.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ReelMind.debug.xcconfig"; path = "Target Support Files/Pods-ReelMind/Pods-ReelMind.debug.xcconfig"; sourceTree = "<group>"; };
 		93C7CABF7C81DE4DE03EB5A3 /* Pods-ReelMind.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ReelMind.release.xcconfig"; path = "Target Support Files/Pods-ReelMind/Pods-ReelMind.release.xcconfig"; sourceTree = "<group>"; };
+		DE0E69E12FBB4F5D00CFD088 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
+		DE0E69E32FBB4F5D00CFD088 /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
+		DE0E69E42FBB4F5D00CFD088 /* LibraryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryService.swift; sourceTree = "<group>"; };
+		DE0E69E62FBB4F5D00CFD088 /* EmptyReelsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyReelsView.swift; sourceTree = "<group>"; };
+		DE0E69E72FBB4F5D00CFD088 /* Reel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reel.swift; sourceTree = "<group>"; };
+		DE0E69E82FBB4F5D00CFD088 /* ReelsHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelsHomeView.swift; sourceTree = "<group>"; };
+		DE0E69E92FBB4F5D00CFD088 /* ReelsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelsListView.swift; sourceTree = "<group>"; };
+		DE0E69EA2FBB4F5D00CFD088 /* ReelsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelsService.swift; sourceTree = "<group>"; };
+		DE0E69EB2FBB4F5D00CFD088 /* ReelsTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelsTheme.swift; sourceTree = "<group>"; };
+		DE0E69ED2FBB4F5D00CFD088 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		DE0E69EF2FBB4F5D00CFD088 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		DE0E69F12FBB4F5D00CFD088 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
+		DE0E69F32FBB4F5D00CFD088 /* FooterTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FooterTabBar.swift; sourceTree = "<group>"; };
+		DE0E69F42FBB4F5D00CFD088 /* ReelCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelCardView.swift; sourceTree = "<group>"; };
+		DE0E69F52FBB4F5D00CFD088 /* ThumbnailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailView.swift; sourceTree = "<group>"; };
+		DE0E69F72FBB4F5D00CFD088 /* CategoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryDetailView.swift; sourceTree = "<group>"; };
+		DE0E69F82FBB4F5D00CFD088 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		DE0E69F92FBB4F5D00CFD088 /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
+		DE0E69FA2FBB4F5D00CFD088 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		DE0E69FB2FBB4F5D00CFD088 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		DE0E69FD2FBB4F5D00CFD088 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DE0E69FE2FBB4F5D00CFD088 /* AuthSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSession.swift; sourceTree = "<group>"; };
+		DE0E69FF2FBB4F5D00CFD088 /* CategoriseReelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriseReelView.swift; sourceTree = "<group>"; };
+		DE0E6A002FBB4F5D00CFD088 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		DE0E6A012FBB4F5D00CFD088 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		DE0E6A022FBB4F5D00CFD088 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		DE0E6A032FBB4F5D00CFD088 /* NotificationPermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPermissionManager.swift; sourceTree = "<group>"; };
+		DE0E6A042FBB4F5D00CFD088 /* OnboardingCompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCompleteView.swift; sourceTree = "<group>"; };
+		DE0E6A052FBB4F5D00CFD088 /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
+		DE0E6A062FBB4F5D00CFD088 /* OnboardingHowItWorksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingHowItWorksView.swift; sourceTree = "<group>"; };
+		DE0E6A072FBB4F5D00CFD088 /* OnboardingOrganizingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingOrganizingView.swift; sourceTree = "<group>"; };
+		DE0E6A082FBB4F5D00CFD088 /* OnboardingPermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPermissionsView.swift; sourceTree = "<group>"; };
+		DE0E6A092FBB4F5D00CFD088 /* OnboardingShareTutorialView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShareTutorialView.swift; sourceTree = "<group>"; };
+		DE0E6A0A2FBB4F5D00CFD088 /* OnboardingSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingSplashView.swift; sourceTree = "<group>"; };
+		DE0E6A0B2FBB4F5D00CFD088 /* OnboardingTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTheme.swift; sourceTree = "<group>"; };
+		DE0E6A0C2FBB4F5D00CFD088 /* ProfileAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileAPI.swift; sourceTree = "<group>"; };
+		DE0E6A0D2FBB4F5D00CFD088 /* ReelCategoryAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelCategoryAPI.swift; sourceTree = "<group>"; };
+		DE0E6A0E2FBB4F5D00CFD088 /* ReelMindApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelMindApp.swift; sourceTree = "<group>"; };
+		DE0E6A0F2FBB4F5D00CFD088 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		DE0E6A102FBB4F5D00CFD088 /* ShareSheetPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheetPresenter.swift; sourceTree = "<group>"; };
+		DE0E6A112FBB4F5D00CFD088 /* SignupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignupView.swift; sourceTree = "<group>"; };
+		DE0E6A122FBB4F5D00CFD088 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
 		DE3C69CC2FA910EF006166C4 /* ReelMind-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "ReelMind-Info.plist"; sourceTree = "<group>"; };
 		DE3C69CE2FAA358E006166C4 /* ReelMind.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReelMind.entitlements; sourceTree = "<group>"; };
 		DE4FFEF52FA4B87D009193DB /* ReelMind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReelMind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DE4FFF072FA4C0F7009193DB /* URL Sharing module.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "URL Sharing module.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		DE7911822FBB5060002C0A28 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
+		DE7911842FBB5060002C0A28 /* ChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatService.swift; sourceTree = "<group>"; };
+		DE7911852FBB5060002C0A28 /* LibraryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryService.swift; sourceTree = "<group>"; };
+		DE7911872FBB5060002C0A28 /* EmptyReelsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyReelsView.swift; sourceTree = "<group>"; };
+		DE7911882FBB5060002C0A28 /* Reel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reel.swift; sourceTree = "<group>"; };
+		DE7911892FBB5060002C0A28 /* ReelsHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelsHomeView.swift; sourceTree = "<group>"; };
+		DE79118A2FBB5060002C0A28 /* ReelsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelsListView.swift; sourceTree = "<group>"; };
+		DE79118B2FBB5060002C0A28 /* ReelsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelsService.swift; sourceTree = "<group>"; };
+		DE79118C2FBB5060002C0A28 /* ReelsTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelsTheme.swift; sourceTree = "<group>"; };
+		DE79118E2FBB5060002C0A28 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		DE7911902FBB5060002C0A28 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		DE7911922FBB5060002C0A28 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
+		DE7911942FBB5060002C0A28 /* FooterTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FooterTabBar.swift; sourceTree = "<group>"; };
+		DE7911952FBB5060002C0A28 /* ReelCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelCardView.swift; sourceTree = "<group>"; };
+		DE7911962FBB5060002C0A28 /* ThumbnailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailView.swift; sourceTree = "<group>"; };
+		DE7911982FBB5060002C0A28 /* CategoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryDetailView.swift; sourceTree = "<group>"; };
+		DE7911992FBB5060002C0A28 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		DE79119A2FBB5060002C0A28 /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
+		DE79119B2FBB5060002C0A28 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		DE79119C2FBB5060002C0A28 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		DE79119E2FBB5060002C0A28 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DE79119F2FBB5060002C0A28 /* AuthSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSession.swift; sourceTree = "<group>"; };
+		DE7911A02FBB5060002C0A28 /* CategoriseReelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriseReelView.swift; sourceTree = "<group>"; };
+		DE7911A12FBB5060002C0A28 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		DE7911A22FBB5060002C0A28 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		DE7911A32FBB5060002C0A28 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		DE7911A42FBB5060002C0A28 /* NotificationPermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPermissionManager.swift; sourceTree = "<group>"; };
+		DE7911A52FBB5060002C0A28 /* OnboardingCompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCompleteView.swift; sourceTree = "<group>"; };
+		DE7911A62FBB5060002C0A28 /* OnboardingFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlow.swift; sourceTree = "<group>"; };
+		DE7911A72FBB5060002C0A28 /* OnboardingHowItWorksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingHowItWorksView.swift; sourceTree = "<group>"; };
+		DE7911A82FBB5060002C0A28 /* OnboardingOrganizingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingOrganizingView.swift; sourceTree = "<group>"; };
+		DE7911A92FBB5060002C0A28 /* OnboardingPermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPermissionsView.swift; sourceTree = "<group>"; };
+		DE7911AA2FBB5060002C0A28 /* OnboardingShareTutorialView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingShareTutorialView.swift; sourceTree = "<group>"; };
+		DE7911AB2FBB5060002C0A28 /* OnboardingSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingSplashView.swift; sourceTree = "<group>"; };
+		DE7911AC2FBB5060002C0A28 /* OnboardingTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTheme.swift; sourceTree = "<group>"; };
+		DE7911AD2FBB5060002C0A28 /* ProfileAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileAPI.swift; sourceTree = "<group>"; };
+		DE7911AE2FBB5060002C0A28 /* ReelCategoryAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelCategoryAPI.swift; sourceTree = "<group>"; };
+		DE7911AF2FBB5060002C0A28 /* ReelMindApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelMindApp.swift; sourceTree = "<group>"; };
+		DE7911B02FBB5060002C0A28 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		DE7911B12FBB5060002C0A28 /* ShareSheetPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheetPresenter.swift; sourceTree = "<group>"; };
+		DE7911B22FBB5060002C0A28 /* SignupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignupView.swift; sourceTree = "<group>"; };
+		DE7911B32FBB5060002C0A28 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -110,9 +278,124 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		DE0E69E22FBB4F5D00CFD088 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				DE0E69E12FBB4F5D00CFD088 /* Category.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		DE0E69E52FBB4F5D00CFD088 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				DE0E69E32FBB4F5D00CFD088 /* ChatService.swift */,
+				DE0E69E42FBB4F5D00CFD088 /* LibraryService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		DE0E69EC2FBB4F5D00CFD088 /* TempReels */ = {
+			isa = PBXGroup;
+			children = (
+				DE0E69E62FBB4F5D00CFD088 /* EmptyReelsView.swift */,
+				DE0E69E72FBB4F5D00CFD088 /* Reel.swift */,
+				DE0E69E82FBB4F5D00CFD088 /* ReelsHomeView.swift */,
+				DE0E69E92FBB4F5D00CFD088 /* ReelsListView.swift */,
+				DE0E69EA2FBB4F5D00CFD088 /* ReelsService.swift */,
+				DE0E69EB2FBB4F5D00CFD088 /* ReelsTheme.swift */,
+			);
+			path = TempReels;
+			sourceTree = "<group>";
+		};
+		DE0E69EE2FBB4F5D00CFD088 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				DE0E69ED2FBB4F5D00CFD088 /* AppTheme.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		DE0E69F02FBB4F5D00CFD088 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				DE0E69EF2FBB4F5D00CFD088 /* Extensions.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		DE0E69F22FBB4F5D00CFD088 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				DE0E69F12FBB4F5D00CFD088 /* AppViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		DE0E69F62FBB4F5D00CFD088 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				DE0E69F32FBB4F5D00CFD088 /* FooterTabBar.swift */,
+				DE0E69F42FBB4F5D00CFD088 /* ReelCardView.swift */,
+				DE0E69F52FBB4F5D00CFD088 /* ThumbnailView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		DE0E69FC2FBB4F5D00CFD088 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				DE0E69F62FBB4F5D00CFD088 /* Components */,
+				DE0E69F72FBB4F5D00CFD088 /* CategoryDetailView.swift */,
+				DE0E69F82FBB4F5D00CFD088 /* ChatView.swift */,
+				DE0E69F92FBB4F5D00CFD088 /* InboxView.swift */,
+				DE0E69FA2FBB4F5D00CFD088 /* LibraryView.swift */,
+				DE0E69FB2FBB4F5D00CFD088 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		DE0E6A132FBB4F5D00CFD088 /* frontend */ = {
+			isa = PBXGroup;
+			children = (
+				DE0E69E22FBB4F5D00CFD088 /* Models */,
+				DE0E69E52FBB4F5D00CFD088 /* Services */,
+				DE0E69EC2FBB4F5D00CFD088 /* TempReels */,
+				DE0E69EE2FBB4F5D00CFD088 /* Theme */,
+				DE0E69F02FBB4F5D00CFD088 /* Utils */,
+				DE0E69F22FBB4F5D00CFD088 /* ViewModels */,
+				DE0E69FC2FBB4F5D00CFD088 /* Views */,
+				DE0E69FD2FBB4F5D00CFD088 /* Assets.xcassets */,
+				DE0E69FE2FBB4F5D00CFD088 /* AuthSession.swift */,
+				DE0E69FF2FBB4F5D00CFD088 /* CategoriseReelView.swift */,
+				DE0E6A002FBB4F5D00CFD088 /* ContentView.swift */,
+				DE0E6A012FBB4F5D00CFD088 /* GoogleService-Info.plist */,
+				DE0E6A022FBB4F5D00CFD088 /* LoginView.swift */,
+				DE0E6A032FBB4F5D00CFD088 /* NotificationPermissionManager.swift */,
+				DE0E6A042FBB4F5D00CFD088 /* OnboardingCompleteView.swift */,
+				DE0E6A052FBB4F5D00CFD088 /* OnboardingFlow.swift */,
+				DE0E6A062FBB4F5D00CFD088 /* OnboardingHowItWorksView.swift */,
+				DE0E6A072FBB4F5D00CFD088 /* OnboardingOrganizingView.swift */,
+				DE0E6A082FBB4F5D00CFD088 /* OnboardingPermissionsView.swift */,
+				DE0E6A092FBB4F5D00CFD088 /* OnboardingShareTutorialView.swift */,
+				DE0E6A0A2FBB4F5D00CFD088 /* OnboardingSplashView.swift */,
+				DE0E6A0B2FBB4F5D00CFD088 /* OnboardingTheme.swift */,
+				DE0E6A0C2FBB4F5D00CFD088 /* ProfileAPI.swift */,
+				DE0E6A0D2FBB4F5D00CFD088 /* ReelCategoryAPI.swift */,
+				DE0E6A0E2FBB4F5D00CFD088 /* ReelMindApp.swift */,
+				DE0E6A0F2FBB4F5D00CFD088 /* RootView.swift */,
+				DE0E6A102FBB4F5D00CFD088 /* ShareSheetPresenter.swift */,
+				DE0E6A112FBB4F5D00CFD088 /* SignupView.swift */,
+				DE0E6A122FBB4F5D00CFD088 /* SupabaseManager.swift */,
+			);
+			path = frontend;
+			sourceTree = "<group>";
+		};
 		DE4FFEEC2FA4B87D009193DB = {
 			isa = PBXGroup;
 			children = (
+				DE7911B42FBB5060002C0A28 /* frontend */,
+				DE0E6A132FBB4F5D00CFD088 /* frontend */,
 				DE3C69CE2FAA358E006166C4 /* ReelMind.entitlements */,
 				DE3C69CC2FA910EF006166C4 /* ReelMind-Info.plist */,
 				DE4FFEF72FA4B87D009193DB /* frontend */,
@@ -130,6 +413,119 @@
 				DE4FFF072FA4C0F7009193DB /* URL Sharing module.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		DE7911832FBB5060002C0A28 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				DE7911822FBB5060002C0A28 /* Category.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		DE7911862FBB5060002C0A28 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				DE7911842FBB5060002C0A28 /* ChatService.swift */,
+				DE7911852FBB5060002C0A28 /* LibraryService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		DE79118D2FBB5060002C0A28 /* TempReels */ = {
+			isa = PBXGroup;
+			children = (
+				DE7911872FBB5060002C0A28 /* EmptyReelsView.swift */,
+				DE7911882FBB5060002C0A28 /* Reel.swift */,
+				DE7911892FBB5060002C0A28 /* ReelsHomeView.swift */,
+				DE79118A2FBB5060002C0A28 /* ReelsListView.swift */,
+				DE79118B2FBB5060002C0A28 /* ReelsService.swift */,
+				DE79118C2FBB5060002C0A28 /* ReelsTheme.swift */,
+			);
+			path = TempReels;
+			sourceTree = "<group>";
+		};
+		DE79118F2FBB5060002C0A28 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				DE79118E2FBB5060002C0A28 /* AppTheme.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		DE7911912FBB5060002C0A28 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				DE7911902FBB5060002C0A28 /* Extensions.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		DE7911932FBB5060002C0A28 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				DE7911922FBB5060002C0A28 /* AppViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		DE7911972FBB5060002C0A28 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				DE7911942FBB5060002C0A28 /* FooterTabBar.swift */,
+				DE7911952FBB5060002C0A28 /* ReelCardView.swift */,
+				DE7911962FBB5060002C0A28 /* ThumbnailView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		DE79119D2FBB5060002C0A28 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				DE7911972FBB5060002C0A28 /* Components */,
+				DE7911982FBB5060002C0A28 /* CategoryDetailView.swift */,
+				DE7911992FBB5060002C0A28 /* ChatView.swift */,
+				DE79119A2FBB5060002C0A28 /* InboxView.swift */,
+				DE79119B2FBB5060002C0A28 /* LibraryView.swift */,
+				DE79119C2FBB5060002C0A28 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		DE7911B42FBB5060002C0A28 /* frontend */ = {
+			isa = PBXGroup;
+			children = (
+				DE7911832FBB5060002C0A28 /* Models */,
+				DE7911862FBB5060002C0A28 /* Services */,
+				DE79118D2FBB5060002C0A28 /* TempReels */,
+				DE79118F2FBB5060002C0A28 /* Theme */,
+				DE7911912FBB5060002C0A28 /* Utils */,
+				DE7911932FBB5060002C0A28 /* ViewModels */,
+				DE79119D2FBB5060002C0A28 /* Views */,
+				DE79119E2FBB5060002C0A28 /* Assets.xcassets */,
+				DE79119F2FBB5060002C0A28 /* AuthSession.swift */,
+				DE7911A02FBB5060002C0A28 /* CategoriseReelView.swift */,
+				DE7911A12FBB5060002C0A28 /* ContentView.swift */,
+				DE7911A22FBB5060002C0A28 /* GoogleService-Info.plist */,
+				DE7911A32FBB5060002C0A28 /* LoginView.swift */,
+				DE7911A42FBB5060002C0A28 /* NotificationPermissionManager.swift */,
+				DE7911A52FBB5060002C0A28 /* OnboardingCompleteView.swift */,
+				DE7911A62FBB5060002C0A28 /* OnboardingFlow.swift */,
+				DE7911A72FBB5060002C0A28 /* OnboardingHowItWorksView.swift */,
+				DE7911A82FBB5060002C0A28 /* OnboardingOrganizingView.swift */,
+				DE7911A92FBB5060002C0A28 /* OnboardingPermissionsView.swift */,
+				DE7911AA2FBB5060002C0A28 /* OnboardingShareTutorialView.swift */,
+				DE7911AB2FBB5060002C0A28 /* OnboardingSplashView.swift */,
+				DE7911AC2FBB5060002C0A28 /* OnboardingTheme.swift */,
+				DE7911AD2FBB5060002C0A28 /* ProfileAPI.swift */,
+				DE7911AE2FBB5060002C0A28 /* ReelCategoryAPI.swift */,
+				DE7911AF2FBB5060002C0A28 /* ReelMindApp.swift */,
+				DE7911B02FBB5060002C0A28 /* RootView.swift */,
+				DE7911B12FBB5060002C0A28 /* ShareSheetPresenter.swift */,
+				DE7911B22FBB5060002C0A28 /* SignupView.swift */,
+				DE7911B32FBB5060002C0A28 /* SupabaseManager.swift */,
+			);
+			path = frontend;
 			sourceTree = "<group>";
 		};
 		F7D8D602841E5880AFA8E3E6 /* Pods */ = {
@@ -234,6 +630,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DE7911DD2FBB5060002C0A28 /* Assets.xcassets in Resources */,
+				DE7911DE2FBB5060002C0A28 /* GoogleService-Info.plist in Resources */,
+				DE0E6A3C2FBB4F5D00CFD088 /* Assets.xcassets in Resources */,
+				DE0E6A3D2FBB4F5D00CFD088 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -297,6 +697,86 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DE0E6A142FBB4F5D00CFD088 /* OnboardingHowItWorksView.swift in Sources */,
+				DE0E6A152FBB4F5D00CFD088 /* ProfileAPI.swift in Sources */,
+				DE0E6A162FBB4F5D00CFD088 /* OnboardingFlow.swift in Sources */,
+				DE0E6A172FBB4F5D00CFD088 /* ThumbnailView.swift in Sources */,
+				DE0E6A182FBB4F5D00CFD088 /* EmptyReelsView.swift in Sources */,
+				DE0E6A192FBB4F5D00CFD088 /* Category.swift in Sources */,
+				DE0E6A1A2FBB4F5D00CFD088 /* ShareSheetPresenter.swift in Sources */,
+				DE0E6A1B2FBB4F5D00CFD088 /* Reel.swift in Sources */,
+				DE0E6A1C2FBB4F5D00CFD088 /* SignupView.swift in Sources */,
+				DE0E6A1D2FBB4F5D00CFD088 /* ContentView.swift in Sources */,
+				DE0E6A1E2FBB4F5D00CFD088 /* ReelsService.swift in Sources */,
+				DE0E6A1F2FBB4F5D00CFD088 /* AuthSession.swift in Sources */,
+				DE0E6A202FBB4F5D00CFD088 /* RootView.swift in Sources */,
+				DE7911B52FBB5060002C0A28 /* SignupView.swift in Sources */,
+				DE7911B62FBB5060002C0A28 /* ContentView.swift in Sources */,
+				DE7911B72FBB5060002C0A28 /* OnboardingTheme.swift in Sources */,
+				DE7911B82FBB5060002C0A28 /* ReelCategoryAPI.swift in Sources */,
+				DE7911B92FBB5060002C0A28 /* ChatService.swift in Sources */,
+				DE7911BA2FBB5060002C0A28 /* ReelsTheme.swift in Sources */,
+				DE7911BB2FBB5060002C0A28 /* ProfileAPI.swift in Sources */,
+				DE7911BC2FBB5060002C0A28 /* ThumbnailView.swift in Sources */,
+				DE7911BD2FBB5060002C0A28 /* OnboardingShareTutorialView.swift in Sources */,
+				DE7911BE2FBB5060002C0A28 /* Reel.swift in Sources */,
+				DE7911BF2FBB5060002C0A28 /* ReelCardView.swift in Sources */,
+				DE7911C02FBB5060002C0A28 /* ReelsHomeView.swift in Sources */,
+				DE7911C12FBB5060002C0A28 /* ChatView.swift in Sources */,
+				DE7911C22FBB5060002C0A28 /* InboxView.swift in Sources */,
+				DE7911C32FBB5060002C0A28 /* EmptyReelsView.swift in Sources */,
+				DE7911C42FBB5060002C0A28 /* RootView.swift in Sources */,
+				DE7911C52FBB5060002C0A28 /* NotificationPermissionManager.swift in Sources */,
+				DE7911C62FBB5060002C0A28 /* CategoryDetailView.swift in Sources */,
+				DE7911C72FBB5060002C0A28 /* CategoriseReelView.swift in Sources */,
+				DE7911C82FBB5060002C0A28 /* OnboardingOrganizingView.swift in Sources */,
+				DE7911C92FBB5060002C0A28 /* AppTheme.swift in Sources */,
+				DE7911CA2FBB5060002C0A28 /* Extensions.swift in Sources */,
+				DE7911CB2FBB5060002C0A28 /* OnboardingSplashView.swift in Sources */,
+				DE7911CC2FBB5060002C0A28 /* FooterTabBar.swift in Sources */,
+				DE7911CD2FBB5060002C0A28 /* ShareSheetPresenter.swift in Sources */,
+				DE7911CE2FBB5060002C0A28 /* Category.swift in Sources */,
+				DE7911CF2FBB5060002C0A28 /* ReelMindApp.swift in Sources */,
+				DE7911D02FBB5060002C0A28 /* OnboardingFlow.swift in Sources */,
+				DE7911D12FBB5060002C0A28 /* ReelsService.swift in Sources */,
+				DE7911D22FBB5060002C0A28 /* OnboardingCompleteView.swift in Sources */,
+				DE7911D32FBB5060002C0A28 /* ReelsListView.swift in Sources */,
+				DE7911D42FBB5060002C0A28 /* LibraryView.swift in Sources */,
+				DE7911D52FBB5060002C0A28 /* OnboardingPermissionsView.swift in Sources */,
+				DE7911D62FBB5060002C0A28 /* AppViewModel.swift in Sources */,
+				DE7911D72FBB5060002C0A28 /* SettingsView.swift in Sources */,
+				DE7911D82FBB5060002C0A28 /* LoginView.swift in Sources */,
+				DE7911D92FBB5060002C0A28 /* AuthSession.swift in Sources */,
+				DE7911DA2FBB5060002C0A28 /* OnboardingHowItWorksView.swift in Sources */,
+				DE7911DB2FBB5060002C0A28 /* LibraryService.swift in Sources */,
+				DE7911DC2FBB5060002C0A28 /* SupabaseManager.swift in Sources */,
+				DE0E6A212FBB4F5D00CFD088 /* OnboardingShareTutorialView.swift in Sources */,
+				DE0E6A222FBB4F5D00CFD088 /* OnboardingCompleteView.swift in Sources */,
+				DE0E6A232FBB4F5D00CFD088 /* FooterTabBar.swift in Sources */,
+				DE0E6A242FBB4F5D00CFD088 /* OnboardingSplashView.swift in Sources */,
+				DE0E6A252FBB4F5D00CFD088 /* ReelCategoryAPI.swift in Sources */,
+				DE0E6A262FBB4F5D00CFD088 /* ReelMindApp.swift in Sources */,
+				DE0E6A272FBB4F5D00CFD088 /* AppTheme.swift in Sources */,
+				DE0E6A282FBB4F5D00CFD088 /* Extensions.swift in Sources */,
+				DE0E6A292FBB4F5D00CFD088 /* CategoryDetailView.swift in Sources */,
+				DE0E6A2A2FBB4F5D00CFD088 /* ChatView.swift in Sources */,
+				DE0E6A2B2FBB4F5D00CFD088 /* ChatService.swift in Sources */,
+				DE0E6A2C2FBB4F5D00CFD088 /* AppViewModel.swift in Sources */,
+				DE0E6A2D2FBB4F5D00CFD088 /* ReelsListView.swift in Sources */,
+				DE0E6A2E2FBB4F5D00CFD088 /* OnboardingTheme.swift in Sources */,
+				DE0E6A2F2FBB4F5D00CFD088 /* LibraryService.swift in Sources */,
+				DE0E6A302FBB4F5D00CFD088 /* NotificationPermissionManager.swift in Sources */,
+				DE0E6A312FBB4F5D00CFD088 /* LibraryView.swift in Sources */,
+				DE0E6A322FBB4F5D00CFD088 /* OnboardingPermissionsView.swift in Sources */,
+				DE0E6A332FBB4F5D00CFD088 /* OnboardingOrganizingView.swift in Sources */,
+				DE0E6A342FBB4F5D00CFD088 /* SettingsView.swift in Sources */,
+				DE0E6A352FBB4F5D00CFD088 /* CategoriseReelView.swift in Sources */,
+				DE0E6A362FBB4F5D00CFD088 /* ReelCardView.swift in Sources */,
+				DE0E6A372FBB4F5D00CFD088 /* LoginView.swift in Sources */,
+				DE0E6A382FBB4F5D00CFD088 /* SupabaseManager.swift in Sources */,
+				DE0E6A392FBB4F5D00CFD088 /* InboxView.swift in Sources */,
+				DE0E6A3A2FBB4F5D00CFD088 /* ReelsTheme.swift in Sources */,
+				DE0E6A3B2FBB4F5D00CFD088 /* ReelsHomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

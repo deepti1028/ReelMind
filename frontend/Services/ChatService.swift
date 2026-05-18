@@ -1,5 +1,6 @@
 import Auth
 import Foundation
+import Supabase
 
 struct ReelSource: Decodable, Identifiable {
     var id: String { reelId }

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Category Detail Screen</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #110f0c;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .screen-wrap { display: flex; flex-direction: column; align-items: center; }
+  .label { color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; text-align: center; }
+
+  .phone {
+    width: 300px;
+    background: #fefae0;
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow: 0 0 0 2px #d4a373, 0 30px 80px rgba(0,0,0,0.6);
+  }
+  .phone-inner {
+    height: 620px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 24px 4px; font-size: 11px; color: #2c1f0e; font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .nav-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 16px 4px; flex-shrink: 0;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 4px;
+    color: #d4a373; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .cat-header {
+    padding: 4px 16px 12px; flex-shrink: 0;
+    display: flex; align-items: baseline; justify-content: space-between;
+  }
+  .cat-header .nav-title { font-size: 26px; font-weight: 700; color: #2c1f0e; line-height: 1.1; }
+  .cat-header .nav-sub { font-size: 12px; color: #b8956a; }
+  .cat-header .nav-sub span { color: #d4a373; font-weight: 700; }
+
+  .reel-list {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    padding: 0 14px 10px;
+  }
+
+  .reel-card {
+    background: #faedcd;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    border: 1px solid #e5d5b8;
+    overflow: hidden;
+  }
+
+  .card-inner {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 12px;
+  }
+
+  .thumb {
+    width: 58px; height: 88px; border-radius: 8px;
+    background: linear-gradient(160deg, #e9edc9, #ccd5ae);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; overflow: hidden;
+  }
+
+  .card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+
+  .creator-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .creator { font-size: 12px; font-weight: 600; color: #d4a373; }
+  .trash-btn { background: none; border: none; cursor: pointer; padding: 2px; }
+
+  .caption {
+    font-size: 11px; color: #9a7654; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  .hashtags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .hashtag {
+    font-size: 10px; color: #9a6a35; background: rgba(212,163,115,0.12);
+    border-radius: 20px; padding: 2px 7px; font-weight: 500;
+  }
+
+  .card-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px 10px; margin-top: 2px;
+  }
+  .time-ago { font-size: 10px; color: #c4a882; }
+  .watch-hint {
+    font-size: 10px; color: #b8956a;
+    display: flex; align-items: center; gap: 3px;
+  }
+
+  .fab-wrap {
+    position: absolute;
+    bottom: 72px;
+    right: 16px;
+    z-index: 10;
+  }
+  .fab {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #d4a373;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(212,163,115,0.45);
+    cursor: pointer;
+  }
+
+  .footer {
+    display: flex; background: #fefae0; border-top: 1px solid #e9edc9;
+    padding: 8px 0 20px; flex-shrink: 0;
+  }
+  .footer-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .footer-label { font-size: 10px; color: #b8956a; font-weight: 500; }
+  .footer-item.active .footer-label { color: #d4a373; }
+
+  .annotation {
+    background: #1e1c16; border: 1px solid #2e2820; border-radius: 12px;
+    padding: 16px; max-width: 240px; align-self: flex-start; margin-top: 30px;
+  }
+  .annotation h3 { color: #d4a373; font-size: 11px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .annotation li {
+    color: #aaa; font-size: 11px; padding: 5px 0 5px 14px;
+    border-bottom: 1px solid #2a2520; position: relative; line-height: 1.4; list-style: none;
+  }
+  .annotation li::before { content: '✓'; position: absolute; left: 0; color: #d4a373; font-size: 10px; top: 6px; }
+  .annotation li:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<div class="screen-wrap">
+  <div class="label">Screen 3 — Category Detail</div>
+  <div class="phone">
+    <div class="phone-inner">
+
+      <div class="status-bar">
+        <span>9:41</span>
+        <div style="display:flex;gap:4px;font-size:11px"><span>●●●</span><span>WiFi</span><span>100%</span></div>
+      </div>
+
+      <div class="nav-bar">
+        <div class="back-btn">
+          <svg width="8" height="13" viewBox="0 0 8 13" fill="none">
+            <path d="M7 1L1 6.5L7 12" stroke="#d4a373" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Back
+        </div>
+      </div>
+      <div class="cat-header">
+        <div class="nav-title">Skincare</div>
+        <div class="nav-sub"><span>24</span> reels saved</div>
+      </div>
+
+      <div class="reel-list">
+
+        <div class="reel-card">
+          <div class="card-inner">
+            <div class="thumb">🎬</div>
+            <div class="card-body">
+              <div class="creator-row">
+                <div class="creator">@dr.aanchal</div>
+                <button class="trash-btn">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M10 11v5M14 11v5" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="caption">Budget SPF 50+ PA++++ sunscreen that doesn't leave a white cast — tested on NC40 skin tone.</div>
+              <div class="hashtags">
+                <span class="hashtag">#spf</span>
+                <span class="hashtag">#skincare</span>
+                <span class="hashtag">#sunscreen</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="time-ago">2 days ago</div>
+            <div class="watch-hint">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <path d="M7 17L17 7M17 7H7M17 7v10" stroke="#b8956a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              tap to watch
+            </div>
+          </div>
+        </div>
+
+        <div class="reel-card">
+          <div class="card-inner">
+            <div class="thumb">🎬</div>
+            <div class="card-body">
+              <div class="creator-row">
+                <div class="creator">@skinwithkrina</div>
+                <button class="trash-btn">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M10 11v5M14 11v5" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="caption">Niacinamide at 2% + Vitamin C can actually be layered. The myth is finally busted with science.</div>
+              <div class="hashtags">
+                <span class="hashtag">#niacinamide</span>
+                <span class="hashtag">#vitaminc</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="time-ago">5 days ago</div>
+            <div class="watch-hint">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <path d="M7 17L17 7M17 7H7M17 7v10" stroke="#b8956a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              tap to watch
+            </div>
+          </div>
+        </div>
+
+        <div class="reel-card">
+          <div class="card-inner">
+            <div class="thumb">🎬</div>
+            <div class="card-body">
+              <div class="creator-row">
+                <div class="creator">@beautybyria</div>
+                <button class="trash-btn">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M10 11v5M14 11v5" stroke="#cc4444" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="caption">Beginner retinol routine — start at 0.2%, two nights a week. Moisturise the method that works.</div>
+              <div class="hashtags">
+                <span class="hashtag">#retinol</span>
+                <span class="hashtag">#antiaging</span>
+                <span class="hashtag">#routine</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="time-ago">1 week ago</div>
+            <div class="watch-hint">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <path d="M7 17L17 7M17 7H7M17 7v10" stroke="#b8956a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              tap to watch
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="fab-wrap">
+        <div class="fab">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="footer-item active">
+          <div style="position:relative;display:flex;align-items:center;justify-content:center">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <rect x="2" y="2" width="8" height="8" rx="2" fill="#d4a373"/>
+              <rect x="12" y="2" width="8" height="8" rx="2" fill="#d4a373"/>
+              <rect x="2" y="12" width="8" height="8" rx="2" fill="#d4a373"/>
+              <rect x="12" y="12" width="8" height="8" rx="2" fill="#d4a373"/>
+            </svg>
+          </div>
+          <div class="footer-label" style="color:#d4a373">Library</div>
+        </div>
+        <div class="footer-item">
+          <div style="position:relative;display:flex;align-items:center;justify-content:center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M3 14h2.5l1.5 3h10l1.5-3H21v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4z" stroke="#c4a882" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+              <path d="M12 3v9m0 0l-3-3m3 3l3-3" stroke="#c4a882" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="footer-label">Inbox</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="annotation">
+  <h3>From PDF spec</h3>
+  <ul>
+    <li>Back nav + category name + reel count</li>
+    <li>Full DB metadata on each card (creator, caption, hashtags, saved date)</li>
+    <li>Red dustbin icon — far right of creator row</li>
+    <li>Tap card → open in Instagram / Chrome</li>
+    <li>Floating chat FAB — caramel, sticky bottom-right, doesn't scroll away</li>
+    <li>"x days ago" shown as saved date</li>
+  </ul>
+</div>
+
+</body>
+</html>
