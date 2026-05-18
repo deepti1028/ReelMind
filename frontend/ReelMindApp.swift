@@ -18,6 +18,9 @@ extension Notification.Name {
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        // 20 MB memory / 150 MB disk — AsyncImage uses URLSession.shared which reads URLCache.shared.
+        URLCache.shared = URLCache(memoryCapacity: 20_000_000, diskCapacity: 150_000_000)
+
         // Configure Firebase
         FirebaseApp.configure()
 
