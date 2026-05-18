@@ -42,4 +42,39 @@ enum ReelCategoryAPI {
             }
         }.resume()
     }
+
+    /// Async version of `assign` — throws on network failure or non-2xx HTTP status.
+    /// Used by CategoriseReelView where the sheet can show an error to the user.
+    static func assignAsync(reelId: String, categoryName: String?) async throws {
+        guard
+            let defaults = UserDefaults(suiteName: AppConfig.appGroupID),
+            let authToken = defaults.string(forKey: AppConfig.authTokenKey)
+        else {
+            throw URLError(.userAuthenticationRequired)
+        }
+
+        let url = AppConfig.backendBaseURL
+            .appendingPathComponent("api/v1/reels")
+            .appendingPathComponent(reelId)
+            .appendingPathComponent("category")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any?] = ["category_name": categoryName]
+        request.httpBody = try? JSONSerialization.data(
+            withJSONObject: body,
+            options: [.fragmentsAllowed]
+        )
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard
+            let http = response as? HTTPURLResponse,
+            (200...299).contains(http.statusCode)
+        else {
+            throw URLError(.badServerResponse)
+        }
+    }
 }
