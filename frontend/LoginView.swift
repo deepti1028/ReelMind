@@ -27,6 +27,8 @@ struct LoginView: View {
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
+                        .foregroundColor(AppTheme.textPrimary)
+                        .tint(AppTheme.accent)
                         .padding()
                         .background(AppTheme.surface)
                         .cornerRadius(12)
@@ -37,6 +39,8 @@ struct LoginView: View {
 
                     SecureField("Password", text: $password)
                         .textContentType(.password)
+                        .foregroundColor(AppTheme.textPrimary)
+                        .tint(AppTheme.accent)
                         .padding()
                         .background(AppTheme.surface)
                         .cornerRadius(12)

@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<!-- saved from url=(0022)http://localhost:4321/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReelMind — UI Showcase</title>
+<style>
+  :root {
+    --bg:        #fefae0;
+    --surface:   #faedcd;
+    --surfSec:   #e9edc9;
+    --border:    #e5d5b8;
+    --accent:    #d4a373;
+    --accentDk:  #9a6a35;
+    --sage:      #ccd5ae;
+    --txtPrim:   #2c1f0e;
+    --txtSec:    #5a3e28;
+    --txtMuted:  #9a7654;
+    --txtFaint:  #b8956a;
+    --destruct:  #cc4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1a1a1a;
+    color: #fff;
+    padding: 40px 24px;
+    min-height: 100vh;
+  }
+  .page-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .page-sub {
+    text-align: center;
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 48px;
+  }
+
+  /* Section headers */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 20px;
+    margin-top: 48px;
+    padding-left: 4px;
+  }
+
+  /* Grid of phone frames */
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  /* iPhone frame */
+  .phone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .phone-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #aaa;
+    text-align: center;
+    letter-spacing: 0.3px;
+  }
+  .phone-frame {
+    width: 280px;
+    height: 580px;
+    background: #111;
+    border-radius: 44px;
+    padding: 10px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), inset 0 0 0 1px #333;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--txtPrim);
+    flex-shrink: 0;
+  }
+  .status-right { display: flex; gap: 4px; align-items: center; font-size: 10px; }
+  /* Dynamic island */
+  .dynamic-island {
+    width: 90px; height: 24px;
+    background: #111;
+    border-radius: 14px;
+    margin: 0 auto;
+    position: absolute;
+    top: 6px; left: 50%; transform: translateX(-50%);
+    z-index: 10;
+  }
+  /* Home indicator */
+  .home-indicator {
+    height: 4px; width: 100px;
+    background: rgba(44,31,14,0.25);
+    border-radius: 2px;
+    margin: 6px auto 8px;
+    flex-shrink: 0;
+  }
+
+  /* — App-level UI primitives — */
+  .screen-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    color: var(--txtPrim);
+  }
+  .scroll-area { flex: 1; overflow: hidden; }
+
+  .btn-primary {
+    background: var(--accentDk);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    border-radius: 30px;
+    padding: 14px 20px;
+    text-align: center;
+    text-transform: uppercase;
+    margin: 0 20px;
+    box-shadow: 0 4px 14px rgba(154,106,53,0.3);
+  }
+  .btn-ghost {
+    color: var(--txtMuted);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    padding: 8px;
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    display: flex;
+    background: var(--bg);
+    border-top: 1px solid var(--surfSec);
+    padding: 8px 0 16px;
+    flex-shrink: 0;
+  }
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .tab-icon { font-size: 18px; }
+  .tab-label { font-size: 9px; font-weight: 600; }
+  .tab-active { color: var(--accent); }
+  .tab-inactive { color: var(--txtFaint); }
+  .tab-badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 7px;
+    font-weight: 800;
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    top: -2px; right: -6px;
+    margin-right: -13px;
+  }
+
+  /* Typography helpers */
+  .h1 { font-size: 22px; font-weight: 800; color: var(--txtPrim); line-height: 1.15; }
+  .h2 { font-size: 18px; font-weight: 800; color: var(--txtPrim); }
+  .h3 { font-size: 14px; font-weight: 700; color: var(--txtPrim); }
+  .small { font-size: 10px; color: var(--txtFaint); }
+  .muted { font-size: 11px; color: var(--txtMuted); }
+  .label-caps {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--txtFaint);
+  }
+  .accent-text { color: var(--accent); }
+  .serif { font-family: Georgia, serif; }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .card-sm { border-radius: 10px; }
+
+  /* Input field */
+  .input-field {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--txtMuted);
+    margin-bottom: 10px;
+  }
+
+  /* Avatar circle */
+  .avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accentDk));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* Pill badge */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surfSec);
+    border: 1px solid var(--sage);
+    border-radius: 20px;
+    padding: 3px 9px;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--txtSec);
+  }
+  .pill-accent {
+    background: rgba(212,163,115,0.12);
+    border-color: var(--accent);
+    color: var(--accentDk);
+  }
+
+  /* Thumbnail placeholder */
+  .thumb {
+    background: linear-gradient(135deg, var(--surfSec), var(--sage));
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    opacity: 0.7;
+  }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 0 16px; }
+
+  /* Settings row */
+  .settings-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+  }
+  .settings-icon {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: var(--surfSec);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .toggle-pill {
+    width: 36px; height: 20px;
+    border-radius: 10px;
+    background: var(--accent);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .toggle-pill::after {
+    content: '';
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    position: absolute;
+    right: 2px; top: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle-off { background: var(--border); }
+  .toggle-off::after { right: auto; left: 2px; }
+
+  /* Nav bar */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    padding: 4px 16px 6px;
+    flex-shrink: 0;
+  }
+  .nav-back {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .nav-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--txtPrim);
+    flex: 1;
+    text-align: center;
+  }
+
+  /* Chat bubble */
+  .bubble-user {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px 14px 4px 14px;
+    padding: 9px 12px;
+    font-size: 11px;
+    color: var(--txtPrim);
+    align-self: flex-end;
+    max-width: 75%;
+  }
+  .bubble-ai {
+    background: #fff;
+    border: 1px solid var(--surfSec);
+    border-radius: 4px 14px 14px 14px;
+    padding: 10px 12px;
+    font-size: 10px;
+    color: var(--txtSec);
+    line-height: 1.5;
+    max-width: 85%;
+  }
+  .ai-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+  .ai-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--surfSec);
+    border: 1px solid var(--sage);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ai-dot-inner {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* Category card in grid */
+  .cat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .cat-number { font-size: 28px; font-weight: 900; color: var(--txtPrim); }
+  .cat-name { font-size: 10px; font-weight: 700; color: var(--txtSec); }
+  .cat-date { font-size: 8px; color: var(--txtFaint); }
+
+  /* FAB */
+  .fab {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 4px 14px rgba(212,163,115,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #fff;
+    position: absolute;
+    bottom: 68px; right: 14px;
+  }
+
+  /* Inbox banner */
+  .inbox-banner {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin: 0 12px 10px;
+  }
+  .inbox-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  /* Step how-to row */
+  .howto-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+  }
+  .howto-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--surfSec);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  /* Onboarding step card */
+  .ob-step-card {
+    background: #fff;
+    border: 0.5px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 16px;
+    margin: 0 14px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+  }
+  .ob-step-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--surfSec);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ob-icon-circle {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: var(--surfSec);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  /* Permission row */
+  .perm-row {
+    background: #fff;
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin: 0 14px 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .perm-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--surfSec);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  /* Reel card for inbox/detail */
+  .reel-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    margin: 0 12px 8px;
+    overflow: hidden;
+  }
+  .reel-card-body {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px 8px;
+    align-items: flex-start;
+  }
+  .reel-chips {
+    display: flex;
+    gap: 6px;
+    padding: 0 12px 10px;
+    overflow: hidden;
+  }
+  .reel-chip {
+    background: var(--surfSec);
+    border: 1px solid var(--sage);
+    border-radius: 12px;
+    padding: 3px 9px;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--txtSec);
+    white-space: nowrap;
+  }
+  .reel-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 12px 8px;
+    font-size: 9px;
+    color: var(--txtFaint);
+    border-top: 1px solid var(--border);
+  }
+
+  /* Manage categories row */
+  .cat-manage-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+  }
+  .cat-folder-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--surfSec);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--accentDk);
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  /* Reassign sheet */
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 8px auto 12px;
+  }
+
+  /* Typing dots */
+  .typing-dots {
+    display: flex;
+    gap: 3px;
+    padding: 8px 10px;
+    background: #fff;
+    border-radius: 10px;
+    width: fit-content;
+    border: 1px solid var(--surfSec);
+  }
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--txtFaint); }
+
+  /* Chat input bar */
+  .chat-input-bar {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px 18px;
+    background: var(--bg);
+    border-top: 1px solid var(--surfSec);
+    flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 12px;
+    font-size: 10px;
+    color: var(--txtMuted);
+  }
+  .chat-send {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  /* Empty states */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+  .empty-icon { font-size: 36px; opacity: 0.5; }
+</style>
+<style id="highlight-mengshou-style">
+    .highlight-mengshou-wrap {
+        background: #ff9;
+        cursor: pointer;
+    }
+    .highlight-mengshou-wrap.active {
+        background: #ffb;
+    }
+</style></head>
+<body>
+
+<div class="page-title">✦ ReelMind — UI Showcase</div>
+<div class="page-sub">All implemented screens · iOS app</div>
+
+<!-- ─── ONBOARDING ─── -->
+<div class="section-label">Onboarding</div>
+<div class="grid">
+
+  <!-- Splash -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen" style="background:var(--bg);">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content" style="align-items:center; justify-content:center; gap:0; padding:0 20px;">
+          <div style="flex:1"></div>
+          <div style="width:100px;height:100px;border-radius:50%;background:#fff;box-shadow:0 8px 24px rgba(212,163,115,0.15);display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:24px;">✦</div>
+          <div class="label-caps" style="margin-bottom:10px;">Personal Memory</div>
+          <div class="h1 serif" style="font-size:28px;text-align:center;line-height:1.2;margin-bottom:16px;">Your reels.<br>Finally<br>remembered.</div>
+          <div class="muted" style="text-align:center;line-height:1.5;margin-bottom:0;padding:0 8px;">Save Instagram reels. Ask questions. Discover insights you didn't know you had.</div>
+          <div style="flex:1"></div>
+          <div class="btn-primary" style="width:calc(100% - 0px);margin:0 0 32px;">Get Started</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Splash</div>
+  </div>
+
+  <!-- How It Works -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <div style="display:flex;justify-content:space-between;padding:6px 16px 10px;align-items:center;flex-shrink:0;">
+            <span style="font-size:16px;color:var(--accent);">‹</span>
+            <span style="font-size:11px;font-weight:600;color:var(--txtMuted);">Skip</span>
+          </div>
+          <div style="padding:0 20px 10px;flex-shrink:0;">
+            <div class="h2 serif" style="font-size:22px;margin-bottom:6px;">How it works</div>
+            <div class="muted" style="font-size:10px;line-height:1.4;">Turn your scrolling into a searchable intelligence base in three steps.</div>
+          </div>
+          <div class="scroll-area" style="overflow:hidden;">
+            <div class="ob-step-card">
+              <div class="ob-step-num">1</div>
+              <div class="ob-icon-circle">📤</div>
+              <div class="h3" style="font-size:13px;">Save from Instagram</div>
+              <div class="muted" style="font-size:10px;line-height:1.4;">Share any reel directly to ReelMind via the native share sheet.</div>
+            </div>
+            <div class="ob-step-card">
+              <div class="ob-step-num">2</div>
+              <div class="ob-icon-circle">🧠</div>
+              <div class="h3" style="font-size:13px;">AI understands it</div>
+              <div class="muted" style="font-size:10px;line-height:1.4;">We transcribe, categorize, and index every detail automatically.</div>
+            </div>
+            <div class="ob-step-card" style="margin-bottom:0;">
+              <div class="ob-step-num">3</div>
+              <div class="ob-icon-circle">🔍</div>
+              <div class="h3" style="font-size:13px;">Ask anything</div>
+              <div class="muted" style="font-size:10px;line-height:1.4;">Find any reel using natural language search.</div>
+            </div>
+          </div>
+          <div class="btn-primary" style="margin:12px 20px 10px;">Continue</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">How It Works</div>
+  </div>
+
+  <!-- Permissions -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <div style="display:flex;justify-content:space-between;padding:6px 16px 10px;align-items:center;flex-shrink:0;">
+            <span style="font-size:16px;color:var(--accent);">‹</span>
+            <span style="font-size:11px;font-weight:600;color:var(--txtMuted);">Skip</span>
+          </div>
+          <div style="display:flex;justify-content:center;padding:0 0 16px;flex-shrink:0;">
+            <div style="width:90px;height:90px;border-radius:50%;background:var(--surfSec);display:flex;align-items:center;justify-content:center;font-size:38px;">🛡️</div>
+          </div>
+          <div class="h2 serif" style="font-size:24px;text-align:center;padding:0 20px 20px;flex-shrink:0;">Stay connected</div>
+          <!-- Share sheet row -->
+          <div class="perm-row">
+            <div class="perm-icon">📤</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:700;color:var(--txtPrim);margin-bottom:3px;" class="serif">Share Sheet Access</div>
+              <div class="muted" style="font-size:10px;line-height:1.4;">Save reels without leaving Instagram.</div>
+            </div>
+            <div class="toggle-pill"></div>
+          </div>
+          <!-- Notifications row -->
+          <div class="perm-row">
+            <div class="perm-icon">🔔</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:700;color:var(--txtPrim);margin-bottom:3px;" class="serif">Notifications</div>
+              <div class="muted" style="font-size:10px;line-height:1.4;">Get alerted when your reels are ready and categorized.</div>
+            </div>
+            <div class="toggle-pill toggle-off"></div>
+          </div>
+          <div style="flex:1;"></div>
+          <div class="btn-primary" style="margin:0 20px 10px;">Grant Access</div>
+          <div class="btn-ghost" style="margin-bottom:24px;">Maybe Later</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Permissions</div>
+  </div>
+
+  <!-- Complete -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content" style="align-items:center;justify-content:center;">
+          <div style="font-size:56px;margin-bottom:20px;">✦</div>
+          <div class="h1 serif" style="text-align:center;font-size:26px;line-height:1.2;margin-bottom:12px;">You're all set.</div>
+          <div class="muted" style="text-align:center;padding:0 30px;line-height:1.5;">Start saving reels and watch your personal library grow.</div>
+          <div style="flex:0 0 40px;"></div>
+          <div class="btn-primary" style="width:calc(100% - 40px);">Go to My Library</div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Onboarding Complete</div>
+  </div>
+
+</div>
+
+<!-- ─── AUTH ─── -->
+<div class="section-label">Authentication</div>
+<div class="grid">
+
+  <!-- Login -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content" style="padding:0 20px;">
+          <div style="flex:1;"></div>
+          <div class="h1 serif" style="font-size:26px;margin-bottom:20px;">Login</div>
+          <div class="input-field">Email</div>
+          <div class="input-field">Password</div>
+          <div class="btn-primary" style="margin:6px 0 14px;">LOGIN</div>
+          <div style="text-align:center;font-size:11px;color:var(--txtMuted);">
+            Don't have an account? <span style="color:var(--accentDk);font-weight:700;">Sign Up</span>
+          </div>
+          <div style="flex:1;"></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Login</div>
+  </div>
+
+  <!-- Signup -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content" style="padding:0 20px;">
+          <div style="flex:1;"></div>
+          <div class="h1 serif" style="font-size:22px;margin-bottom:20px;">Create an account</div>
+          <div class="input-field">Email</div>
+          <div class="input-field">Password</div>
+          <div class="input-field">Confirm Password</div>
+          <div class="btn-primary" style="margin:6px 0 14px;">SIGN UP</div>
+          <div style="text-align:center;font-size:11px;color:var(--txtMuted);">
+            Already have an account? <span style="color:var(--accentDk);font-weight:700;">Login</span>
+          </div>
+          <div style="flex:1;"></div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Signup</div>
+  </div>
+
+</div>
+
+<!-- ─── MAIN APP ─── -->
+<div class="section-label">Main App</div>
+<div class="grid">
+
+  <!-- Library (with content) -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <!-- Top bar -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 18px 10px;flex-shrink:0;">
+            <div>
+              <div class="h1" style="font-size:20px;">Your library</div>
+              <div class="small">24 reels saved</div>
+            </div>
+            <div class="avatar">D</div>
+          </div>
+          <!-- Inbox banner -->
+          <div class="inbox-banner">
+            <div class="inbox-dot"></div>
+            <div style="font-size:10px;flex:1;"><b style="color:var(--accent);">3 reels</b> <span style="color:var(--txtMuted);">need a category</span></div>
+            <span style="color:var(--txtFaint);font-size:13px;">›</span>
+          </div>
+          <!-- Collections label -->
+          <div class="label-caps" style="padding:0 18px 6px;flex-shrink:0;">Collections</div>
+          <!-- 2-col grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px;flex-shrink:0;">
+            <div class="cat-card">
+              <div class="cat-number">12</div>
+              <div style="flex:1;"></div>
+              <div class="cat-name">Skincare</div>
+              <div class="cat-date">Updated 2h ago</div>
+            </div>
+            <div class="cat-card">
+              <div class="cat-number">7</div>
+              <div style="flex:1;"></div>
+              <div class="cat-name">Fitness</div>
+              <div class="cat-date">Updated 1d ago</div>
+            </div>
+            <div class="cat-card">
+              <div class="cat-number">3</div>
+              <div style="flex:1;"></div>
+              <div class="cat-name">Cooking</div>
+              <div class="cat-date">Updated 3d ago</div>
+            </div>
+            <div class="cat-card">
+              <div class="cat-number">2</div>
+              <div style="flex:1;"></div>
+              <div class="cat-name">Finance</div>
+              <div class="cat-date">Updated 1w ago</div>
+            </div>
+          </div>
+          <div style="flex:1;"></div>
+          <!-- Tab bar -->
+          <div class="tab-bar">
+            <div class="tab-item tab-active">
+              <div style="display:flex;align-items:center;"><div class="tab-icon">⊞</div></div>
+              <div class="tab-label">Library</div>
+            </div>
+            <div class="tab-item tab-inactive">
+              <div style="display:flex;align-items:center;position:relative;">
+                <div class="tab-icon">📥</div>
+                <div class="tab-badge">3</div>
+              </div>
+              <div class="tab-label">Inbox</div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Library — with content</div>
+  </div>
+
+  <!-- Library empty state -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 18px 10px;flex-shrink:0;">
+            <div>
+              <div class="h1" style="font-size:20px;">Your library</div>
+              <div class="small">0 reels saved</div>
+            </div>
+            <div class="avatar">D</div>
+          </div>
+          <div style="padding:16px 18px 0;flex:1;">
+            <div style="font-size:28px;margin-bottom:6px;">✦</div>
+            <div class="h2" style="font-size:17px;margin-bottom:6px;">Your library is empty</div>
+            <div class="muted" style="font-size:11px;line-height:1.4;margin-bottom:16px;">Share reels from Instagram to build your personal collection.</div>
+            <div class="card">
+              <div class="howto-row">
+                <div class="howto-num">1</div>
+                <div style="font-size:11px;font-weight:600;color:var(--txtSec);">Open any reel in Instagram</div>
+              </div>
+              <div class="divider"></div>
+              <div class="howto-row">
+                <div class="howto-num">2</div>
+                <div style="font-size:11px;font-weight:600;color:var(--txtSec);">Tap the Share button</div>
+              </div>
+              <div class="divider"></div>
+              <div class="howto-row">
+                <div class="howto-num">3</div>
+                <div style="font-size:11px;font-weight:600;color:var(--txtSec);">Select ReelMind from the list</div>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item tab-active">
+              <div class="tab-icon">⊞</div>
+              <div class="tab-label">Library</div>
+            </div>
+            <div class="tab-item tab-inactive">
+              <div class="tab-icon">📥</div>
+              <div class="tab-label">Inbox</div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Library — empty state</div>
+  </div>
+
+  <!-- Inbox with reels -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 18px 12px;flex-shrink:0;">
+            <div>
+              <div class="h1" style="font-size:18px;">Needs a category</div>
+              <div class="muted" style="font-size:10px;margin-top:3px;line-height:1.3;">The AI wasn't confident. Pick a home for them.</div>
+            </div>
+            <div class="avatar">D</div>
+          </div>
+          <div class="scroll-area">
+            <!-- Reel card 1 -->
+            <div class="reel-card">
+              <div class="reel-card-body">
+                <div class="thumb" style="width:48px;height:68px;border-radius:8px;">🎬</div>
+                <div style="flex:1;">
+                  <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:3px;">@glowwithsarah</div>
+                  <div class="muted" style="font-size:10px;line-height:1.3;">Best SPF moisturizers for oily skin under ₹500 that won't break...</div>
+                </div>
+              </div>
+              <div class="reel-chips">
+                <div class="reel-chip">Skincare</div>
+                <div class="reel-chip">Beauty</div>
+                <div class="reel-chip">Health</div>
+              </div>
+            </div>
+            <!-- Reel card 2 -->
+            <div class="reel-card">
+              <div class="reel-card-body">
+                <div class="thumb" style="width:48px;height:68px;border-radius:8px;">🎬</div>
+                <div style="flex:1;">
+                  <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:3px;">@fitnessfriday</div>
+                  <div class="muted" style="font-size:10px;line-height:1.3;">5-minute morning stretch routine for desk workers...</div>
+                </div>
+              </div>
+              <div class="reel-chips">
+                <div class="reel-chip">Fitness</div>
+                <div class="reel-chip">Wellness</div>
+              </div>
+            </div>
+            <!-- Reel card 3 -->
+            <div class="reel-card">
+              <div class="reel-card-body">
+                <div class="thumb" style="width:48px;height:68px;border-radius:8px;">🎬</div>
+                <div style="flex:1;">
+                  <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:3px;">@cookwithpriya</div>
+                  <div class="muted" style="font-size:10px;line-height:1.3;">30-minute dinner ideas with 5 ingredients or less...</div>
+                </div>
+              </div>
+              <div class="reel-chips">
+                <div class="reel-chip">Cooking</div>
+                <div class="reel-chip">Food</div>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item tab-inactive">
+              <div class="tab-icon">⊞</div>
+              <div class="tab-label">Library</div>
+            </div>
+            <div class="tab-item tab-active">
+              <div style="display:flex;align-items:center;position:relative;">
+                <div class="tab-icon">📥</div>
+                <div class="tab-badge">3</div>
+              </div>
+              <div class="tab-label">Inbox</div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Inbox — with reels</div>
+  </div>
+
+  <!-- Inbox empty -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <div class="empty-state">
+            <div style="font-size:38px;color:var(--accent);opacity:0.7;">✓</div>
+            <div class="h3">All caught up</div>
+            <div class="muted" style="font-size:11px;">Every reel has been categorised.</div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item tab-inactive">
+              <div class="tab-icon">⊞</div>
+              <div class="tab-label">Library</div>
+            </div>
+            <div class="tab-item tab-active">
+              <div class="tab-icon">📥</div>
+              <div class="tab-label">Inbox</div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Inbox — empty state</div>
+  </div>
+
+</div>
+
+<!-- ─── DETAIL VIEWS ─── -->
+<div class="section-label">Detail Views</div>
+<div class="grid">
+
+  <!-- Category Detail -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen" style="position:relative;">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <div class="nav-bar">
+            <div class="nav-back">‹ Back</div>
+            <div style="flex:1;"></div>
+            <div class="avatar" style="width:26px;height:26px;font-size:10px;">D</div>
+          </div>
+          <div style="padding:4px 18px 12px;flex-shrink:0;">
+            <div class="h1" style="font-size:22px;">Skincare</div>
+          </div>
+          <div class="scroll-area">
+            <!-- Detail reel card -->
+            <div class="reel-card" style="margin-bottom:8px;">
+              <div class="reel-card-body">
+                <div class="thumb" style="width:52px;height:76px;">🎬</div>
+                <div style="flex:1;">
+                  <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:3px;">@glowwithsarah</div>
+                  <div class="muted" style="font-size:10px;line-height:1.3;margin-bottom:5px;">Best SPF moisturizers for oily skin under ₹500...</div>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <span class="pill pill-accent" style="font-size:8px;">#skincare</span>
+                    <span class="pill pill-accent" style="font-size:8px;">#spf</span>
+                  </div>
+                </div>
+              </div>
+              <div class="reel-footer">
+                <span>2h ago</span>
+                <span>↗ tap to watch</span>
+              </div>
+            </div>
+            <div class="reel-card">
+              <div class="reel-card-body">
+                <div class="thumb" style="width:52px;height:76px;">🎬</div>
+                <div style="flex:1;">
+                  <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:3px;">@skincarebydoc</div>
+                  <div class="muted" style="font-size:10px;line-height:1.3;margin-bottom:5px;">Retinol beginner guide — start here if you're new...</div>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <span class="pill pill-accent" style="font-size:8px;">#retinol</span>
+                  </div>
+                </div>
+              </div>
+              <div class="reel-footer">
+                <span>1d ago</span>
+                <span>↗ tap to watch</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- FAB -->
+        <div class="fab">💬</div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Category Detail</div>
+  </div>
+
+  <!-- Settings -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <div style="padding:6px 18px 12px;flex-shrink:0;">
+            <div class="label-caps" style="margin-bottom:2px;">Account</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div class="h1" style="font-size:22px;">Settings</div>
+              <span style="font-size:10px;font-weight:700;color:var(--destruct);">Sign out</span>
+            </div>
+          </div>
+          <div class="scroll-area">
+            <!-- User card -->
+            <div style="margin:0 12px 16px;" class="card">
+              <div style="display:flex;align-items:center;gap:10px;padding:14px;">
+                <div class="avatar" style="width:38px;height:38px;font-size:14px;">D</div>
+                <div style="flex:1;">
+                  <div class="h3" style="font-size:13px;">Deepti Jain</div>
+                  <div class="small">deeptihnd000@gmail.com</div>
+                </div>
+                <div style="font-size:10px;font-weight:600;color:var(--txtMuted);background:var(--surfSec);border:1px solid var(--sage);border-radius:20px;padding:3px 10px;">Edit</div>
+              </div>
+            </div>
+            <!-- Library section -->
+            <div style="padding:0 12px 14px;">
+              <div class="label-caps" style="margin-bottom:6px;padding-left:4px;">Library</div>
+              <div class="card">
+                <div class="settings-row">
+                  <div class="settings-icon">⊞</div>
+                  <div style="font-size:11px;font-weight:600;color:var(--txtPrim);flex:1;">Manage categories</div>
+                  <span class="small" style="margin-right:4px;">4</span>
+                  <span style="font-size:10px;color:var(--txtFaint);">›</span>
+                </div>
+                <div class="divider"></div>
+                <div class="settings-row">
+                  <div class="settings-icon">🤖</div>
+                  <div style="font-size:11px;font-weight:600;color:var(--txtPrim);flex:1;">Auto-categorise</div>
+                  <div class="toggle-pill"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Saving section -->
+            <div style="padding:0 12px 14px;">
+              <div class="label-caps" style="margin-bottom:6px;padding-left:4px;">Saving</div>
+              <div class="card">
+                <div class="settings-row">
+                  <div class="settings-icon">📤</div>
+                  <div style="font-size:11px;font-weight:600;color:var(--txtPrim);flex:1;">Share sheet permissions</div>
+                  <span style="font-size:10px;color:var(--accent);margin-right:4px;">Granted</span>
+                  <span style="font-size:10px;color:var(--txtFaint);">›</span>
+                </div>
+                <div class="divider"></div>
+                <div class="settings-row">
+                  <div class="settings-icon">🔔</div>
+                  <div style="font-size:11px;font-weight:600;color:var(--txtPrim);flex:1;">Save notifications</div>
+                  <div class="toggle-pill toggle-off"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Privacy -->
+            <div style="padding:0 12px;">
+              <div class="label-caps" style="margin-bottom:6px;padding-left:4px;">Privacy</div>
+              <div class="card">
+                <div class="settings-row">
+                  <div class="settings-icon">🔒</div>
+                  <div style="font-size:11px;font-weight:600;color:var(--txtPrim);flex:1;">Data &amp; privacy</div>
+                  <span style="font-size:10px;color:var(--txtFaint);">›</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Settings</div>
+  </div>
+
+  <!-- Manage Categories -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <div class="nav-bar" style="justify-content:center;">
+            <div class="nav-title">Collections</div>
+          </div>
+          <div style="padding:0 12px;flex:1;overflow:hidden;">
+            <div class="card" style="margin-top:8px;">
+              <div class="cat-manage-row">
+                <div class="cat-folder-icon">📁</div>
+                <div style="flex:1;">
+                  <div class="h3" style="font-size:12px;">Skincare</div>
+                  <div class="small">12 reels</div>
+                </div>
+                <div class="icon-btn" style="background:var(--surfSec);">✏️</div>
+                <div class="icon-btn" style="background:rgba(204,68,68,0.08);">🗑</div>
+              </div>
+              <div class="divider" style="margin-left:54px;"></div>
+              <div class="cat-manage-row">
+                <div class="cat-folder-icon">📁</div>
+                <div style="flex:1;">
+                  <div class="h3" style="font-size:12px;">Fitness</div>
+                  <div class="small">7 reels</div>
+                </div>
+                <div class="icon-btn" style="background:var(--surfSec);">✏️</div>
+                <div class="icon-btn" style="background:rgba(204,68,68,0.08);">🗑</div>
+              </div>
+              <div class="divider" style="margin-left:54px;"></div>
+              <div class="cat-manage-row">
+                <div class="cat-folder-icon">📁</div>
+                <div style="flex:1;">
+                  <div class="h3" style="font-size:12px;">Cooking</div>
+                  <div class="small">3 reels</div>
+                </div>
+                <div class="icon-btn" style="background:var(--surfSec);">✏️</div>
+                <div class="icon-btn" style="background:rgba(204,68,68,0.08);">🗑</div>
+              </div>
+              <div class="divider" style="margin-left:54px;"></div>
+              <div class="cat-manage-row">
+                <div class="cat-folder-icon">📁</div>
+                <div style="flex:1;">
+                  <div class="h3" style="font-size:12px;">Finance</div>
+                  <div class="small">2 reels</div>
+                </div>
+                <div class="icon-btn" style="background:var(--surfSec);">✏️</div>
+                <div class="icon-btn" style="background:rgba(204,68,68,0.08);">🗑</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Manage Categories</div>
+  </div>
+
+  <!-- Reassign Sheet -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen" style="position:relative;">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <!-- Blurred background (inbox) -->
+          <div style="flex:1;background:var(--bg);opacity:0.4;display:flex;flex-direction:column;gap:8px;padding:40px 12px;overflow:hidden;">
+            <div class="reel-card" style="margin:0;opacity:0.5;"></div>
+          </div>
+          <!-- Sheet overlay -->
+          <div style="position:absolute;bottom:0;left:0;right:0;background:var(--bg);border-radius:20px 20px 0 0;border-top:1px solid var(--border);box-shadow:0 -8px 32px rgba(0,0,0,0.15);z-index:20;">
+            <div class="sheet-handle"></div>
+            <div style="padding:0 18px 10px;">
+              <div class="h3" style="margin-bottom:4px;">Reassign Category</div>
+              <div class="muted" style="font-size:10px;margin-bottom:12px;">Move this reel to a different collection.</div>
+              <!-- Category options -->
+              <div class="card" style="margin-bottom:10px;">
+                <div class="settings-row">
+                  <div class="cat-folder-icon" style="width:28px;height:28px;">📁</div>
+                  <div style="font-size:12px;font-weight:600;flex:1;color:var(--txtPrim);">Skincare</div>
+                  <span style="font-size:10px;color:var(--txtFaint);">12</span>
+                </div>
+                <div class="divider" style="margin-left:46px;"></div>
+                <div class="settings-row">
+                  <div class="cat-folder-icon" style="width:28px;height:28px;">📁</div>
+                  <div style="font-size:12px;font-weight:600;flex:1;color:var(--txtPrim);">Fitness</div>
+                  <span style="font-size:10px;color:var(--txtFaint);">7</span>
+                </div>
+                <div class="divider" style="margin-left:46px;"></div>
+                <div class="settings-row">
+                  <div class="cat-folder-icon" style="width:28px;height:28px;">📁</div>
+                  <div style="font-size:12px;font-weight:600;flex:1;color:var(--txtPrim);">Cooking</div>
+                  <span style="font-size:10px;color:var(--txtFaint);">3</span>
+                </div>
+              </div>
+            </div>
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">Reassign Category Sheet</div>
+  </div>
+
+</div>
+
+<!-- ─── CHAT ─── -->
+<div class="section-label">Chat</div>
+<div class="grid">
+
+  <!-- Chat empty state -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <!-- Header -->
+          <div style="padding:10px 16px 12px;flex-shrink:0;border-bottom:1px solid var(--surfSec);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <span class="pill" style="margin-bottom:6px;display:inline-flex;">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;"></span>
+                  Skincare · Chat
+                </span>
+                <div class="h1" style="font-size:18px;">Skincare</div>
+              </div>
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--txtMuted);">✕</div>
+            </div>
+          </div>
+          <div class="scroll-area" style="padding:16px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:12px;">🤖</div>
+            <div class="h3" style="font-size:17px;margin-bottom:6px;">What are you looking for?</div>
+            <div class="muted" style="font-size:11px;line-height:1.4;margin-bottom:16px;">I've read every reel in your skincare collection. Ask anything specific.</div>
+            <div class="label-caps" style="margin-bottom:8px;">Try asking</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div class="card" style="padding:11px 12px;font-size:11px;color:var(--txtSec);">sunscreen for oily skin under ₹500</div>
+              <div class="card" style="padding:11px 12px;font-size:11px;color:var(--txtSec);">retinol routine for beginners</div>
+              <div class="card" style="padding:11px 12px;font-size:11px;color:var(--txtSec);">best niacinamide serums</div>
+            </div>
+          </div>
+          <div class="chat-input-bar">
+            <div class="chat-input">Ask anything about skincare...</div>
+            <div class="chat-send">↑</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Chat — empty state</div>
+  </div>
+
+  <!-- Chat with messages -->
+  <div class="phone">
+    <div class="phone-frame">
+      <div class="dynamic-island"></div>
+      <div class="phone-screen">
+        <div class="status-bar"><span>9:41</span><span class="status-right">●●● ▮▮ 🔋</span></div>
+        <div class="screen-content">
+          <div style="padding:10px 16px 12px;flex-shrink:0;border-bottom:1px solid var(--surfSec);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <span class="pill" style="margin-bottom:6px;display:inline-flex;">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;"></span>
+                  Skincare · Chat
+                </span>
+                <div class="h1" style="font-size:18px;">Skincare</div>
+              </div>
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--txtMuted);">✕</div>
+            </div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:12px 12px 6px;display:flex;flex-direction:column;gap:10px;">
+            <!-- User bubble -->
+            <div class="bubble-user" style="align-self:flex-end;">sunscreen for oily skin under ₹500</div>
+            <!-- AI bubble -->
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div class="ai-label">
+                <div class="ai-dot"><div class="ai-dot-inner"></div></div>
+                <span style="font-size:8px;font-weight:700;letter-spacing:0.5px;color:var(--accent);text-transform:uppercase;">ReelMind</span>
+              </div>
+              <div class="bubble-ai">Based on your 12 skincare reels, here are the top picks: <b>Minimalist SPF 50 PA++++</b> was recommended in 3 reels for oily skin, available for ₹349. <b>Neutrogena Ultra Sheer</b> came up twice...</div>
+            </div>
+            <!-- Typing indicator -->
+            <div class="typing-dots" style="margin-top:2px;">
+              <div class="dot"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+            </div>
+          </div>
+          <div class="chat-input-bar">
+            <div class="chat-input" style="color:var(--txtPrim);">Which is best for sensitive skin?</div>
+            <div class="chat-send">↑</div>
+          </div>
+        </div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+    <div class="phone-label">Chat — conversation</div>
+  </div>
+
+</div>
+
+<div style="height:60px;"></div>
+
+
+<div id="webhighlights-notificationshldjnlbobkdkghfidgoecgmklcemanhm" data-browser-type="chrome" data-app-type="highlighter"></div></body></html>

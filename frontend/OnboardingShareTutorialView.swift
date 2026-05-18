@@ -91,10 +91,7 @@ private struct PhoneMockup: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 28)
                         .fill(LinearGradient(
-                            colors: [
-                                Color(red: 0.20, green: 0.18, blue: 0.32),
-                                Color(red: 0.30, green: 0.26, blue: 0.50)
-                            ],
+                            colors: [AppTheme.accentDark, AppTheme.accent],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ))

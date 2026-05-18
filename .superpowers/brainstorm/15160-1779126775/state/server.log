@@ -1,0 +1,5 @@
+{"type":"server-started","port":54130,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:54130","screen_dir":"/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/.superpowers/brainstorm/15160-1779126775/content","state_dir":"/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/.superpowers/brainstorm/15160-1779126775/state"}
+{"type":"screen-added","file":"/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/.superpowers/brainstorm/15160-1779126775/content/context-menu-explainer.html"}
+{"type":"screen-added","file":"/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/.superpowers/brainstorm/15160-1779126775/content/context-menu-v2.html"}
+{"type":"screen-added","file":"/Users/deeptijain/Desktop/Deepti/Projects/ReelMind/.superpowers/brainstorm/15160-1779126775/content/context-menu-v3.html"}
+{"type":"server-stopped","reason":"idle timeout"}

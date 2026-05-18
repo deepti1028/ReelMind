@@ -1,0 +1,117 @@
+<h2>Two things to confirm before we build</h2>
+<p class="subtitle">1 — How the popup actually renders on iOS &nbsp;·&nbsp; 2 — What Step 30 adds</p>
+
+<div class="section">
+  <div class="label">How long-press context menu renders on iOS</div>
+  <p style="font-size:13px;color:#5a3e28;margin:8px 0 16px;">SwiftUI's <code style="background:#e9edc9;padding:2px 6px;border-radius:4px;">.contextMenu</code> gives you automatic blur, scale-down animation, haptic feedback, and a system popup — all for free. The popup background is always iOS frosted glass (white/translucent). Our custom icons show inside it.</p>
+
+  <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
+
+    <!-- What happens on long press -->
+    <div style="flex:1;min-width:200px;">
+      <div style="font-size:11px;font-weight:700;color:#b8956a;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">① Long press card → iOS takes over</div>
+      <!-- rest of screen blurs -->
+      <div style="background:#f0ebe0;border-radius:16px;padding:12px;position:relative;">
+        <!-- blurred card -->
+        <div style="background:#faedcd;border:1px solid #e5d5b8;border-radius:14px;padding:12px;opacity:0.4;filter:blur(1.5px);transform:scale(0.96);transform-origin:top center;font-family:system-ui;">
+          <div style="display:flex;gap:10px;">
+            <div style="width:58px;height:88px;background:linear-gradient(160deg,#e9edc9,#ccd5ae);border-radius:8px;flex-shrink:0;"></div>
+            <div style="flex:1;">
+              <div style="font-size:12px;font-weight:600;color:#d4a373;">@skinguru</div>
+              <div style="font-size:11px;color:#9a7654;margin-top:4px;">Best SPF picks for oily skin…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System popup — frosted glass -->
+        <div style="background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border-radius:14px;overflow:hidden;margin-top:10px;box-shadow:0 8px 32px rgba(0,0,0,0.2);font-family:system-ui;">
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;gap:12px;">
+            <div style="width:28px;height:28px;border-radius:7px;background:#faedcd;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 100 100" fill="none"><path d="M15 50 A35 35 0 0 1 75 20" stroke="#d4a373" stroke-width="11" stroke-linecap="round" fill="none"/><path d="M85 50 A35 35 0 0 1 25 80" stroke="#d4a373" stroke-width="11" stroke-linecap="round" fill="none"/><polygon points="72,5 85,22 58,22" fill="#d4a373"/><polygon points="28,95 15,78 42,78" fill="#d4a373"/></svg>
+            </div>
+            <span style="font-size:15px;color:#1c1c1e;">Reassign Category</span>
+          </div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(0,0,0,0.08);display:flex;align-items:center;gap:12px;">
+            <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            </div>
+            <span style="font-size:15px;color:#1c1c1e;">Open in Instagram</span>
+          </div>
+          <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;">
+            <div style="width:28px;height:28px;border-radius:7px;background:#fff0f0;display:flex;align-items:center;justify-content:center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#cc4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11v6M14 11v6" stroke="#cc4444" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <span style="font-size:15px;color:#cc4444;font-weight:500;">Delete Reel</span>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:#9a7654;margin-top:8px;text-align:center;">Popup is iOS frosted glass — icons are our custom ones</p>
+    </div>
+
+    <!-- What happens after tapping delete -->
+    <div style="flex:1;min-width:200px;">
+      <div style="font-size:11px;font-weight:700;color:#b8956a;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">② Tap Delete → confirmation alert</div>
+      <div style="background:#f0ebe0;border-radius:16px;padding:12px;">
+        <div style="background:rgba(255,255,255,0.95);border-radius:16px;padding:20px 20px 0;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.12);font-family:system-ui;overflow:hidden;">
+          <div style="font-size:17px;font-weight:700;color:#1c1c1e;margin-bottom:6px;">Delete Reel?</div>
+          <div style="font-size:13px;color:#666;margin-bottom:20px;line-height:1.4;">Removed from your library. This cannot be undone.</div>
+          <div style="display:flex;border-top:0.5px solid #ccc;">
+            <div style="flex:1;padding:14px;font-size:17px;color:#1c1c1e;border-right:0.5px solid #ccc;">Cancel</div>
+            <div style="flex:1;padding:14px;font-size:17px;color:#cc4444;font-weight:600;">Delete</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:#b8956a;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;">③ Tap Reassign → bottom sheet</div>
+      <div style="background:#fefae0;border:1.5px solid #e5d5b8;border-radius:16px;padding:16px;font-family:system-ui;">
+        <div style="width:32px;height:4px;background:#e5d5b8;border-radius:2px;margin:0 auto 12px;"></div>
+        <div style="font-size:15px;font-weight:700;color:#2c1f0e;margin-bottom:10px;">Move to collection</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">
+          <div style="padding:10px 12px;background:#faedcd;border:1px solid #e5d5b8;border-radius:10px;display:flex;justify-content:space-between;"><span style="font-size:13px;color:#2c1f0e;">Skincare</span><span style="font-size:11px;color:#b8956a;">14 reels</span></div>
+          <div style="padding:10px 12px;background:#faedcd;border:1.5px solid #d4a373;border-radius:10px;display:flex;justify-content:space-between;"><span style="font-size:13px;font-weight:600;color:#d4a373;">Fitness ✓</span><span style="font-size:11px;color:#b8956a;">8 reels</span></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div style="flex:1;padding:9px 12px;background:#faedcd;border:1px solid #e5d5b8;border-radius:9px;font-size:12px;color:#b8956a;">New name…</div>
+          <div style="padding:9px 14px;background:#d4a373;border-radius:9px;font-size:12px;font-weight:600;color:white;">Add</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Step 30 — one missing piece (banner not tappable yet)</div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;align-items:center;">
+    <div style="flex:1;min-width:200px;background:#faedcd;border:1px solid #e5d5b8;border-radius:14px;padding:13px;font-family:system-ui;display:flex;align-items:center;gap:8px;">
+      <div style="width:7px;height:7px;background:#d4a373;border-radius:50%;flex-shrink:0;"></div>
+      <span style="font-size:12px;color:#5a3e28;"><strong style="color:#d4a373;">3 reels</strong> need a category</span>
+      <span style="flex:1;"></span>
+      <span style="font-size:16px;color:#b8956a;">›</span>
+    </div>
+    <div style="font-size:13px;color:#5a3e28;">
+      ← The <code style="background:#e9edc9;padding:2px 5px;border-radius:4px;">›</code> implies it's tappable but the banner has no action. Tapping it should switch to the Inbox tab. Fix: pass an <code style="background:#e9edc9;padding:2px 5px;border-radius:4px;">onInboxTap: () → Void</code> closure from ContentView into LibraryView.
+    </div>
+  </div>
+</div>
+
+<div class="section" style="background:#fefae0;border:1px solid #e9edc9;border-radius:12px;padding:16px;">
+  <div class="label">Full scope — Steps 29 · 30 · 31 · 32</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:10px;">
+    <div style="font-size:12px;color:#2c1f0e;line-height:1.7;background:#faedcd;border-radius:10px;padding:10px;">
+      <strong style="color:#d4a373;display:block;margin-bottom:4px;">Step 29 — Context Menu</strong>
+      Remove inline trash from both cards. Add <code style="background:#e9edc9;padding:1px 3px;border-radius:3px;">.contextMenu</code> with 3 actions + custom icons.
+    </div>
+    <div style="font-size:12px;color:#2c1f0e;line-height:1.7;background:#faedcd;border-radius:10px;padding:10px;">
+      <strong style="color:#d4a373;display:block;margin-bottom:4px;">Step 30 — Inbox Banner Tap</strong>
+      Add <code style="background:#e9edc9;padding:1px 3px;border-radius:3px;">onInboxTap</code> closure to LibraryView. ContentView passes tab-switch action.
+    </div>
+    <div style="font-size:12px;color:#2c1f0e;line-height:1.7;background:#faedcd;border-radius:10px;padding:10px;">
+      <strong style="color:#d4a373;display:block;margin-bottom:4px;">Step 31 — Delete Flow</strong>
+      Delete action → native alert → confirm → soft-delete via LibraryService. Vectors cleaned up server-side.
+    </div>
+    <div style="font-size:12px;color:#2c1f0e;line-height:1.7;background:#faedcd;border-radius:10px;padding:10px;">
+      <strong style="color:#d4a373;display:block;margin-bottom:4px;">Step 32 — Reassign Sheet</strong>
+      New <code style="background:#e9edc9;padding:1px 3px;border-radius:3px;">ReassignCategorySheet</code>. Lists categories + new name field. Calls LibraryService.assignCategory.
+    </div>
+  </div>
+</div>

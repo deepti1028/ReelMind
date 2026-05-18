@@ -1,7 +1,11 @@
 import SwiftUI
-
+import Auth
 struct InboxView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @EnvironmentObject private var auth: AuthSession
+
+    @State private var reelToDelete: UUID?
+    @State private var reelToReassign: Reel?
 
     var body: some View {
         ZStack {
@@ -12,6 +16,24 @@ struct InboxView: View {
             } else {
                 reelList
             }
+        }
+        .alert("Delete Reel?", isPresented: Binding(
+            get: { reelToDelete != nil },
+            set: { if !$0 { reelToDelete = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { reelToDelete = nil }
+            Button("Delete", role: .destructive) {
+                if let id = reelToDelete {
+                    Task { await appVM.deleteReel(id) }
+                }
+                reelToDelete = nil
+            }
+        } message: {
+            Text("Removed from your library. This cannot be undone.")
+        }
+        .sheet(item: $reelToReassign) { reel in
+            ReassignCategorySheet(reel: reel)
+                .environmentObject(appVM)
         }
     }
 
@@ -31,26 +53,40 @@ struct InboxView: View {
                             onAssign: { categoryId in
                                 Task { await appVM.assignCategory(reelId: reel.id, categoryId: categoryId) }
                             },
-                            onDelete: {
-                                Task { await appVM.deleteReel(reel.id) }
-                            }
+                            onDelete: { reelToDelete = reel.id },
+                            onReassign: { reelToReassign = reel }
                         )
                     }
                 }
                 .padding(.horizontal, 14)
             }
         }
+        .refreshable { await appVM.load() }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text("Needs a category")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundColor(AppTheme.textPrimary)
-            Text("The AI wasn't confident about these \(appVM.inboxCount) reels. Pick a home for them.")
-                .font(.system(size: 12))
-                .foregroundColor(AppTheme.textMuted)
-                .lineLimit(2)
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Needs a category")
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundColor(AppTheme.textPrimary)
+                Text("The AI wasn't confident about these \(appVM.inboxCount) reels. Pick a home for them.")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppTheme.textMuted)
+                    .lineLimit(2)
+            }
+            Spacer()
+            Button { appVM.showSettings = true } label: {
+                Circle()
+                    .fill(AppTheme.avatarGradient)
+                    .frame(width: 36, height: 36)
+                    .overlay(
+                        Text(auth.session?.user.email?.prefix(1).uppercased() ?? "?")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                    )
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -72,4 +108,5 @@ struct InboxView: View {
 #Preview {
     InboxView()
         .environmentObject(AppViewModel())
+        .environmentObject(AuthSession())
 }

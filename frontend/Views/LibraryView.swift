@@ -4,6 +4,7 @@ import SwiftUI
 struct LibraryView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var auth: AuthSession
+    var onInboxTap: () -> Void = {}
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -21,25 +22,32 @@ struct LibraryView: View {
                         .padding(.bottom, 12)
                 }
 
-                Text("Collections")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(AppTheme.textFaint)
-                    .textCase(.uppercase)
-                    .kerning(1.2)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
+                if appVM.categorySummaries.isEmpty && appVM.inboxCount == 0 {
+                    libraryEmptyState
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                } else {
+                    Text("Collections")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(AppTheme.textFaint)
+                        .textCase(.uppercase)
+                        .kerning(1.2)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 8)
 
-                LazyVGrid(columns: columns, spacing: 9) {
-                    ForEach(appVM.categorySummaries) { summary in
-                        NavigationLink(value: summary) {
-                            CategoryCard(summary: summary)
+                    LazyVGrid(columns: columns, spacing: 9) {
+                        ForEach(appVM.categorySummaries) { summary in
+                            NavigationLink(value: summary) {
+                                CategoryCard(summary: summary)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
+                    .padding(.horizontal, 14)
                 }
-                .padding(.horizontal, 14)
             }
         }
+        .refreshable { await appVM.load() }
         .background(AppTheme.background.ignoresSafeArea())
         .navigationBarHidden(true)
         .navigationDestination(for: CategorySummary.self) { summary in
@@ -48,6 +56,37 @@ struct LibraryView: View {
     }
 
     // MARK: - Sub-views
+
+    private var libraryEmptyState: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 10) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 36))
+                    .foregroundColor(AppTheme.accent)
+                    .padding(.bottom, 4)
+                Text("Your library is empty")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(AppTheme.textPrimary)
+                Text("Share reels from Instagram to build your personal collection.")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppTheme.textMuted)
+            }
+
+            VStack(spacing: 0) {
+                LibraryHowToStep(number: 1, text: "Open any reel in Instagram")
+                Divider().background(AppTheme.border).padding(.leading, 42)
+                LibraryHowToStep(number: 2, text: "Tap the Share button")
+                Divider().background(AppTheme.border).padding(.leading, 42)
+                LibraryHowToStep(number: 3, text: "Select ReelMind from the list")
+            }
+            .background(AppTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AppTheme.border, lineWidth: 1)
+            )
+        }
+    }
 
     private var topBar: some View {
         HStack(alignment: .top) {
@@ -98,6 +137,32 @@ struct LibraryView: View {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
                 .stroke(AppTheme.border, lineWidth: 1)
         )
+        .contentShape(Rectangle())
+        .onTapGesture { onInboxTap() }
+    }
+}
+
+// MARK: - How-to step row for empty state
+
+private struct LibraryHowToStep: View {
+    let number: Int
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text("\(number)")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(AppTheme.accent)
+                .frame(width: 26, height: 26)
+                .background(AppTheme.surfaceSecondary)
+                .clipShape(Circle())
+            Text(text)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(AppTheme.textSecondary)
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
     }
 }
 

@@ -4,6 +4,7 @@ import UIKit
 
 struct SettingsView: View {
     @EnvironmentObject private var auth: AuthSession
+    @EnvironmentObject private var appVM: AppViewModel
     @Environment(\.dismiss) private var dismiss
     @StateObject private var notifManager = NotificationPermissionManager()
     @AppStorage("autoCategorise") private var autoCategorise = true
@@ -104,10 +105,15 @@ struct SettingsView: View {
 
     private var librarySection: some View {
         SettingsSection(title: "Library") {
-            SettingsRow(icon: "square.grid.2x2", iconBg: AppTheme.surfaceSecondary,
-                        label: "Manage categories") {
-                Text("6").font(.system(size: 12)).foregroundColor(AppTheme.textFaint)
+            NavigationLink(destination: ManageCategoriesView().environmentObject(appVM)) {
+                SettingsRow(icon: "square.grid.2x2", iconBg: AppTheme.surfaceSecondary,
+                            label: "Manage categories") {
+                    Text("\(appVM.categorySummaries.count)")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppTheme.textFaint)
+                }
             }
+            .buttonStyle(.plain)
             Divider().background(AppTheme.border)
             HStack {
                 SettingsRowLeft(icon: "cpu", iconBg: AppTheme.surfaceSecondary,
@@ -237,6 +243,9 @@ private struct SettingsRowLeft: View {
 }
 
 #Preview {
-    SettingsView()
-        .environmentObject(AuthSession())
+    NavigationStack {
+        SettingsView()
+            .environmentObject(AuthSession())
+            .environmentObject(AppViewModel())
+    }
 }

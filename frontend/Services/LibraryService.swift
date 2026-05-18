@@ -56,6 +56,47 @@ struct LibraryService {
             .execute()
     }
 
+    /// Creates a new user-owned category and returns it.
+    func createCategory(name: String) async throws -> Category {
+        let userId = try await client.auth.session.user.id
+        struct Payload: Encodable {
+            let name: String
+            let userId: UUID
+            let isDefault: Bool
+            enum CodingKeys: String, CodingKey {
+                case name
+                case userId = "user_id"
+                case isDefault = "is_default"
+            }
+        }
+        return try await client
+            .from("categories")
+            .insert(Payload(name: name, userId: userId, isDefault: false))
+            .select()
+            .single()
+            .execute()
+            .value
+    }
+
+    /// Renames an existing category.
+    func renameCategory(id: UUID, newName: String) async throws {
+        struct Payload: Encodable { let name: String }
+        try await client
+            .from("categories")
+            .update(Payload(name: newName))
+            .eq("id", value: id)
+            .execute()
+    }
+
+    /// Deletes a category row. Reels in this category will have category_id set to null by the DB cascade.
+    func deleteCategory(id: UUID) async throws {
+        try await client
+            .from("categories")
+            .delete()
+            .eq("id", value: id)
+            .execute()
+    }
+
     /// Assigns a category to a reel (used in InboxView chip tap).
     func assignCategory(reelId: UUID, categoryId: UUID) async throws {
         struct Payload: Encodable {

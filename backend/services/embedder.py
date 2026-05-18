@@ -8,7 +8,9 @@ _model: SentenceTransformer | None = None
 def _get_model() -> SentenceTransformer:
     global _model
     if _model is None:
-        _model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+        # device='cpu' prevents PyTorch from initializing Metal/MPS on macOS,
+        # which would spawn ObjC background threads that conflict with Celery's fork().
+        _model = SentenceTransformer("BAAI/bge-small-en-v1.5", device="cpu")
     return _model
 
 

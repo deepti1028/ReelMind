@@ -165,7 +165,7 @@ private struct ToggleControl: View {
         Button(action: action) {
             ZStack(alignment: isOn ? .trailing : .leading) {
                 Capsule()
-                    .fill(isOn ? OnboardingTheme.primary : Color(red: 0.85, green: 0.85, blue: 0.88))
+                    .fill(isOn ? OnboardingTheme.primary : AppTheme.border)
                     .frame(width: 50, height: 30)
 
                 Circle()

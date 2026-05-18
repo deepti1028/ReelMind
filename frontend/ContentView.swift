@@ -9,7 +9,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             NavigationStack {
-                LibraryView()
+                LibraryView(onInboxTap: { selectedTab = 1 })
             }
             .opacity(selectedTab == 0 ? 1 : 0)
             .allowsHitTesting(selectedTab == 0)
@@ -28,8 +28,11 @@ struct ContentView: View {
             if phase == .active { Task { await appVM.load(silent: true) } }
         }
         .sheet(isPresented: $appVM.showSettings) {
-            SettingsView()
-                .environmentObject(auth)
+            NavigationStack {
+                SettingsView()
+                    .environmentObject(auth)
+                    .environmentObject(appVM)
+            }
         }
     }
 }

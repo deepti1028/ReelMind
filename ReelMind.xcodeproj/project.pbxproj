@@ -50,6 +50,8 @@
 		DE0E6A3B2FBB4F5D00CFD088 /* ReelsHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E69E82FBB4F5D00CFD088 /* ReelsHomeView.swift */; };
 		DE0E6A3C2FBB4F5D00CFD088 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DE0E69FD2FBB4F5D00CFD088 /* Assets.xcassets */; };
 		DE0E6A3D2FBB4F5D00CFD088 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DE0E6A012FBB4F5D00CFD088 /* GoogleService-Info.plist */; };
+		DE0E6A3E2FBB4F5D00CFD088 /* ReassignCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6B002FBB4F5D00CFD088 /* ReassignCategorySheet.swift */; };
+		DE0E6A3F2FBB4F5D00CFD089 /* ManageCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE0E6B012FBB4F5D00CFD089 /* ManageCategoriesView.swift */; };
 		DE4AACD02FAE2D9700C72FB2 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACCF2FAE2D9700C72FB2 /* Auth */; };
 		DE4AACD22FAE2D9700C72FB2 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACD12FAE2D9700C72FB2 /* Functions */; };
 		DE4AACD42FAE2D9700C72FB2 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = DE4AACD32FAE2D9700C72FB2 /* PostgREST */; };
@@ -99,6 +101,8 @@
 		DE7911DC2FBB5060002C0A28 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911B32FBB5060002C0A28 /* SupabaseManager.swift */; };
 		DE7911DD2FBB5060002C0A28 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DE79119E2FBB5060002C0A28 /* Assets.xcassets */; };
 		DE7911DE2FBB5060002C0A28 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DE7911A22FBB5060002C0A28 /* GoogleService-Info.plist */; };
+		DE7911E12FBB5060002C0A28 /* ReassignCategorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911E02FBB5060002C0A28 /* ReassignCategorySheet.swift */; };
+		DE7911E32FBB5060002C0A29 /* ManageCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7911E22FBB5060002C0A29 /* ManageCategoriesView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -171,6 +175,8 @@
 		DE0E6A102FBB4F5D00CFD088 /* ShareSheetPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheetPresenter.swift; sourceTree = "<group>"; };
 		DE0E6A112FBB4F5D00CFD088 /* SignupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignupView.swift; sourceTree = "<group>"; };
 		DE0E6A122FBB4F5D00CFD088 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
+		DE0E6B002FBB4F5D00CFD088 /* ReassignCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReassignCategorySheet.swift; sourceTree = "<group>"; };
+		DE0E6B012FBB4F5D00CFD089 /* ManageCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManageCategoriesView.swift; sourceTree = "<group>"; };
 		DE3C69CC2FA910EF006166C4 /* ReelMind-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "ReelMind-Info.plist"; sourceTree = "<group>"; };
 		DE3C69CE2FAA358E006166C4 /* ReelMind.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReelMind.entitlements; sourceTree = "<group>"; };
 		DE4FFEF52FA4B87D009193DB /* ReelMind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReelMind.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -217,6 +223,8 @@
 		DE7911B12FBB5060002C0A28 /* ShareSheetPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheetPresenter.swift; sourceTree = "<group>"; };
 		DE7911B22FBB5060002C0A28 /* SignupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignupView.swift; sourceTree = "<group>"; };
 		DE7911B32FBB5060002C0A28 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
+		DE7911E02FBB5060002C0A28 /* ReassignCategorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReassignCategorySheet.swift; sourceTree = "<group>"; };
+		DE7911E22FBB5060002C0A29 /* ManageCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManageCategoriesView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -351,6 +359,8 @@
 				DE0E69F92FBB4F5D00CFD088 /* InboxView.swift */,
 				DE0E69FA2FBB4F5D00CFD088 /* LibraryView.swift */,
 				DE0E69FB2FBB4F5D00CFD088 /* SettingsView.swift */,
+				DE0E6B002FBB4F5D00CFD088 /* ReassignCategorySheet.swift */,
+				DE0E6B012FBB4F5D00CFD089 /* ManageCategoriesView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -488,6 +498,8 @@
 				DE79119A2FBB5060002C0A28 /* InboxView.swift */,
 				DE79119B2FBB5060002C0A28 /* LibraryView.swift */,
 				DE79119C2FBB5060002C0A28 /* SettingsView.swift */,
+				DE7911E02FBB5060002C0A28 /* ReassignCategorySheet.swift */,
+				DE7911E22FBB5060002C0A29 /* ManageCategoriesView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -777,6 +789,10 @@
 				DE0E6A392FBB4F5D00CFD088 /* InboxView.swift in Sources */,
 				DE0E6A3A2FBB4F5D00CFD088 /* ReelsTheme.swift in Sources */,
 				DE0E6A3B2FBB4F5D00CFD088 /* ReelsHomeView.swift in Sources */,
+				DE0E6A3E2FBB4F5D00CFD088 /* ReassignCategorySheet.swift in Sources */,
+				DE0E6A3F2FBB4F5D00CFD089 /* ManageCategoriesView.swift in Sources */,
+				DE7911E12FBB5060002C0A28 /* ReassignCategorySheet.swift in Sources */,
+				DE7911E32FBB5060002C0A29 /* ManageCategoriesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
