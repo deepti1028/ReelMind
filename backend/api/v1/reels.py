@@ -129,30 +129,52 @@ async def update_reel_category(
         return {"reel_id": reel_id, "status": "uncategorised"}
 
     # Path A — user picked a specific category
+    # Normalise name: strip whitespace and title-case so "travel vlogs" → "Travel Vlogs"
+    normalised_name = payload.category_name.strip().title()
+    if not normalised_name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Category name cannot be empty",
+        )
+
+    # Case-insensitive lookup: finds "Travel" even if user sent "travel"
     cat_rows = (
         supabase.table("categories")
         .select("id, name")
-        .eq("name", payload.category_name)
+        .ilike("name", normalised_name)
         .or_(f"user_id.eq.{user_id},user_id.is.null")
         .execute()
     )
-    if not cat_rows.data:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Category '{payload.category_name}' not found for this user",
-        )
 
-    category_id = cat_rows.data[0]["id"]
+    created = False
+    if cat_rows.data:
+        category_id = cat_rows.data[0]["id"]
+    else:
+        # Auto-create: category doesn't exist for this user
+        new_cat = supabase.table("categories").insert({
+            "user_id": user_id,
+            "name": normalised_name,
+            "is_default": False,
+        }).execute()
+        category_id = new_cat.data[0]["id"]
+        created = True
+
     supabase.table("reels").update({
         "category_id": category_id,
         "confidence": 1.0,
         "status": "ready",
         "suggested_categories": [],
     }).eq("id", reel_id).execute()
+
     send_push_notification(
         fcm_token=fcm_token,
         title="Reel categorised!",
-        body=f"Moved to {payload.category_name}",
+        body=f"Added to {normalised_name}",
         data={"reel_id": reel_id, "status": "ready"},
     )
-    return {"reel_id": reel_id, "status": "ready", "category": payload.category_name}
+    return {
+        "reel_id": reel_id,
+        "status": "ready",
+        "category": normalised_name,
+        "created": created,
+    }

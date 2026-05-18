@@ -38,7 +38,7 @@ def _make_supabase_patch_mock(reel_status="pending_category", category_id=None):
         .data
     ) = reel_row
 
-    # Category lookup: .table("categories").select(...).eq(name).or_(...).execute()
+    # Category lookup: .table("categories").select(...).ilike(name).or_(...).execute()
     if category_id:
         cat_rows = [{"id": category_id, "name": "Fitness"}]
     else:
@@ -46,7 +46,7 @@ def _make_supabase_patch_mock(reel_status="pending_category", category_id=None):
     (
         db.table.return_value
         .select.return_value
-        .eq.return_value
+        .ilike.return_value
         .or_.return_value
         .execute.return_value
         .data
@@ -140,12 +140,121 @@ def test_reel_not_found_returns_404(mock_get_supabase):
     assert resp.status_code == 404
 
 
+# ---------------------------------------------------------------------------
+# Auto-create tests (Task 1)
+# ---------------------------------------------------------------------------
+
+def _make_supabase_auto_create_mock(category_found=False, new_cat_id="new-cat-uuid"):
+    """Table-routing mock that supports the auto-create branch in update_reel_category."""
+    reels_mock = MagicMock()
+    categories_mock = MagicMock()
+    profiles_mock = MagicMock()
+
+    # Reel fetch: .select().eq(id).eq(user_id).maybe_single().execute().data
+    reel_row = {
+        "id": REEL_ID,
+        "user_id": "user-test-id",
+        "status": "pending_category",
+        "suggested_categories": ["Fitness"],
+    }
+    (
+        reels_mock.select.return_value
+        .eq.return_value.eq.return_value
+        .maybe_single.return_value.execute.return_value.data
+    ) = reel_row
+    reels_mock.update.return_value.eq.return_value.execute.return_value = None
+
+    # Profile fetch for FCM token
+    (
+        profiles_mock.select.return_value
+        .eq.return_value.maybe_single.return_value.execute.return_value.data
+    ) = {"fcm_token": None}
+
+    # Category lookup: .select().ilike(name).or_(...).execute().data
+    cat_data = [{"id": "existing-cat-id", "name": "Travel"}] if category_found else []
+    (
+        categories_mock.select.return_value
+        .ilike.return_value.or_.return_value.execute.return_value.data
+    ) = cat_data
+
+    # Category insert (auto-create path)
+    categories_mock.insert.return_value.execute.return_value.data = [
+        {"id": new_cat_id, "name": "Travel Vlogs"}
+    ]
+
+    db = MagicMock()
+
+    def _table(name):
+        if name == "reels":
+            return reels_mock
+        if name == "categories":
+            return categories_mock
+        if name == "profiles":
+            return profiles_mock
+        return MagicMock()
+
+    db.table.side_effect = _table
+    return db
+
+
 @patch("api.v1.reels.get_supabase")
-def test_unknown_category_name_returns_422(mock_get_supabase):
-    db = _make_supabase_patch_mock(category_id=None)  # empty cat_rows
+@patch("api.v1.reels.send_push_notification", return_value=False)
+def test_patch_auto_creates_category_when_not_found(_push, mock_get_supabase):
+    """Unknown category name → auto-creates row, marks reel ready, returns created=True."""
+    db = _make_supabase_auto_create_mock(category_found=False, new_cat_id="new-cat-uuid")
     mock_get_supabase.return_value = db
+
     resp = client.patch(
         f"/api/v1/reels/{REEL_ID}/category",
-        json={"category_name": "NonExistentCategory"},
+        json={"category_name": "Travel Vlogs"},
     )
-    assert resp.status_code == 422
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ready"
+    assert body["created"] is True
+
+    # Verify insert was called on categories table with correct user_id
+    cat_insert_call = db.table("categories").insert.call_args.args[0]
+    assert cat_insert_call["user_id"] == "user-test-id"
+    assert cat_insert_call["is_default"] is False
+
+    # Verify reel was updated to ready
+    reels_update_call = db.table("reels").update.call_args.args[0]
+    assert reels_update_call["status"] == "ready"
+    assert reels_update_call["category_id"] == "new-cat-uuid"
+
+
+@patch("api.v1.reels.get_supabase")
+@patch("api.v1.reels.send_push_notification", return_value=False)
+def test_patch_case_insensitive_reuses_existing_category(_push, mock_get_supabase):
+    """Lowercase name that matches existing category → reuses it, no insert, created=False."""
+    db = _make_supabase_auto_create_mock(category_found=True)
+    mock_get_supabase.return_value = db
+
+    resp = client.patch(
+        f"/api/v1/reels/{REEL_ID}/category",
+        json={"category_name": "travel"},  # lowercase
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["created"] is False
+
+    # Verify insert was NOT called
+    db.table("categories").insert.assert_not_called()
+
+
+@patch("api.v1.reels.get_supabase")
+@patch("api.v1.reels.send_push_notification", return_value=False)
+def test_patch_title_cases_new_category_name(_push, mock_get_supabase):
+    """Input 'travel vlogs' → stored as 'Travel Vlogs' (title-cased)."""
+    db = _make_supabase_auto_create_mock(category_found=False)
+    mock_get_supabase.return_value = db
+
+    client.patch(
+        f"/api/v1/reels/{REEL_ID}/category",
+        json={"category_name": "travel vlogs"},
+    )
+
+    cat_insert_call = db.table("categories").insert.call_args.args[0]
+    assert cat_insert_call["name"] == "Travel Vlogs"
