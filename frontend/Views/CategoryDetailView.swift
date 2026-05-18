@@ -1,9 +1,10 @@
 import SwiftUI
+import Combine
 
 @MainActor
 private final class CategoryDetailViewModel: ObservableObject {
-    @Published private(set) var reels: [Reel] = []
-    @Published private(set) var isLoading = false
+    @Published var reels: [Reel] = []
+    @Published var isLoading = false
 
     func load(categoryId: UUID) async {
         guard !isLoading else { return }
