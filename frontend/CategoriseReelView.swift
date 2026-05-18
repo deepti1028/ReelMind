@@ -12,6 +12,7 @@ struct CategoriseReelView: View {
     @State private var userCategories: [CategoryRow] = []
     @State private var newCategoryName: String = ""
     @State private var isLoading: Bool = true
+    @State private var assignError: Bool = false
 
     struct CategoryRow: Identifiable, Decodable, Hashable {
         let id: String
@@ -78,13 +79,17 @@ struct CategoriseReelView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Skip") {
-                        ReelCategoryAPI.assign(reelId: reelId, categoryName: nil)
-                        dismiss()
+                        assignAndDismiss(categoryName: nil)
                     }
                 }
             }
             .task {
                 await loadReelAndCategories()
+            }
+            .alert("Couldn't save", isPresented: $assignError) {
+                Button("OK") { assignError = false }
+            } message: {
+                Text("Please check your connection and try again.")
             }
         }
     }
@@ -131,26 +136,20 @@ struct CategoriseReelView: View {
     }
 
     private func assignAndDismiss(categoryName: String?) {
-        ReelCategoryAPI.assign(reelId: reelId, categoryName: categoryName)
-        dismiss()
+        Task {
+            do {
+                try await ReelCategoryAPI.assignAsync(reelId: reelId, categoryName: categoryName)
+                await MainActor.run { dismiss() }
+            } catch {
+                await MainActor.run { assignError = true }
+            }
+        }
     }
 
     private func createCategoryAndAssign() {
         let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        Task {
-            do {
-                try await SupabaseManager.shared.client
-                    .from("categories")
-                    .insert(["name": trimmed])
-                    .execute()
-                await MainActor.run {
-                    assignAndDismiss(categoryName: trimmed)
-                }
-            } catch {
-                print("[CategoriseReelView] create category failed: \(error)")
-            }
-        }
+        assignAndDismiss(categoryName: trimmed)
     }
 
     private struct ReelMeta: Decodable {
