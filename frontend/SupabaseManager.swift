@@ -11,7 +11,7 @@ enum AppConfig {
 
     // Backend base URL — must match the URL hardcoded in URL Sharing module/Constants.swift.
     // Update both places when the Render URL changes.
-    static let backendBaseURL = URL(string: "https://beaulah-insuperable-accentually.ngrok-free.dev")!
+    static let backendBaseURL = URL(string: "https://reelmind-8paz.onrender.com")!
 
     // App Group identifier — must match what's in BOTH:
     //   1. Main app target's Signing & Capabilities → App Groups
