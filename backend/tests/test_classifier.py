@@ -1,4 +1,4 @@
-"""Tests for services.classifier — Step 18 Groq Llama classification."""
+"""Tests for services.classifier — Step 18 Gemini classification."""
 from unittest.mock import MagicMock, patch
 import json
 import pytest
@@ -6,29 +6,21 @@ import pytest
 CATEGORIES = ["Skincare", "Haircare", "Fitness", "Nutrition"]
 
 
-def _make_groq_response(category_id: int, confidence: float, alternative_ids: list[int]):
-    """Build a mock Groq chat completion response."""
+def _make_gemini_response(category_id: int, confidence: float, alternative_ids: list[int]):
+    """Build a mock Gemini GenerateContentResponse."""
     content = json.dumps({
         "category_id": category_id,
         "confidence": confidence,
         "alternative_ids": alternative_ids,
     })
-    msg = MagicMock()
-    msg.content = content
-    choice = MagicMock()
-    choice.message = msg
     resp = MagicMock()
-    resp.choices = [choice]
+    resp.text = content
     return resp
 
 
 def _make_bad_json_response():
-    msg = MagicMock()
-    msg.content = "not valid json {{{"
-    choice = MagicMock()
-    choice.message = msg
     resp = MagicMock()
-    resp.choices = [choice]
+    resp.text = "not valid json {{{"
     return resp
 
 
@@ -36,10 +28,12 @@ def _make_bad_json_response():
 # Happy paths
 # ---------------------------------------------------------------------------
 
-@patch("services.classifier.Groq")
-def test_happy_path_high_confidence(mock_groq_cls):
-    mock_groq_cls.return_value.chat.completions.create.return_value = (
-        _make_groq_response(3, 0.92, [4])
+@patch("services.classifier.genai.Client")
+def test_happy_path_high_confidence(mock_client_cls):
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = (
+        _make_gemini_response(3, 0.92, [4])
     )
     from services.classifier import classify_reel
     result = classify_reel("Great workout!", "Gym time!", ["fitness"], CATEGORIES)
@@ -48,10 +42,12 @@ def test_happy_path_high_confidence(mock_groq_cls):
     assert result.alternatives == ["Nutrition"]
 
 
-@patch("services.classifier.Groq")
-def test_category_id_mapped_to_name(mock_groq_cls):
-    mock_groq_cls.return_value.chat.completions.create.return_value = (
-        _make_groq_response(1, 0.85, [])
+@patch("services.classifier.genai.Client")
+def test_category_id_mapped_to_name(mock_client_cls):
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = (
+        _make_gemini_response(1, 0.85, [])
     )
     from services.classifier import classify_reel
     result = classify_reel(None, "Moisturiser review", [], CATEGORIES)
@@ -59,10 +55,12 @@ def test_category_id_mapped_to_name(mock_groq_cls):
     assert result.alternatives == []
 
 
-@patch("services.classifier.Groq")
-def test_alternatives_mapped_to_names(mock_groq_cls):
-    mock_groq_cls.return_value.chat.completions.create.return_value = (
-        _make_groq_response(1, 0.75, [3, 4])
+@patch("services.classifier.genai.Client")
+def test_alternatives_mapped_to_names(mock_client_cls):
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = (
+        _make_gemini_response(1, 0.75, [3, 4])
     )
     from services.classifier import classify_reel
     result = classify_reel("skin routine", None, [], CATEGORIES)
@@ -70,41 +68,32 @@ def test_alternatives_mapped_to_names(mock_groq_cls):
 
 
 # ---------------------------------------------------------------------------
-# JSON parse retry
+# JSON parse errors (edge case with Gemini schema validation)
 # ---------------------------------------------------------------------------
 
-@patch("services.classifier.Groq")
-def test_json_parse_failure_retried_once(mock_groq_cls):
-    good_resp = _make_groq_response(1, 0.9, [])
-    mock_groq_cls.return_value.chat.completions.create.side_effect = [
-        _make_bad_json_response(),
-        good_resp,
-    ]
-    from services.classifier import classify_reel
-    result = classify_reel(None, "Skincare routine", [], CATEGORIES)
-    assert result.category == "Skincare"
-    assert mock_groq_cls.return_value.chat.completions.create.call_count == 2
-
-
-@patch("services.classifier.Groq")
-def test_json_parse_failure_twice_raises_non_retryable(mock_groq_cls):
-    mock_groq_cls.return_value.chat.completions.create.return_value = (
+@patch("services.classifier.genai.Client")
+def test_bad_json_response_raises_error(mock_client_cls):
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = (
         _make_bad_json_response()
     )
     from services.classifier import classify_reel, ClassificationError
     with pytest.raises(ClassificationError) as exc_info:
         classify_reel(None, "caption", [], CATEGORIES)
-    assert exc_info.value.is_retryable is False
+    assert exc_info.value.is_retryable is True
 
 
 # ---------------------------------------------------------------------------
 # Validation failures
 # ---------------------------------------------------------------------------
 
-@patch("services.classifier.Groq")
-def test_invalid_category_id_raises_non_retryable(mock_groq_cls):
-    mock_groq_cls.return_value.chat.completions.create.return_value = (
-        _make_groq_response(99, 0.9, [])
+@patch("services.classifier.genai.Client")
+def test_invalid_category_id_raises_non_retryable(mock_client_cls):
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = (
+        _make_gemini_response(99, 0.9, [])
     )
     from services.classifier import classify_reel, ClassificationError
     with pytest.raises(ClassificationError) as exc_info:
@@ -112,10 +101,12 @@ def test_invalid_category_id_raises_non_retryable(mock_groq_cls):
     assert exc_info.value.is_retryable is False
 
 
-@patch("services.classifier.Groq")
-def test_confidence_out_of_range_raises_non_retryable(mock_groq_cls):
-    mock_groq_cls.return_value.chat.completions.create.return_value = (
-        _make_groq_response(1, 1.5, [])
+@patch("services.classifier.genai.Client")
+def test_confidence_out_of_range_raises_non_retryable(mock_client_cls):
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = (
+        _make_gemini_response(1, 1.5, [])
     )
     from services.classifier import classify_reel, ClassificationError
     with pytest.raises(ClassificationError) as exc_info:
@@ -123,10 +114,12 @@ def test_confidence_out_of_range_raises_non_retryable(mock_groq_cls):
     assert exc_info.value.is_retryable is False
 
 
-@patch("services.classifier.Groq")
-def test_category_in_alternatives_raises_non_retryable(mock_groq_cls):
-    mock_groq_cls.return_value.chat.completions.create.return_value = (
-        _make_groq_response(1, 0.9, [1])  # category_id == alternative_id
+@patch("services.classifier.genai.Client")
+def test_category_in_alternatives_raises_non_retryable(mock_client_cls):
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = (
+        _make_gemini_response(1, 0.9, [1])  # category_id == alternative_id
     )
     from services.classifier import classify_reel, ClassificationError
     with pytest.raises(ClassificationError) as exc_info:
@@ -135,66 +128,51 @@ def test_category_in_alternatives_raises_non_retryable(mock_groq_cls):
 
 
 # ---------------------------------------------------------------------------
-# Groq API errors
+# Gemini API errors
 # ---------------------------------------------------------------------------
 
-@patch("services.classifier.Groq")
-def test_groq_429_is_retryable(mock_groq_cls):
-    from groq import RateLimitError
-    mock_response = MagicMock()
-    mock_response.status_code = 429
-    mock_groq_cls.return_value.chat.completions.create.side_effect = RateLimitError(
-        message="rate limit exceeded",
-        response=mock_response,
-        body={},
-    )
+@patch("services.classifier.genai.Client")
+def test_rate_limit_error_is_retryable(mock_client_cls):
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.side_effect = Exception("rate limit exceeded")
     from services.classifier import classify_reel, ClassificationError
     with pytest.raises(ClassificationError) as exc_info:
         classify_reel(None, "caption", [], CATEGORIES)
     assert exc_info.value.is_retryable is True
 
 
-@patch("services.classifier.Groq")
-def test_groq_400_not_retryable(mock_groq_cls):
-    from groq import APIStatusError
-    mock_response = MagicMock()
-    mock_response.status_code = 400
-    mock_groq_cls.return_value.chat.completions.create.side_effect = APIStatusError(
-        message="bad request",
-        response=mock_response,
-        body={},
-    )
+@patch("services.classifier.genai.Client")
+def test_auth_error_not_retryable(mock_client_cls):
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.side_effect = Exception("401 authentication failed")
     from services.classifier import classify_reel, ClassificationError
     with pytest.raises(ClassificationError) as exc_info:
         classify_reel(None, "caption", [], CATEGORIES)
     assert exc_info.value.is_retryable is False
 
 
-@patch("services.classifier.Groq")
-def test_groq_5xx_is_retryable(mock_groq_cls):
-    from groq import APIStatusError
-    mock_response = MagicMock()
-    mock_response.status_code = 503
-    mock_groq_cls.return_value.chat.completions.create.side_effect = APIStatusError(
-        message="service unavailable",
-        response=mock_response,
-        body={},
-    )
-    from services.classifier import classify_reel, ClassificationError
-    with pytest.raises(ClassificationError) as exc_info:
-        classify_reel(None, "caption", [], CATEGORIES)
-    assert exc_info.value.is_retryable is True
-
-
-@patch("services.classifier.Groq")
-def test_groq_call_uses_correct_model_and_params(mock_groq_cls):
-    """Locks in model, temperature, and response_format on the Groq call."""
-    mock_groq_cls.return_value.chat.completions.create.return_value = (
-        _make_groq_response(1, 0.9, [])
+@patch("services.classifier.genai.Client")
+def test_gemini_call_uses_correct_model_and_params(mock_client_cls):
+    """Locks in model and temperature on the Gemini call."""
+    mock_client = MagicMock()
+    mock_client_cls.return_value = mock_client
+    mock_client.models.generate_content.return_value = (
+        _make_gemini_response(1, 0.9, [])
     )
     from services.classifier import classify_reel
     classify_reel(None, "caption", [], CATEGORIES)
-    kwargs = mock_groq_cls.return_value.chat.completions.create.call_args.kwargs
-    assert kwargs["temperature"] == 0
-    assert kwargs["model"] == "llama-3.3-70b-versatile"
-    assert kwargs["response_format"] == {"type": "json_object"}
+
+    # Check that generate_content was called with correct model
+    call_kwargs = mock_client.models.generate_content.call_args.kwargs
+    assert call_kwargs["model"] == "gemini-1.5-pro"
+
+    # system_instruction must be inside config, NOT a top-level kwarg —
+    # google-genai SDK v1.x rejects it at the top level with TypeError.
+    assert "system_instruction" not in call_kwargs, (
+        "system_instruction must be in GenerateContentConfig, not a top-level kwarg"
+    )
+    config = call_kwargs["config"]
+    assert config.temperature == 0
+    assert config.system_instruction is not None
