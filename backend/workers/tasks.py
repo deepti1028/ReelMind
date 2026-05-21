@@ -28,7 +28,7 @@ from services.downloader import (
     DownloadResult,
     download_reel,
 )
-from services.embedder import build_chunk_text, embed_document
+from services.embedder import EmbeddingError, build_chunk_text, embed_document
 from services.signal_builder import NoSignalError, build_classification_signal
 from services.classifier import ClassificationError, ClassificationResult, classify_reel
 from services.notifier import send_push_notification
@@ -223,7 +223,17 @@ def process_reel(self, reel_id: str) -> dict:
         )
         if _chunk_text:
             log.info("step 20 | embedding | chars=%d", len(_chunk_text))
-            _embedding = embed_document(_chunk_text)
+            try:
+                _embedding = embed_document(_chunk_text)
+            except EmbeddingError as exc:
+                log.warning(
+                    "step 20 | embedding failed | retryable=%s | %s",
+                    exc.is_retryable,
+                    exc,
+                )
+                return _handle_pipeline_error(
+                    self, supabase, reel_id, exc, exc.is_retryable, log
+                )
             supabase.table("reel_chunks").upsert({
                 "reel_id": reel_id,
                 "user_id": reel_data["user_id"],
