@@ -43,32 +43,31 @@ struct CategoryDetailView: View {
         // ZStack positions the chat FAB inside the safe-area frame.
         // Background is a modifier (not a ZStack child) so the ZStack sizes
         // to the safe area — keeping the button above the tab bar.
-        ZStack(alignment: .bottomTrailing) {
-            ScrollView {
-                LazyVStack(spacing: 10) {
-                    categoryHeader
-                        .padding(.horizontal, 20)
-                        .padding(.top, 4)
-                        .padding(.bottom, 8)
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                categoryHeader
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                    .padding(.bottom, 8)
 
-                    if viewModel.reels.isEmpty && !viewModel.isLoading {
-                        categoryEmptyState
-                            .padding(.horizontal, 14)
-                    } else {
-                        ForEach(viewModel.reels) { reel in
-                            DetailReelCard(
-                                reel: reel,
-                                onDelete: { reelToDelete = reel.id },
-                                onReassign: { reelToReassign = reel }
-                            )
-                        }
+                if viewModel.reels.isEmpty && !viewModel.isLoading {
+                    categoryEmptyState
+                        .padding(.horizontal, 14)
+                } else {
+                    ForEach(viewModel.reels) { reel in
+                        DetailReelCard(
+                            reel: reel,
+                            onDelete: { reelToDelete = reel.id },
+                            onReassign: { reelToReassign = reel }
+                        )
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.bottom, 80)
             }
-            .refreshable { await viewModel.load(categoryId: summary.id) }
-
+            .padding(.horizontal, 14)
+            .padding(.bottom, 80)
+        }
+        .refreshable { await viewModel.load(categoryId: summary.id) }
+        .overlay(alignment: .bottomTrailing) {
             chatButton
                 .padding(.trailing, 16)
                 .padding(.bottom, 16)
