@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
 
-from groq import Groq
+from google import genai
+from google.genai.types import GenerateContentConfig
+from pydantic import BaseModel
 
 from config import get_config
 from services.embedder import embed_query
@@ -18,7 +19,7 @@ _HYDE_SYSTEM = (
     "1. Write a short hypothetical reel transcript (3-5 sentences) that would perfectly "
     "answer the question. Write in first person as if you are a creator speaking in a reel.\n"
     "2. Extract any explicit filters: creator username only.\n\n"
-    "Return valid JSON only, no other text:\n"
+    "Return valid JSON only with this schema:\n"
     '{"hypothetical_doc": "...", "filters": {"creator_handle": null}}'
 )
 
@@ -28,33 +29,48 @@ _ANSWER_SYSTEM = (
     "If the reels don't contain enough to answer, say so honestly — don't make things up."
 )
 
-_MODEL = "llama-3.3-70b-versatile"
+_MODEL = "gemini-2.0-flash"
 
-_groq_client: Groq | None = None
+
+class HydeSchema(BaseModel):
+    """Structured output schema for HyDE extraction."""
+    hypothetical_doc: str
+    filters: dict = None
 
 
 class RagGenerationError(Exception):
     pass
 
 
-def _get_groq_client() -> Groq:
-    global _groq_client
-    if _groq_client is None:
-        _groq_client = Groq(api_key=get_config().GROQ_API_KEY)
-    return _groq_client
+_gemini_client: genai.Client | None = None
+
+
+def _get_gemini_client() -> genai.Client:
+    global _gemini_client
+    if _gemini_client is None:
+        cfg = get_config()
+        if not cfg.GEMINI_API_KEY:
+            raise RagGenerationError("GEMINI_API_KEY not configured")
+        _gemini_client = genai.Client(api_key=cfg.GEMINI_API_KEY)
+    return _gemini_client
 
 
 def _hyde_and_extract_filters(user_message: str) -> tuple[str, dict]:
     try:
-        response = _get_groq_client().chat.completions.create(
+        client = _get_gemini_client()
+        response = client.models.generate_content(
             model=_MODEL,
-            messages=[
-                {"role": "system", "content": _HYDE_SYSTEM},
-                {"role": "user", "content": user_message},
+            contents=[
+                genai.types.Content(role="user", parts=[genai.types.Part(text=user_message)]),
             ],
-            temperature=0.3,
+            system_instruction=_HYDE_SYSTEM,
+            config=GenerateContentConfig(
+                temperature=0.3,
+                response_mime_type="application/json",
+                response_schema=HydeSchema,
+            ),
         )
-        parsed = json.loads(response.choices[0].message.content)
+        parsed = json.loads(response.text)
         return parsed["hypothetical_doc"], parsed.get("filters", {})
     except Exception as exc:
         logger.warning("HyDE failed, falling back to raw query | %s", exc)
@@ -90,7 +106,7 @@ def _generate(
     user_message: str,
     chunks: list[dict],
     history: list[dict],
-    groq_client: Groq,
+    gemini_client: genai.Client,
 ) -> str:
     if chunks:
         context_block = "\n\n---\n\n".join(
@@ -102,16 +118,25 @@ def _generate(
         user_content = f"No relevant reels found.\n\nQuestion: {user_message}"
 
     try:
-        response = groq_client.chat.completions.create(
-            model=_MODEL,
-            messages=[
-                {"role": "system", "content": _ANSWER_SYSTEM},
-                *history,
-                {"role": "user", "content": user_content},
-            ],
-            temperature=0.5,
+        # Build message history for Gemini
+        messages = []
+        for h in history:
+            messages.append(
+                genai.types.Content(
+                    role=h["role"], parts=[genai.types.Part(text=h["content"])]
+                )
+            )
+        messages.append(
+            genai.types.Content(role="user", parts=[genai.types.Part(text=user_content)])
         )
-        return response.choices[0].message.content
+
+        response = gemini_client.models.generate_content(
+            model=_MODEL,
+            contents=messages,
+            system_instruction=_ANSWER_SYSTEM,
+            config=GenerateContentConfig(temperature=0.5),
+        )
+        return response.text
     except Exception as exc:
         raise RagGenerationError(str(exc)) from exc
 
@@ -124,13 +149,13 @@ def answer(
     user_id = str(session["user_id"])
     category_id = str(session["category_id"])
     supabase = get_supabase()
-    groq = _get_groq_client()
+    gemini = _get_gemini_client()
 
     hypothetical_doc, filters = _hyde_and_extract_filters(user_message)
     query_vec = embed_query(hypothetical_doc)
 
     chunks = _retrieve(query_vec, user_id, category_id, filters, supabase)
-    generated = _generate(user_message, chunks, history, groq)
+    generated = _generate(user_message, chunks, history, gemini)
 
     return {
         "content": generated,

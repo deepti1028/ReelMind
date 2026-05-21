@@ -22,7 +22,7 @@ from config import get_config
 
 logger = logging.getLogger(__name__)
 
-_MODEL = "gemini-1.5-pro"
+_MODEL = "gemini-2.0-flash"
 _MAX_FIELD_CHARS = 4000
 
 
