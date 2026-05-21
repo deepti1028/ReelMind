@@ -8,8 +8,10 @@ pydantic-settings==2.5.2
 supabase==2.9.1
 
 # AI / LLM
-# Groq SDK — used for both Whisper transcription and Llama classification
-groq==0.11.0
+# Groq SDK — used for Whisper audio transcription (Gemini handles classification + RAG)
+groq>=0.15.0
+# Google Gemini API — used for classification and RAG
+google-genai
 # Local embedding model (no API, runs in Celery worker)
 sentence-transformers==3.2.1
 
@@ -19,7 +21,7 @@ redis==5.1.1
 
 # Environment & utilities
 python-dotenv==1.0.1
-httpx==0.27.2
+httpx>=0.27.2
 
 # Instagram reel scraping (services/downloader.py)
 # curl_cffi: TLS fingerprint impersonation so Instagram serves us the real HTML
