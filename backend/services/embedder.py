@@ -1,17 +1,17 @@
+# backend/services/embedder.py
 from __future__ import annotations
 
-from sentence_transformers import SentenceTransformer
+from google.genai import types
 
-_model: SentenceTransformer | None = None
+from services.gemini_client import get_gemini_client
+
+_MODEL = "text-embedding-004"
 
 
-def _get_model() -> SentenceTransformer:
-    global _model
-    if _model is None:
-        # device='cpu' prevents PyTorch from initializing Metal/MPS on macOS,
-        # which would spawn ObjC background threads that conflict with Celery's fork().
-        _model = SentenceTransformer("BAAI/bge-small-en-v1.5", device="cpu")
-    return _model
+class EmbeddingError(Exception):
+    def __init__(self, message: str, is_retryable: bool = True):
+        super().__init__(message)
+        self.is_retryable = is_retryable
 
 
 def build_chunk_text(
@@ -30,9 +30,24 @@ def build_chunk_text(
 
 
 def embed_document(text: str) -> list[float]:
-    return _get_model().encode(text, normalize_embeddings=True).tolist()
+    try:
+        response = get_gemini_client().models.embed_content(
+            model=_MODEL,
+            contents=text,
+            config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
+        )
+        return list(response.embeddings[0].values)
+    except Exception as exc:
+        raise EmbeddingError(str(exc), is_retryable=True) from exc
 
 
 def embed_query(text: str) -> list[float]:
-    prefixed = f"Represent this sentence for searching relevant passages: {text}"
-    return _get_model().encode(prefixed, normalize_embeddings=True).tolist()
+    try:
+        response = get_gemini_client().models.embed_content(
+            model=_MODEL,
+            contents=text,
+            config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY"),
+        )
+        return list(response.embeddings[0].values)
+    except Exception as exc:
+        raise EmbeddingError(str(exc), is_retryable=True) from exc
