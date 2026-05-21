@@ -7,8 +7,8 @@ from google import genai
 from google.genai.types import GenerateContentConfig
 from pydantic import BaseModel
 
-from config import get_config
 from services.embedder import embed_query
+from services.gemini_client import get_gemini_client
 from supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -42,22 +42,9 @@ class RagGenerationError(Exception):
     pass
 
 
-_gemini_client: genai.Client | None = None
-
-
-def _get_gemini_client() -> genai.Client:
-    global _gemini_client
-    if _gemini_client is None:
-        cfg = get_config()
-        if not cfg.GEMINI_API_KEY:
-            raise RagGenerationError("GEMINI_API_KEY not configured")
-        _gemini_client = genai.Client(api_key=cfg.GEMINI_API_KEY)
-    return _gemini_client
-
-
 def _hyde_and_extract_filters(user_message: str) -> tuple[str, dict]:
     try:
-        client = _get_gemini_client()
+        client = get_gemini_client()
         response = client.models.generate_content(
             model=_MODEL,
             contents=[
@@ -149,7 +136,7 @@ def answer(
     user_id = str(session["user_id"])
     category_id = str(session["category_id"])
     supabase = get_supabase()
-    gemini = _get_gemini_client()
+    gemini = get_gemini_client()
 
     hypothetical_doc, filters = _hyde_and_extract_filters(user_message)
     query_vec = embed_query(hypothetical_doc)
