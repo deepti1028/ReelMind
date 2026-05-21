@@ -123,8 +123,8 @@ def send_push_notification(
             )
         )
 
-    # Use _Message dataclass so that the object passed to messaging.send()
-    # has real attribute values regardless of whether `messaging` is mocked.
+    # _Message dataclass lets tests inspect real attribute values when messaging is mocked.
+    # Convert to an actual messaging.Message before handing off to the Firebase SDK.
     message = _Message(
         notification=messaging.Notification(title=title, body=body),
         data=data or {},
@@ -132,8 +132,23 @@ def send_push_notification(
         token=fcm_token,
     )
 
+    sdk_apns = None
+    if message.apns:
+        sdk_apns = messaging.APNSConfig(
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(category=message.apns.payload.aps.category)
+            )
+        )
+
+    sdk_message = messaging.Message(
+        notification=message.notification,
+        data=message.data,
+        apns=sdk_apns,
+        token=message.token,
+    )
+
     try:
-        messaging.send(message, app=app)
+        messaging.send(sdk_message, app=app)
         logger.info("notifier | push sent | title=%r", title)
         return True
     except Exception as exc:
