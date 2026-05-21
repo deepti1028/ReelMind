@@ -721,41 +721,46 @@ def _parse_dash_manifest(
 
 def _download_file(url: str, dest_path: str, log: logging.LoggerAdapter) -> int:
     """Stream ``url`` to ``dest_path``. Returns bytes written."""
+    import urllib.request
+    from urllib.error import HTTPError, URLError
+
     parsed = urlparse(url)
+    # CDN URLs don't require full TLS fingerprinting, but setting a standard UA helps.
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+    )
     try:
-        resp = cffi_requests.get(url, impersonate="chrome", stream=True, timeout=60)
-        if resp.status_code != 200:
-            # 4xx on a CDN URL almost always means the asset URL has
-            # expired (IG CDN URLs are signed + short-lived); 5xx is a
-            # CDN hiccup worth retrying.
-            cause = (
-                "CDN server-side issue"
-                if resp.status_code >= 500
-                else "asset URL expired or revoked (IG CDN URLs are signed+short-lived)"
-            )
-            log.error(
-                "asset download failed | host=%s | path=%s | status=%s "
-                "| likely_cause=%s",
-                parsed.hostname,
-                parsed.path,
-                resp.status_code,
-                cause,
-            )
-            raise DownloadError(
-                f"download HTTP {resp.status_code} for {parsed.path}: {cause}",
-                is_retryable=resp.status_code >= 500,
-            )
         written = 0
-        with open(dest_path, "wb") as fh:
-            for chunk in resp.iter_content(chunk_size=64 * 1024):
+        with urllib.request.urlopen(req, timeout=60) as resp, open(dest_path, "wb") as fh:
+            while True:
+                chunk = resp.read(64 * 1024)
                 if not chunk:
-                    continue
+                    break
                 fh.write(chunk)
                 written += len(chunk)
         return written
-    except DownloadError:
-        raise
-    except Exception as exc:
+    except HTTPError as exc:
+        cause = (
+            "CDN server-side issue"
+            if exc.code >= 500
+            else "asset URL expired or revoked (IG CDN URLs are signed+short-lived)"
+        )
+        log.error(
+            "asset download failed | host=%s | path=%s | status=%s "
+            "| likely_cause=%s",
+            parsed.hostname,
+            parsed.path,
+            exc.code,
+            cause,
+        )
+        raise DownloadError(
+            f"download HTTP {exc.code} for {parsed.path}: {cause}",
+            is_retryable=exc.code >= 500,
+        )
+    except (URLError, Exception) as exc:
         log.error(
             "asset download failed | host=%s | path=%s | exc_type=%s | reason=%s",
             parsed.hostname,
