@@ -10,10 +10,8 @@ supabase==2.9.1
 # AI / LLM
 # Groq SDK — used for Whisper audio transcription (Gemini handles classification + RAG)
 groq>=0.15.0
-# Google Gemini API — used for classification and RAG
+# Google Gemini API — used for classification, RAG, and embeddings (text-embedding-004)
 google-genai
-# Local embedding model (no API, runs in Celery worker)
-sentence-transformers==3.2.1
 
 # Background jobs
 celery==5.4.0
