@@ -29,7 +29,7 @@ _ANSWER_SYSTEM = (
     "If the reels don't contain enough to answer, say so honestly — don't make things up."
 )
 
-_MODEL = "gemini-2.0-flash"
+_MODEL = "gemini-3.1-pro-preview"
 
 
 class HydeSchema(BaseModel):
