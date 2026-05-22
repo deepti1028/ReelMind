@@ -16,7 +16,7 @@ Rules:
 
 ## What This Project Is
 
-ReelMind is an iOS app that lets users save Instagram Reels via the iOS Share Sheet. When a user shares a reel URL, a background pipeline downloads it, transcribes its audio (Groq Whisper), classifies it into a category (Groq Llama 3.3 70B), and generates embeddings (sentence-transformers locally in Celery). Steps 17–22 of the pipeline (classification, embeddings, FCM push) are not yet implemented.
+ReelMind is an iOS app that lets users save Instagram Reels via the iOS Share Sheet. When a user shares a reel URL, a background pipeline downloads it, transcribes its audio (Groq Whisper), classifies it into a category (Groq Llama 3.3 70B), generates embeddings (sentence-transformers locally in Celery), and sends an FCM push notification. All pipeline steps (Steps 15–22) are implemented.
 
 ---
 
@@ -53,9 +53,9 @@ Health check: http://localhost:8000/api/v1/health
 
 ### Environment variables
 
-Copy `backend/.env.example` → `backend/.env`. Required vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Optional: `GROQ_API_KEY`, `REDIS_URL` (defaults to `redis://localhost:6379`), `FCM_SERVER_KEY`, `TAVILY_API_KEY`.
+Copy `backend/.env.example` → `backend/.env`. Required vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Optional: `GROQ_API_KEY`, `REDIS_URL` (defaults to `redis://localhost:6379`), `FIREBASE_SERVICE_ACCOUNT_JSON` (base64-encoded Firebase service account JSON — enables FCM push; if unset, push is silently skipped), `TAVILY_API_KEY`.
 
-Production deployment is on Render via `render.yaml`; env vars are set manually in the Render dashboard.
+Production deployment: FastAPI runs on Render (`reelmind-api` web service). Celery runs on Render (`reelmind-celery` worker service). Redis is managed by Upstash (free tier, TLS URL). Set `REDIS_URL` on both Render services. Set `FIREBASE_SERVICE_ACCOUNT_JSON` only on the Celery worker — FastAPI never sends pushes directly.
 
 ### Database / Supabase
 
@@ -65,7 +65,7 @@ Migrations live in `supabase/migrations/`. Apply with:
 supabase db push
 ```
 
-The `reel_chunks.embedding` column is currently `vector(1536)` but **must be migrated to `vector(384)`** before implementing Step 20 (embeddings), since `sentence-transformers/all-MiniLM-L6-v2` produces 384-dimensional vectors.
+The `reel_chunks.embedding` column is `vector(384)` (migrated via `supabase/migrations/20260518000001_resize_reel_chunks_embedding.sql`). The embedding model is `BAAI/bge-small-en-v1.5` (384-dim).
 
 ---
 
@@ -124,7 +124,11 @@ Redis  ← Celery broker (local Docker in dev, managed Redis in prod)
 `process_reel` Celery task (`workers/tasks.py`) — all pipeline stages in one task:
 - **Step 15** (`services/downloader.py`): scrapes Instagram reel HTML using `curl_cffi` (TLS fingerprint impersonation), parses the embedded `application/json` GraphQL blob with `parsel`, extracts audio URL from the DASH manifest. Downloads audio-only `.m4a` and thumbnail to a temp dir.
 - **Step 16** (`services/transcriber.py`): sends `.m4a` to Groq Whisper, persists transcript + `has_audio` flag.
-- **Steps 17–22**: not yet implemented (classification, caption extraction, embeddings, confidence routing, FCM push).
+- **Step 17** (`workers/tasks.py`): Build classification signal from transcript, caption, and hashtags.
+- **Step 18** (`services/classifier.py`): Classify via Groq Llama 3.3 70B → category name + confidence score.
+- **Step 19** (`workers/tasks.py`): Confidence routing — ≥0.70 → `status=ready`; <0.70 → `status=pending_category` with suggested categories.
+- **Step 20** (`services/embedder.py`): Embed transcript+caption+hashtags as 384-dim vector → store in `reel_chunks`.
+- **Step 22** (`services/notifier.py`): FCM push via Firebase Admin SDK. `ready` path: "Reel saved!". `pending_category` path: push with action buttons for suggested categories. Requires `FIREBASE_SERVICE_ACCOUNT_JSON` env var; silently skips if unset.
 
 `DownloadError.is_retryable` controls whether Celery retries (max 3, backoff 60s × retry number) or marks the reel `status="failed"`. The temp dir is always cleaned up in the `finally` block.
 
