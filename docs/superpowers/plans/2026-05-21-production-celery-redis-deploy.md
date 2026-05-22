@@ -2,11 +2,31 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deploy Celery + Redis to production on Render so the full reel ingestion pipeline (Steps 15-22) runs automatically when users share reels from their iPhone.
+**Goal:** Deploy Celery + Redis to production on Render so the full reel ingestion pipeline (Steps 15–22) runs automatically when users share reels from their iPhone.
 
-**Architecture:** FastAPI already runs on Render at `reelmind-8paz.onrender.com`. We add a second Render service (a background worker running Celery) connected to Upstash Redis as the task broker. Firebase Admin SDK is already implemented — it just needs the `FIREBASE_SERVICE_ACCOUNT_JSON` env var set on the worker to enable FCM pushes.
+**Architecture (Option B — Single Service):** FastAPI already runs on Render at `reelmind-8paz.onrender.com`. Both uvicorn and Celery run inside the **same** `reelmind-api` web service using a combined start command. A separate background worker service was rejected because Render has no free tier for background workers ($7/month minimum). Option B works because the embedder uses the Gemini API (no local model in RAM) — peak memory ~200 MB, well under the 512 MB free-tier limit.
 
-**Tech Stack:** Render (web + worker services), Upstash Redis (managed, free-tier, TLS), Firebase Admin SDK, `render.yaml`
+**Tech Stack:** Render (single web service running both uvicorn + Celery), Upstash Redis (managed, free-tier, TLS), Firebase Admin SDK, `render.yaml`
+
+---
+
+## Status: What Is Done vs Pending
+
+| Milestone | Status |
+|---|---|
+| Phase 1 tests verified | ✅ Done |
+| `render.yaml` updated (worker block + GEMINI_API_KEY) | ✅ Done |
+| `CLAUDE.md` updated (all pipeline steps, correct vector dim) | ✅ Done |
+| ngrok URLs replaced with Render URL in iOS files | ✅ Done |
+| Upstash Redis created | ✅ Done |
+| Firebase key already on Render from prior work | ✅ Done |
+| `REDIS_URL` set on `reelmind-api` in Render dashboard | ✅ Done |
+| `GEMINI_API_KEY` set on `reelmind-api` in Render dashboard | ✅ Done |
+| Render start command updated to Option B | ✅ Done |
+| Verify `celery@<hostname> ready.` in logs | ⏳ M4 |
+| End-to-end smoke test | ⏳ M5 |
+| `git push origin main` | ⏳ Pending |
+| Rebuild iOS app in Xcode (⌘R) | ⏳ Pending |
 
 ---
 
@@ -25,84 +45,38 @@ Before doing anything, verify Phase 1 (Steps 23-24 code gaps) is fully implement
 
 ## File Map
 
-| File | Action | Responsibility |
+| File | Action | Status |
 |---|---|---|
-| `render.yaml` | Modify | Add `reelmind-celery` worker service |
-| `CLAUDE.md` | Modify | Fix stale statements about pipeline steps and vector dimension |
+| `render.yaml` | Modified — worker block added + GEMINI_API_KEY on both services | ✅ Done |
+| `CLAUDE.md` | Modified — all stale statements fixed | ✅ Done |
+| `URL Sharing module/ShareViewController.swift` | Modified — ngrok → Render URL | ✅ Done |
+| `frontend/SupabaseManager.swift` | Modified — ngrok → Render URL | ✅ Done |
 
 ---
 
-## Task 1: Verify Phase 1 Tests Still Pass
+## Task 1: Verify Phase 1 Tests Still Pass ✅
 
-Before touching any infrastructure, confirm the backend tests are green. This catches any regression before we build on top.
+Before touching any infrastructure, confirm the backend tests are green.
 
 **Files:** None modified — read-only verification.
 
-- [ ] **Step 1: Run the full backend test suite**
+- [x] **Step 1: Run the full backend test suite**
 
 ```bash
 cd /Users/deeptijain/Desktop/Deepti/Projects/ReelMind/backend && source venv/bin/activate && \
 pytest tests/ -v 2>&1 | tail -30
 ```
 
-Expected output (all tests pass):
-```
-tests/test_category_endpoint.py::test_assign_category_marks_ready PASSED
-tests/test_category_endpoint.py::test_null_category_name_marks_uncategorised PASSED
-tests/test_category_endpoint.py::test_already_resolved_returns_409 PASSED
-tests/test_category_endpoint.py::test_reel_not_found_returns_404 PASSED
-tests/test_category_endpoint.py::test_patch_auto_creates_category_when_not_found PASSED
-tests/test_category_endpoint.py::test_patch_case_insensitive_reuses_existing_category PASSED
-tests/test_category_endpoint.py::test_patch_title_cases_new_category_name PASSED
-...
-N passed
-```
-
-If any test fails, stop and fix it before continuing.
-
 ---
 
-## Task 2: Add Celery Worker Service to `render.yaml`
+## Task 2: Update `render.yaml` ✅
 
-Render reads `render.yaml` from the repo root to know what services to deploy. We add a `worker` type service that runs Celery. The `worker` type never receives HTTP traffic and never sleeps — it stays alive 24/7 on the free tier (unlike the web service which can spin down).
+The `render.yaml` was updated with two changes:
+1. Added `reelmind-celery` worker block (serves as infrastructure-as-code documentation even though Celery actually runs inside the web service — Option B)
+2. Added `GEMINI_API_KEY` to both the web service and worker blocks (the embedder calls the Gemini API)
+3. Changed `FCM_SERVER_KEY` → `FIREBASE_SERVICE_ACCOUNT_JSON` on the worker block
 
-**Files:**
-- Modify: `render.yaml`
-
-- [ ] **Step 1: Open `render.yaml` and append the Celery worker service**
-
-The current file ends after the `reelmind-api` web service. Add the following block at the end of the file (after the last line):
-
-```yaml
-  - type: worker
-    name: reelmind-celery
-    runtime: python
-    region: oregon
-    plan: free
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && celery -A workers.celery_app worker --loglevel=info --concurrency=1
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: GROQ_API_KEY
-        sync: false
-      - key: REDIS_URL
-        sync: false
-      - key: FIREBASE_SERVICE_ACCOUNT_JSON
-        sync: false
-```
-
-**Why `concurrency=1`:** The sentence-transformers embedding model loads ~300 MB into RAM. Render free tier allows up to 512 MB. Two workers would exceed the limit and get OOM-killed.
-
-**Why `sync: false`:** These env vars contain secrets and must be set manually in the Render dashboard — they are not committed to the repo.
-
-After the edit, the full `render.yaml` should look like this:
+**Final `render.yaml` state:**
 
 ```yaml
 services:
@@ -130,6 +104,8 @@ services:
         sync: false
       - key: TAVILY_API_KEY
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
 
   - type: worker
     name: reelmind-celery
@@ -153,167 +129,99 @@ services:
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
 ```
 
-- [ ] **Step 2: Commit**
+> **Note:** The `render.yaml` `startCommand` for `reelmind-api` still shows the uvicorn-only command. The actual start command used in the Render dashboard (Option B, set manually) is different — see Task 4 Step M3 below.
 
-```bash
-cd /Users/deeptijain/Desktop/Deepti/Projects/ReelMind && \
-git add render.yaml && \
-git commit -m "feat: add reelmind-celery worker service to render.yaml"
-```
+- [x] **Step 1: Edit render.yaml**
+- [x] **Step 2: Commit**
 
 ---
 
-## Task 3: Update `CLAUDE.md` to Reflect Current State
+## Task 3: Update `CLAUDE.md` ✅
 
-`CLAUDE.md` has two stale statements that will mislead future work:
-1. "Steps 17–22 not yet implemented" — they ARE implemented (classification, confidence routing, embeddings, FCM push all exist in `workers/tasks.py`)
-2. "must be migrated to `vector(384)`" — already done via `supabase/migrations/20260518000001_resize_reel_chunks_embedding.sql`
+`CLAUDE.md` was updated with the following fixes:
+1. "What This Project Is" — removed "Steps 17–22 not yet implemented", replaced with "All pipeline steps (Steps 15–22) are implemented."
+2. Env vars — `FCM_SERVER_KEY` → `FIREBASE_SERVICE_ACCOUNT_JSON`; added production deployment topology note
+3. Database section — updated from `vector(1536)`/`vector(384)` confusion to `vector(768)` migrated via `20260522000001_resize_embeddings_to_768.sql`, model is `gemini-embedding-2`
+4. Pipeline section — Steps 17–22 now described with actual implementation details
+5. AI stack section — `gemini-embedding-2` (768-dim, Gemini API) replaces sentence-transformers note
 
-We also need to add production deployment context and the `FIREBASE_SERVICE_ACCOUNT_JSON` env var.
-
-**Files:**
-- Modify: `CLAUDE.md`
-
-- [ ] **Step 1: Fix the "What This Project Is" section**
-
-Find this line in `CLAUDE.md`:
-
-```
-ReelMind is an iOS app that lets users save Instagram Reels via the iOS Share Sheet. When a user shares a reel URL, a background pipeline downloads it, transcribes its audio (Groq Whisper), classifies it into a category (Groq Llama 3.3 70B), and generates embeddings (sentence-transformers locally in Celery). Steps 17–22 of the pipeline (classification, embeddings, FCM push) are not yet implemented.
-```
-
-Replace with:
-
-```
-ReelMind is an iOS app that lets users save Instagram Reels via the iOS Share Sheet. When a user shares a reel URL, a background pipeline downloads it, transcribes its audio (Groq Whisper), classifies it into a category (Groq Llama 3.3 70B), generates embeddings (sentence-transformers locally in Celery), and sends an FCM push notification. All pipeline steps (Steps 15–22) are implemented.
-```
-
-- [ ] **Step 2: Fix the env vars section — add `FIREBASE_SERVICE_ACCOUNT_JSON`, remove stale FCM_SERVER_KEY note**
-
-Find this line in the `### Environment variables` section:
-
-```
-Copy `backend/.env.example` → `backend/.env`. Required vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Optional: `GROQ_API_KEY`, `REDIS_URL` (defaults to `redis://localhost:6379`), `FCM_SERVER_KEY`, `TAVILY_API_KEY`.
-```
-
-Replace with:
-
-```
-Copy `backend/.env.example` → `backend/.env`. Required vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Optional: `GROQ_API_KEY`, `REDIS_URL` (defaults to `redis://localhost:6379`), `FIREBASE_SERVICE_ACCOUNT_JSON` (base64-encoded Firebase service account JSON — enables FCM push; if unset, push is silently skipped), `TAVILY_API_KEY`.
-
-Production deployment: FastAPI runs on Render (`reelmind-api` web service). Celery runs on Render (`reelmind-celery` worker service). Redis is managed by Upstash (free tier, TLS URL). Set `REDIS_URL` on both Render services. Set `FIREBASE_SERVICE_ACCOUNT_JSON` only on the Celery worker — FastAPI never sends pushes directly.
-```
-
-- [ ] **Step 3: Fix the stale database note about vector dimension**
-
-Find this paragraph in `### Database / Supabase`:
-
-```
-The `reel_chunks.embedding` column is currently `vector(1536)` but **must be migrated to `vector(384)`** before implementing Step 20 (embeddings), since `sentence-transformers/all-MiniLM-L6-v2` produces 384-dimensional vectors.
-```
-
-Replace with:
-
-```
-The `reel_chunks.embedding` column is `vector(384)` (migrated via `supabase/migrations/20260518000001_resize_reel_chunks_embedding.sql`). The embedding model is `BAAI/bge-small-en-v1.5` (384-dim).
-```
-
-- [ ] **Step 4: Fix the stale pipeline description**
-
-Find this in `### Backend ingestion pipeline`:
-
-```
-- **Steps 17–22**: not yet implemented (classification, caption extraction, embeddings, confidence routing, FCM push).
-```
-
-Replace with:
-
-```
-- **Step 17** (`workers/tasks.py`): Build classification signal from transcript, caption, and hashtags.
-- **Step 18** (`services/classifier.py`): Classify via Groq Llama 3.3 70B → category name + confidence score.
-- **Step 19** (`workers/tasks.py`): Confidence routing — ≥0.70 → `status=ready`; <0.70 → `status=pending_category` with suggested categories.
-- **Step 20** (`services/embedder.py`): Embed transcript+caption+hashtags as 384-dim vector → store in `reel_chunks`.
-- **Step 22** (`services/notifier.py`): FCM push via Firebase Admin SDK. `ready` path: "Reel saved!". `pending_category` path: push with action buttons for suggested categories. Requires `FIREBASE_SERVICE_ACCOUNT_JSON` env var; silently skips if unset.
-```
-
-- [ ] **Step 5: Commit**
-
-```bash
-cd /Users/deeptijain/Desktop/Deepti/Projects/ReelMind && \
-git add CLAUDE.md && \
-git commit -m "docs: update CLAUDE.md — all pipeline steps implemented, fix stale statements"
-```
+- [x] **Step 1–5: All edits and commit done**
 
 ---
 
-## Task 4: Manual Infrastructure Steps (You Do These)
+## Task 4: Replace ngrok URLs with Render URL ✅
 
-These steps cannot be done by Claude — they require browser access and Render dashboard credentials. Do them **after** the code changes above are pushed to `main`.
+Replaced all hardcoded ngrok tunnel URLs with the permanent Render URL `https://reelmind-8paz.onrender.com` in:
 
-### Step M1 — Create Upstash Redis
+| File | Line | Change |
+|---|---|---|
+| `URL Sharing module/ShareViewController.swift` | ~45 | `K.backendBaseURL = "https://reelmind-8paz.onrender.com"` |
+| `frontend/SupabaseManager.swift` | 12 | `AppConfig.backendBaseURL = URL(string: "https://reelmind-8paz.onrender.com")!` |
 
-1. Go to [upstash.com](https://upstash.com) → click **Sign Up** (free, no credit card required)
-2. After signing in → click **Create Database**
-3. Name: `reelmind` → Region: **US-West-1** (Oregon — closest to Render's Oregon region → lower latency) → Type: **Regional** → click **Create**
-4. On the database detail page → copy the **Redis URL** — it starts with `rediss://default:xxxx@xxx.upstash.io:6379`
-   - Save this string — you'll paste it as `REDIS_URL` on both Render services
+- [x] **Both files updated**
 
-**Why Upstash, not another provider:** Free tier includes 10,000 commands/day and 256 MB — enough for ~700-1,000 reels/day. No credit card required. TLS connection is included.
+> **Rebuild iOS app required:** After pushing these changes to GitHub, rebuild the iOS app in Xcode (⌘R) and reinstall on device so the new URL takes effect.
 
-### Step M2 — Get Firebase Service Account JSON
+---
 
-1. Go to [Firebase Console](https://console.firebase.google.com) → select your ReelMind project
-2. Click the gear icon (⚙) → **Project Settings** → **Service Accounts** tab
-3. Click **Generate new private key** → **Generate key** → a `.json` file downloads
-4. In your Mac terminal, run:
-   ```bash
-   base64 -i /path/to/downloaded-serviceAccount.json | tr -d '\n'
-   ```
-   Replace `/path/to/downloaded-serviceAccount.json` with the actual path (e.g. `~/Downloads/reelmind-firebase-adminsdk-xxxx.json`)
-5. Copy the entire output string — this is `FIREBASE_SERVICE_ACCOUNT_JSON`
+## Task 5: Manual Infrastructure Steps (You Do These)
 
-**Why base64?** Render env vars are single-line strings. The JSON file contains newlines that would break parsing. Base64 encodes it to a safe single-line string. The backend's `notifier.py` already handles decoding it back.
+### Step M1 — Create Upstash Redis ✅
 
-### Step M3 — Set Env Vars on Render
+Done. Upstash database created, `rediss://` (double-s, TLS) URL obtained.
 
-Push the code changes first (`git push origin main`), then:
+> **Note on URL format:** The Upstash dashboard shows the URL prefixed with `redis-cli --tls -u` — that is CLI flag syntax. The actual `REDIS_URL` value starts after `-u`, i.e. `rediss://default:xxxx@xxx.upstash.io:6379`. Must use `rediss://` (double-s) — single-s `redis://` will fail because Upstash requires TLS.
 
-**On `reelmind-api` (existing web service):**
-1. [Render Dashboard](https://dashboard.render.com) → select `reelmind-api` → **Environment** tab
-2. Verify `REDIS_URL` is set (it was already in `render.yaml` as `sync: false` — you may have set it already). If not, add it now with the Upstash URL from Step M1.
+### Step M2 — Firebase Service Account JSON ✅
 
-**On `reelmind-celery` (new worker — Render creates it automatically when render.yaml is pushed):**
-1. In Render Dashboard → select `reelmind-celery` → **Environment** tab
-2. Add ALL of the following variables:
-   - `REDIS_URL` → paste the Upstash `rediss://...` URL from Step M1
-   - `FIREBASE_SERVICE_ACCOUNT_JSON` → paste the base64 string from Step M2
-   - `SUPABASE_URL` → same value as on `reelmind-api`
-   - `SUPABASE_ANON_KEY` → same value as on `reelmind-api`
-   - `SUPABASE_SERVICE_ROLE_KEY` → same value as on `reelmind-api`
-   - `GROQ_API_KEY` → same value as on `reelmind-api`
+Already set from prior work. The `FIREBASE_SERVICE_ACCOUNT_JSON` (base64-encoded) was set on the `reelmind-api` Render service in a previous session. No action needed.
 
-**Important:** After setting env vars, Render auto-redeploys the service.
+### Step M3 — Set Env Vars + Update Start Command on Render ✅
 
-### Step M4 — Verify Deployment
+All env vars set on `reelmind-api` (the single web service running both uvicorn + Celery):
 
-1. In Render Dashboard → `reelmind-celery` → **Logs** tab
-2. Wait ~2-3 minutes for the build to complete (pip install + model download)
+| Var | Value |
+|---|---|
+| `REDIS_URL` | `rediss://...` Upstash URL |
+| `GEMINI_API_KEY` | Gemini API key |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | base64-encoded Firebase service account JSON |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Already set |
+| `GROQ_API_KEY` | Already set |
+
+**Start command** set in Render → `reelmind-api` → Settings → Start Command:
+
+```
+cd backend && (uvicorn main:app --host 0.0.0.0 --port $PORT &) && celery -A workers.celery_app worker --loglevel=info --concurrency=2
+```
+
+> **Why `(uvicorn ... &)` with parens:** Without the subshell, bash `&` sends `cd backend && uvicorn` to background and runs `celery` from the repo root — so `workers` package is not found (`ModuleNotFoundError: No module named 'workers'`). The subshell `(cmd &)` runs uvicorn in background while keeping the `cd backend` working directory in effect for the celery command that follows.
+>
+> **Why `--concurrency=2`:** Embedder uses the Gemini API (no local model in RAM). Idle ~120 MB, peak ~200 MB, well under 512 MB free-tier limit. Two workers safe.
+>
+> **Why `reelmind-celery` worker block is NOT used:** Render background workers have no free tier. The `render.yaml` block is kept as infrastructure-as-code documentation but Render was not instructed to create a separate `reelmind-celery` service.
+
+### Step M4 — Verify Deployment ⏳
+
+1. In Render Dashboard → `reelmind-api` → **Logs** tab
+2. Wait for build/restart to complete
 3. Look for this line in the logs:
    ```
    celery@<hostname> ready.
    ```
-   If you see it → Celery is running and connected to Redis successfully.
+   This confirms Celery started and connected to Upstash Redis successfully.
 
-4. In Render Dashboard → `reelmind-api` → **Logs** tab
-5. Look for Redis connection errors. If none → the web service is connecting to Upstash correctly.
+4. Also confirm no Redis connection errors in the logs.
 
-### Step M5 — End-to-End Smoke Test
+### Step M5 — End-to-End Smoke Test ⏳
 
-1. Open the ReelMind iOS app on your iPhone → make sure you're logged in
-2. Find any Instagram reel → tap Share → select ReelMind from the share sheet
-3. Watch `reelmind-celery` logs in the Render dashboard — you should see:
+1. Rebuild iOS app in Xcode (⌘R) — required for the Render URL change to take effect
+2. Open the ReelMind iOS app on iPhone → make sure you're logged in
+3. Find any Instagram reel → tap Share → select ReelMind from the share sheet
+4. Watch `reelmind-api` logs in Render dashboard — expect:
    ```
    [Step 15] Downloading reel <reel_id>
    [Step 16] Transcribing audio
@@ -323,8 +231,16 @@ Push the code changes first (`git push origin main`), then:
    [Step 22] FCM push sent
    Task process_reel[<uuid>] succeeded
    ```
-4. Check the app — the reel should appear with a category assigned
-5. A push notification should arrive on your iPhone saying "Reel saved!" (or if confidence < 0.70, a "Help us categorise" notification with suggested categories)
+5. Check the app — the reel should appear with a category assigned
+6. A push notification should arrive: "Reel saved!" (or "Help us categorise" with suggested categories if confidence < 0.70)
+
+### Step M6 — Push to GitHub ⏳
+
+```bash
+git push origin main
+```
+
+This syncs all local commits (render.yaml, CLAUDE.md, Swift URL changes) to the remote.
 
 ---
 
@@ -332,19 +248,18 @@ Push the code changes first (`git push origin main`), then:
 
 **Spec coverage check:**
 
-| Spec requirement | Covered by |
-|---|---|
-| Gap 1: Backend auto-create category | Already implemented — Task 1 verifies |
-| Gap 2: iOS `assignAsync` | Already implemented — Task 1 verifies (Xcode build) |
-| Gap 3: iOS `CategoriseReelView` fix | Already implemented — Task 1 verifies |
-| Render worker service in render.yaml | Task 2 |
-| REDIS_URL on web service | Already in render.yaml |
-| FIREBASE_SERVICE_ACCOUNT_JSON on worker | Task 4 (M3) |
-| Upstash Redis setup | Task 4 (M1) |
-| Render env vars | Task 4 (M3) |
-| Deploy and verify | Task 4 (M4, M5) |
-| CLAUDE.md updated | Task 3 |
-
-**Placeholder scan:** No TBDs or incomplete sections. All code blocks are complete.
-
-**Type consistency:** No new types introduced — only configuration and documentation changes in this plan.
+| Spec requirement | Covered by | Status |
+|---|---|---|
+| Gap 1: Backend auto-create category | Task 1 verifies | ✅ |
+| Gap 2: iOS `assignAsync` | Task 1 verifies | ✅ |
+| Gap 3: iOS `CategoriseReelView` fix | Task 1 verifies | ✅ |
+| Render: Celery running in production | Option B — single service start command | ✅ |
+| REDIS_URL on web service | Task 5 M3 | ✅ |
+| GEMINI_API_KEY on web service | Task 5 M3 | ✅ |
+| FIREBASE_SERVICE_ACCOUNT_JSON | Task 5 M2 — already set | ✅ |
+| Upstash Redis (TLS, `rediss://`) | Task 5 M1 | ✅ |
+| ngrok URLs replaced | Task 4 | ✅ |
+| CLAUDE.md updated | Task 3 | ✅ |
+| Deployment verified | Task 5 M4 | ⏳ |
+| End-to-end smoke test | Task 5 M5 | ⏳ |
+| `git push origin main` | Task 5 M6 | ⏳ |
