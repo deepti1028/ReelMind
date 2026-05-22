@@ -761,7 +761,10 @@ def _download_file(url: str, dest_path: str, log: logging.LoggerAdapter) -> int:
             is_retryable=exc.code >= 500,
         )
     except (URLError, Exception) as exc:
-        log.error(
+        # Log at WARNING — callers that treat this as non-fatal (e.g. the
+        # video-audio fallback) will catch DownloadError and proceed; callers
+        # where this is a hard failure will let it propagate and log context there.
+        log.warning(
             "asset download failed | host=%s | path=%s | exc_type=%s | reason=%s",
             parsed.hostname,
             parsed.path,
