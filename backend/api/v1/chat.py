@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 import uuid
 from typing import List, Optional
 
@@ -30,9 +31,21 @@ class ReelSource(BaseModel):
 
 
 class MessageResponse(BaseModel):
-    message_id: str
+    id: str
+    role: str
     content: str
     sources: List[ReelSource]
+    created_at: str
+
+
+def _format_iso8601(dt_str: Optional[str]) -> str:
+    if not dt_str:
+        return "2026-05-22T00:00:00Z"
+    try:
+        parsed = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        return parsed.strftime("%Y-%m-%dT%H:%M:%SZ")
+    except Exception:
+        return dt_str
 
 
 def _get_session_or_403(session_id: str, user_id: str, supabase) -> dict:
@@ -104,10 +117,13 @@ def send_message(
         "sources": result["sources"],
     }).execute()
 
+    row = saved.data[0]
     return MessageResponse(
-        message_id=saved.data[0]["id"],
-        content=result["content"],
-        sources=[ReelSource(**s) for s in result["sources"]],
+        id=row["id"],
+        role=row.get("role", "assistant"),
+        content=row.get("content", result["content"]),
+        sources=[ReelSource(**s) for s in row.get("sources", result.get("sources", []))],
+        created_at=_format_iso8601(row.get("created_at")),
     )
 
 
@@ -125,4 +141,8 @@ def get_messages(
         .order("created_at", desc=False)
         .execute()
     )
-    return rows.data or []
+    data = rows.data or []
+    for r in data:
+        if "created_at" in r:
+            r["created_at"] = _format_iso8601(r["created_at"])
+    return data

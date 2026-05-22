@@ -166,7 +166,7 @@ def test_gemini_call_uses_correct_model_and_params(mock_client_cls):
 
     # Check that generate_content was called with correct model
     call_kwargs = mock_client.models.generate_content.call_args.kwargs
-    assert call_kwargs["model"] == "gemini-3.5-flash"
+    assert call_kwargs["model"] == "gemini-2.5-flash"
 
     # system_instruction must be inside config, NOT a top-level kwarg —
     # google-genai SDK v1.x rejects it at the top level with TypeError.

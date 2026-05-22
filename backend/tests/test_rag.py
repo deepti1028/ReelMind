@@ -119,8 +119,8 @@ def test_creator_filter_extracted_and_passed_to_rpc():
          patch("services.rag.embed_query", return_value=[0.1] * 768):
         answer(_make_session(), "reels by creator skincareguru", [])
 
-    rpc_kwargs = mock_db.rpc.call_args[1]
-    assert rpc_kwargs["p_creator"] == "skincareguru"
+    rpc_args = mock_db.rpc.call_args[0][1]
+    assert rpc_args["p_creator"] == "skincareguru"
 
 
 # --- Deduplication ---

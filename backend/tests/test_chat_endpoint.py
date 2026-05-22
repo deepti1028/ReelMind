@@ -113,7 +113,9 @@ def test_send_message_returns_content_and_sources(mock_rag, mock_get_supabase):
     body = resp.json()
     assert body["content"] == "Best sunscreens are A and B"
     assert body["sources"][0]["reel_id"] == "r1"
-    assert "message_id" in body
+    assert "id" in body
+    assert "role" in body
+    assert "created_at" in body
 
 
 @patch("api.v1.chat.get_supabase")

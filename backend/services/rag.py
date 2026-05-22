@@ -29,7 +29,7 @@ _ANSWER_SYSTEM = (
     "If the reels don't contain enough to answer, say so honestly — don't make things up."
 )
 
-_MODEL = "gemini-3.5-flash"
+_MODEL = "gemini-2.5-flash"
 
 
 class HydeSchema(BaseModel):
@@ -50,8 +50,8 @@ def _hyde_and_extract_filters(user_message: str) -> tuple[str, dict]:
             contents=[
                 genai.types.Content(role="user", parts=[genai.types.Part(text=user_message)]),
             ],
-            system_instruction=_HYDE_SYSTEM,
             config=GenerateContentConfig(
+                system_instruction=_HYDE_SYSTEM,
                 temperature=0.3,
                 response_mime_type="application/json",
                 response_schema=HydeSchema,
@@ -73,12 +73,14 @@ def _retrieve(
 ) -> list[dict]:
     results = supabase.rpc(
         "match_reel_chunks",
-        query_embedding=query_vec,
-        p_user_id=user_id,
-        p_category_id=category_id,
-        p_creator=filters.get("creator_handle"),
-        match_count=10,
-        threshold=0.3,
+        {
+            "query_embedding": query_vec,
+            "p_user_id": user_id,
+            "p_category_id": category_id,
+            "p_creator": filters.get("creator_handle"),
+            "match_count": 10,
+            "threshold": 0.3,
+        },
     ).execute()
 
     seen: dict[str, dict] = {}
@@ -120,8 +122,10 @@ def _generate(
         response = gemini_client.models.generate_content(
             model=_MODEL,
             contents=messages,
-            system_instruction=_ANSWER_SYSTEM,
-            config=GenerateContentConfig(temperature=0.5),
+            config=GenerateContentConfig(
+                system_instruction=_ANSWER_SYSTEM,
+                temperature=0.5,
+            ),
         )
         return response.text
     except Exception as exc:
