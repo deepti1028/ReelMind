@@ -56,7 +56,7 @@ def classify_reel(
 
     Args:
         transcript: Raw transcript text from Step 16, or None.
-        caption:    Caption text from Step 15, or None.
+        caption:    Caption text from Step 15 or None.
         hashtags:   List of hashtag strings from Step 15 (may be empty).
         categories: Exact category names from the DB for this user.
 
@@ -67,6 +67,15 @@ def classify_reel(
         ClassificationError: On API failure or schema validation failure.
                             has .is_retryable flag.
     """
+    logger.info(
+        "classify_reel start | categories=%d | transcript_chars=%s | "
+        "caption_chars=%s | hashtags=%d",
+        len(categories),
+        len(transcript) if transcript else 0,
+        len(caption) if caption else 0,
+        len(hashtags),
+    )
+
     # Map sequential IDs to category names to avoid spelling/casing issues.
     id_to_name: dict[int, str] = {i + 1: name for i, name in enumerate(categories)}
     category_list_str = "\n".join(f"{cid}: {name}" for cid, name in id_to_name.items())
@@ -110,8 +119,10 @@ Hashtags:
 
     cfg = get_config()
     if not cfg.GEMINI_API_KEY:
+        logger.error("classify_reel failed | likely_cause=GEMINI_API_KEY not set")
         raise ClassificationError("GEMINI_API_KEY not configured", is_retryable=False)
 
+    logger.info("classify_reel | calling Gemini | model=%s", _MODEL)
     try:
         client = genai.Client(api_key=cfg.GEMINI_API_KEY)
         response = client.models.generate_content(
@@ -127,8 +138,11 @@ Hashtags:
             ),
         )
 
+        logger.info("classify_reel | Gemini responded | raw_chars=%s", len(response.text or ""))
+
         # Extract and validate the response
         if not response.text:
+            logger.error("classify_reel failed | likely_cause=empty response from Gemini")
             raise ClassificationError("Empty response from Gemini", is_retryable=True)
 
         # Parse the JSON response
@@ -139,35 +153,59 @@ Hashtags:
         alternative_ids = [int(a) for a in parsed.get("alternative_ids", [])]
 
     except Exception as exc:
-        # Check if it's a known error pattern
         exc_str = str(exc)
         if "rate" in exc_str.lower() or "quota" in exc_str.lower():
+            logger.warning(
+                "classify_reel failed | retryable=True | likely_cause=rate limit or quota | %s", exc
+            )
             raise ClassificationError(str(exc), is_retryable=True) from exc
         if "401" in exc_str or "authentication" in exc_str.lower():
+            logger.error(
+                "classify_reel failed | retryable=False | likely_cause=invalid GEMINI_API_KEY | %s", exc
+            )
             raise ClassificationError("Authentication failed", is_retryable=False) from exc
-        # Unknown errors are retryable by default (transient network issues)
+        logger.warning(
+            "classify_reel failed | retryable=True | likely_cause=transient Gemini error | %s", exc
+        )
         raise ClassificationError(str(exc), is_retryable=True) from exc
 
     # Validate response schema
     try:
         if category_id not in id_to_name:
+            logger.error(
+                "classify_reel schema error | category_id=%s not in range 1–%d | retryable=False",
+                category_id, len(id_to_name),
+            )
             raise ClassificationError(
                 f"category_id {category_id} not in valid range 1–{len(id_to_name)}",
                 is_retryable=False,
             )
         if not (0.0 <= confidence <= 1.0):
+            logger.error(
+                "classify_reel schema error | confidence=%s out of [0.0, 1.0] | retryable=False",
+                confidence,
+            )
             raise ClassificationError(
                 f"confidence {confidence} out of [0.0, 1.0]", is_retryable=False
             )
         if any(a not in id_to_name for a in alternative_ids):
+            logger.error(
+                "classify_reel schema error | alternative_ids=%s contains invalid ID | retryable=False",
+                alternative_ids,
+            )
             raise ClassificationError(
                 "alternative_ids contains invalid category ID", is_retryable=False
             )
         if category_id in alternative_ids:
+            logger.error(
+                "classify_reel schema error | category_id=%s must not appear in alternative_ids | retryable=False",
+                category_id,
+            )
             raise ClassificationError(
                 "category_id must not appear in alternative_ids", is_retryable=False
             )
     except (KeyError, TypeError, ValueError) as exc:
+        logger.error("classify_reel schema error | missing required fields | %s", exc)
         raise ClassificationError(
             f"response missing required fields: {exc}", is_retryable=False
         ) from exc

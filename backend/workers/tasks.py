@@ -12,7 +12,7 @@ Pipeline stages:
     Step 15 — download audio + metadata          (services/downloader.py)
     Step 16 — transcribe audio                   (services/transcriber.py)
     Step 17 — build classification signal        (services/signal_builder.py)
-    Step 18 — Llama classification (TODO)
+    Step 18 — Gemini classification
     Step 19 — confidence routing (TODO)
     Step 20 — chunk + embed (TODO)
     Step 22 — FCM push (TODO)
