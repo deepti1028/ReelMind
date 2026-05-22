@@ -40,9 +40,6 @@ struct CategoryDetailView: View {
     @State private var reelToReassign: Reel?
 
     var body: some View {
-        // ZStack positions the chat FAB inside the safe-area frame.
-        // Background is a modifier (not a ZStack child) so the ZStack sizes
-        // to the safe area — keeping the button above the tab bar.
         ScrollView {
             LazyVStack(spacing: 10) {
                 categoryHeader
@@ -64,13 +61,13 @@ struct CategoryDetailView: View {
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.bottom, 80)
+            .padding(.bottom, 16)
         }
         .refreshable { await viewModel.load(categoryId: summary.id) }
-        .overlay(alignment: .bottomTrailing) {
+        .safeAreaInset(edge: .bottom, alignment: .trailing, spacing: 0) {
             chatButton
                 .padding(.trailing, 16)
-                .padding(.bottom, 16)
+                .padding(.bottom, 76)
         }
         .background(AppTheme.background.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
