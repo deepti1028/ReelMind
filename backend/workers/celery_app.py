@@ -4,6 +4,8 @@ Run a worker locally with:
     celery -A workers.celery_app worker --loglevel=info
 """
 
+import ssl
+
 from celery import Celery
 
 from config import get_config
@@ -29,6 +31,14 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_acks_late=True,
 )
+
+# Upstash requires TLS (rediss://). Celery needs ssl_cert_reqs explicitly set.
+if config.REDIS_URL and config.REDIS_URL.startswith("rediss://"):
+    _ssl_opts = {"ssl_cert_reqs": ssl.CERT_NONE}
+    celery_app.conf.update(
+        broker_use_ssl=_ssl_opts,
+        redis_backend_use_ssl=_ssl_opts,
+    )
 
 celery_app.conf.beat_schedule = {
     "expire-pending-categories": {
