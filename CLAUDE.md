@@ -65,7 +65,7 @@ Migrations live in `supabase/migrations/`. Apply with:
 supabase db push
 ```
 
-The `reel_chunks.embedding` column is `vector(384)` (migrated via `supabase/migrations/20260518000001_resize_reel_chunks_embedding.sql`). The embedding model is `BAAI/bge-small-en-v1.5` (384-dim).
+The `reel_chunks.embedding` column is `vector(768)` (migrated via `supabase/migrations/20260522000001_resize_embeddings_to_768.sql`). The embedding model is `gemini-embedding-2` (768-dim, Gemini API).
 
 ---
 
@@ -143,6 +143,6 @@ Key `reels` columns: `url` (unique per user), `status` (queued â†’ processing â†
 All AI services use free-tier providers (see `docs/DECISIONS.md`):
 - Transcription: Groq `whisper-large-v3`
 - Classification: Groq Llama 3.3 70B
-- Embeddings: `sentence-transformers/all-MiniLM-L6-v2` (runs in Celery worker, no API key, 384-dim output)
+- Embeddings: Gemini `gemini-embedding-2` (API call in Celery worker, requires `GEMINI_API_KEY`, 768-dim output)
 
 Caption + hashtags are always fed to the classifier as primary signal alongside the transcript, not as a fallback.

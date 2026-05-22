@@ -23,6 +23,8 @@ services:
         sync: false
       - key: TAVILY_API_KEY
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
 
   - type: worker
     name: reelmind-celery
@@ -45,4 +47,6 @@ services:
       - key: REDIS_URL
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GEMINI_API_KEY
         sync: false
