@@ -328,16 +328,10 @@ struct ChatView: View {
     }
 
     private var typingIndicator: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<3, id: \.self) { _ in
-                Circle()
-                    .fill(AppTheme.textFaint)
-                    .frame(width: 6, height: 6)
-            }
-        }
-        .padding(12)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        TypingDotsView()
+            .padding(12)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: Input bar
@@ -373,6 +367,32 @@ struct ChatView: View {
         .background(AppTheme.background)
         .overlay(alignment: .top) {
             Rectangle().fill(AppTheme.borderSubtle).frame(height: 1)
+        }
+    }
+}
+
+private struct TypingDotsView: View {
+    @State private var phase = 0
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { i in
+                Circle()
+                    .fill(AppTheme.textFaint)
+                    .frame(width: 6, height: 6)
+                    .scaleEffect(phase == i ? 1.4 : 1.0)
+                    .animation(
+                        .easeInOut(duration: 0.4).repeatForever(autoreverses: true).delay(Double(i) * 0.15),
+                        value: phase == i
+                    )
+            }
+        }
+        .onAppear { animateDots() }
+    }
+
+    private func animateDots() {
+        Timer.scheduledTimer(withTimeInterval: 0.45, repeats: true) { _ in
+            phase = (phase + 1) % 3
         }
     }
 }

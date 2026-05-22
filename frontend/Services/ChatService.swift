@@ -50,7 +50,45 @@ struct ChatService {
 
     private var decoder: JSONDecoder {
         let d = JSONDecoder()
-        d.dateDecodingStrategy = .iso8601
+        d.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateStr = try container.decode(String.self)
+            
+            // Try standard ISO8601 format
+            let formatter = ISO8601DateFormatter()
+            if let date = formatter.date(from: dateStr) {
+                return date
+            }
+            
+            // Try ISO8601 with fractional seconds
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: dateStr) {
+                return date
+            }
+            
+            // Fallback for database formats (e.g. from postgres)
+            let fallbackFormatter = DateFormatter()
+            fallbackFormatter.locale = Locale(identifier: "en_US_POSIX")
+            fallbackFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+            
+            let formats = [
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZZZZZ",
+                "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ",
+                "yyyy-MM-dd HH:mm:ss.SSSSSS",
+                "yyyy-MM-dd HH:mm:ss"
+            ]
+            for format in formats {
+                fallbackFormatter.dateFormat = format
+                if let date = fallbackFormatter.date(from: dateStr) {
+                    return date
+                }
+            }
+            
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Cannot decode date string \(dateStr)"
+            )
+        }
         return d
     }
 
