@@ -5,7 +5,7 @@ from google.genai import types
 
 from services.gemini_client import get_gemini_client
 
-_MODEL = "text-embedding-004"
+_MODEL = "gemini-embedding-2"
 
 
 class EmbeddingError(Exception):
@@ -34,7 +34,10 @@ def embed_document(text: str) -> list[float]:
         response = get_gemini_client().models.embed_content(
             model=_MODEL,
             contents=text,
-            config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
+            config=types.EmbedContentConfig(
+                task_type="RETRIEVAL_DOCUMENT",
+                output_dimensionality=768
+            ),
         )
         return list(response.embeddings[0].values)
     except Exception as exc:
@@ -46,7 +49,10 @@ def embed_query(text: str) -> list[float]:
         response = get_gemini_client().models.embed_content(
             model=_MODEL,
             contents=text,
-            config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY"),
+            config=types.EmbedContentConfig(
+                task_type="RETRIEVAL_QUERY",
+                output_dimensionality=768
+            ),
         )
         return list(response.embeddings[0].values)
     except Exception as exc:

@@ -66,7 +66,7 @@ def test_embed_document_uses_correct_model():
     mock_client.models.embed_content.return_value = _make_embed_response()
     with patch("services.embedder.get_gemini_client", return_value=mock_client):
         embed_document("some reel content")
-    assert mock_client.models.embed_content.call_args.kwargs["model"] == "text-embedding-004"
+    assert mock_client.models.embed_content.call_args.kwargs["model"] == "gemini-embedding-2"
 
 
 def test_embed_document_api_error_raises_embedding_error():
@@ -107,7 +107,7 @@ def test_embed_query_uses_correct_model():
     mock_client.models.embed_content.return_value = _make_embed_response()
     with patch("services.embedder.get_gemini_client", return_value=mock_client):
         embed_query("some query")
-    assert mock_client.models.embed_content.call_args.kwargs["model"] == "text-embedding-004"
+    assert mock_client.models.embed_content.call_args.kwargs["model"] == "gemini-embedding-2"
 
 
 def test_embed_query_api_error_raises_embedding_error():
