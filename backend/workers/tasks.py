@@ -93,6 +93,11 @@ def process_reel(self, reel_id: str) -> dict:
             )
             if _profile.data:
                 _fcm_token = _profile.data.get("fcm_token")
+                log.info(
+                    "fcm_token fetched | present=%s | prefix=%s",
+                    bool(_fcm_token),
+                    (_fcm_token[:12] + "...") if _fcm_token else "None",
+                )
         except Exception as exc:
             log.warning("could not fetch fcm_token | %s", exc)
 
@@ -107,7 +112,7 @@ def process_reel(self, reel_id: str) -> dict:
                 "download failed | retryable=%s | %s", exc.is_retryable, exc
             )
             return _handle_pipeline_error(
-                self, supabase, reel_id, exc, exc.is_retryable, log
+                self, supabase, reel_id, exc, exc.is_retryable, log, _fcm_token
             )
 
         meta = download_result.metadata
@@ -232,7 +237,7 @@ def process_reel(self, reel_id: str) -> dict:
                     exc,
                 )
                 return _handle_pipeline_error(
-                    self, supabase, reel_id, exc, exc.is_retryable, log
+                    self, supabase, reel_id, exc, exc.is_retryable, log, _fcm_token
                 )
             supabase.table("reel_chunks").upsert({
                 "reel_id": reel_id,
@@ -279,7 +284,7 @@ def process_reel(self, reel_id: str) -> dict:
                 exc,
             )
             return _handle_pipeline_error(
-                self, supabase, reel_id, exc, exc.is_retryable, log
+                self, supabase, reel_id, exc, exc.is_retryable, log, _fcm_token
             )
 
         # ------------------------------------------------------------------
@@ -359,6 +364,7 @@ def _handle_pipeline_error(
     exc: Exception,
     is_retryable: bool,
     log: logging.LoggerAdapter,
+    fcm_token: str | None = None,
 ) -> dict:
     """Schedule a Celery retry or mark the reel failed."""
     if is_retryable and task.request.retries < task.max_retries:
@@ -370,6 +376,12 @@ def _handle_pipeline_error(
     supabase.table("reels").update({"status": "failed"}).eq(
         "id", reel_id
     ).execute()
+    send_push_notification(
+        fcm_token=fcm_token,
+        title="Reel couldn't be saved",
+        body="Something went wrong processing your reel. Please try again.",
+        data={"reel_id": reel_id, "status": "failed"},
+    )
     return {"reel_id": reel_id, "status": "failed", "error": str(exc)}
 
 

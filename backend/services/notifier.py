@@ -149,8 +149,17 @@ def send_push_notification(
 
     try:
         messaging.send(sdk_message, app=app)
-        logger.info("notifier | push sent | title=%r", title)
+        logger.info(
+            "notifier | push sent | title=%r | token_prefix=%s",
+            title,
+            (fcm_token[:12] + "...") if fcm_token else "None",
+        )
         return True
     except Exception as exc:
-        logger.error("notifier | push failed | title=%r | %s", title, exc)
+        logger.error(
+            "notifier | push failed | title=%r | token_prefix=%s | %s",
+            title,
+            (fcm_token[:12] + "...") if fcm_token else "None",
+            exc,
+        )
         return False
