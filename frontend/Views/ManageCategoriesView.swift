@@ -6,10 +6,60 @@ struct ManageCategoriesView: View {
 
     @State private var categories: [Category] = []
     @State private var isLoading = false
-    @State private var editingCategory: Category?
+    @State private var activeAlert: ActiveAlert?
     @State private var editName = ""
-    @State private var categoryToDelete: Category?
+    @State private var newCategoryName = ""
     @State private var errorMessage: String?
+
+    private enum ActiveAlert: Identifiable {
+        case rename(Category)
+        case confirmDelete(Category)
+        case create
+        var id: String {
+            switch self {
+            case .rename(let c):        return "rename-\(c.id)"
+            case .confirmDelete(let c): return "delete-\(c.id)"
+            case .create:               return "create"
+            }
+        }
+    }
+
+    private var alertTitle: String {
+        switch activeAlert {
+        case .rename:        return "Rename Collection"
+        case .confirmDelete: return "Delete Collection?"
+        case .create:        return "New Collection"
+        case nil:            return ""
+        }
+    }
+
+    private var renameTarget: Category? {
+        guard case .rename(let cat) = activeAlert else { return nil }
+        return cat
+    }
+
+    private var deleteTarget: Category? {
+        guard case .confirmDelete(let cat) = activeAlert else { return nil }
+        return cat
+    }
+
+    @ViewBuilder
+    private var alertActions: some View {
+        if let cat = renameTarget {
+            TextField("Collection name", text: $editName)
+            Button("Cancel", role: .cancel) { activeAlert = nil }
+            Button("Save") { Task { await rename(cat) } }
+                .disabled(editName.trimmingCharacters(in: .whitespaces).isEmpty)
+        } else if let cat = deleteTarget {
+            Button("Cancel", role: .cancel) { activeAlert = nil }
+            Button("Delete", role: .destructive) { Task { await delete(cat) } }
+        } else {
+            TextField("Collection name", text: $newCategoryName)
+            Button("Cancel", role: .cancel) { activeAlert = nil }
+            Button("Create") { Task { await addCategory() } }
+                .disabled(newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty)
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -28,35 +78,26 @@ struct ManageCategoriesView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                if isLoading { ProgressView().scaleEffect(0.8).tint(AppTheme.accent) }
+                if isLoading {
+                    ProgressView().scaleEffect(0.8).tint(AppTheme.accent)
+                } else {
+                    Button {
+                        newCategoryName = ""
+                        activeAlert = .create
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(AppTheme.accentDark)
+                    }
+                }
             }
         }
         .task { await load() }
-        .alert("Rename Collection", isPresented: Binding(
-            get: { editingCategory != nil },
-            set: { if !$0 { editingCategory = nil } }
+        .alert(alertTitle, isPresented: Binding(
+            get: { activeAlert != nil },
+            set: { if !$0 { activeAlert = nil } }
         )) {
-            TextField("Collection name", text: $editName)
-            Button("Cancel", role: .cancel) { editingCategory = nil }
-            Button("Save") {
-                if let cat = editingCategory {
-                    Task { await rename(cat) }
-                }
-            }
-            .disabled(editName.trimmingCharacters(in: .whitespaces).isEmpty)
-        }
-        .alert("Delete Collection?", isPresented: Binding(
-            get: { categoryToDelete != nil },
-            set: { if !$0 { categoryToDelete = nil } }
-        )) {
-            Button("Cancel", role: .cancel) { categoryToDelete = nil }
-            Button("Delete", role: .destructive) {
-                if let cat = categoryToDelete {
-                    Task { await delete(cat) }
-                }
-            }
-        } message: {
-            Text("Reels in this collection will be moved to your inbox.")
+            alertActions
         }
     }
 
@@ -81,9 +122,9 @@ struct ManageCategoriesView: View {
                             reelCount: appVM.categorySummaries.first(where: { $0.id == cat.id })?.reelCount ?? 0,
                             onEdit: {
                                 editName = cat.name
-                                editingCategory = cat
+                                activeAlert = .rename(cat)
                             },
-                            onDelete: { categoryToDelete = cat }
+                            onDelete: { activeAlert = .confirmDelete(cat) }
                         )
 
                         if cat.id != categories.last?.id {
@@ -107,19 +148,37 @@ struct ManageCategoriesView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "folder")
-                .font(.system(size: 40))
-                .foregroundColor(AppTheme.accent.opacity(0.6))
-            Text("No collections yet")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(AppTheme.textPrimary)
-            Text("Save and categorise a reel to create your first collection.")
-                .font(.system(size: 13))
-                .foregroundColor(AppTheme.textMuted)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+        VStack(spacing: 16) {
+            Image(systemName: "folder.badge.plus")
+                .font(.system(size: 44))
+                .foregroundColor(AppTheme.accent)
+
+            VStack(spacing: 6) {
+                Text("No collections yet")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(AppTheme.textPrimary)
+                Text("Tap + to create your first collection.")
+                    .font(.system(size: 13))
+                    .foregroundColor(AppTheme.textMuted)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 260)
+            }
+
+            Button {
+                newCategoryName = ""
+                activeAlert = .create
+            } label: {
+                Text("Create collection")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(AppTheme.textPrimary)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(AppTheme.accent)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
         }
+        .padding(.horizontal, 40)
     }
 
     // MARK: - Actions
@@ -137,7 +196,7 @@ struct ManageCategoriesView: View {
     private func rename(_ cat: Category) async {
         let trimmed = editName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        editingCategory = nil
+        activeAlert = nil
         do {
             try await LibraryService.shared.renameCategory(id: cat.id, newName: trimmed)
             await appVM.load(silent: true)
@@ -148,13 +207,26 @@ struct ManageCategoriesView: View {
     }
 
     private func delete(_ cat: Category) async {
-        categoryToDelete = nil
+        activeAlert = nil
         do {
             try await LibraryService.shared.deleteCategory(id: cat.id)
             await appVM.load(silent: true)
             await load()
         } catch {
             errorMessage = "Failed to delete collection."
+        }
+    }
+
+    private func addCategory() async {
+        let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        activeAlert = nil
+        do {
+            _ = try await LibraryService.shared.createCategory(name: trimmed)
+            await appVM.load(silent: true)
+            await load()
+        } catch {
+            errorMessage = "Failed to create collection."
         }
     }
 }
