@@ -4,6 +4,7 @@ struct SignupView: View {
     @EnvironmentObject private var auth: AuthSession
     @Environment(\.dismiss) private var dismiss
 
+    @State private var displayName = ""
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
@@ -24,6 +25,20 @@ struct SignupView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(spacing: 16) {
+                    TextField("Display Name", text: $displayName)
+                        .textContentType(.name)
+                        .autocapitalization(.words)
+                        .disableAutocorrection(true)
+                        .foregroundColor(AppTheme.textPrimary)
+                        .tint(AppTheme.accent)
+                        .padding()
+                        .background(AppTheme.surface)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(AppTheme.border, lineWidth: 0.5)
+                        )
+
                     TextField("Email", text: $email)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
@@ -95,6 +110,29 @@ struct SignupView: View {
                 }
                 .disabled(isSubmitting || !canSubmit)
 
+                SocialAuthDivider()
+
+                VStack(spacing: 12) {
+                    SocialAuthButton(systemIcon: "apple.logo", label: "Continue with Apple") {
+                        errorMessage = nil
+                        do {
+                            try await auth.signInWithApple()
+                        } catch {
+                            errorMessage = error.localizedDescription
+                        }
+                    }
+
+                    SocialAuthButton(textIcon: "G", label: "Continue with Google") {
+                        errorMessage = nil
+                        do {
+                            try await auth.signInWithGoogle()
+                        } catch {
+                            errorMessage = error.localizedDescription
+                        }
+                    }
+                }
+                .disabled(isSubmitting)
+
                 HStack {
                     Text("Already have an account?")
                         .foregroundColor(AppTheme.textMuted)
@@ -111,6 +149,7 @@ struct SignupView: View {
     }
 
     private var canSubmit: Bool {
+        !displayName.trimmingCharacters(in: .whitespaces).isEmpty &&
         !email.trimmingCharacters(in: .whitespaces).isEmpty &&
         password.count >= 6 &&
         password == confirmPassword
@@ -126,7 +165,7 @@ struct SignupView: View {
         isSubmitting = true
         Task {
             do {
-                try await auth.signUp(email: email, password: password)
+                try await auth.signUp(email: email, password: password, displayName: displayName)
                 if auth.session == nil {
                     infoMessage = "Check your email to confirm your account, then log in."
                 } else {
