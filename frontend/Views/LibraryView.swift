@@ -8,38 +8,45 @@ struct LibraryView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                topBar
-                    .padding(.horizontal, 20)
-                    .padding(.top, 6)
-                    .padding(.bottom, 12)
-
-                if appVM.inboxCount > 0 {
-                    inboxBanner
-                        .padding(.horizontal, 14)
+            if !appVM.hasLoaded {
+                LibrarySkeletonContent()
+                    .transition(.opacity)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    topBar
+                        .padding(.horizontal, 20)
+                        .padding(.top, 6)
                         .padding(.bottom, 12)
-                }
 
-                if appVM.categorySummaries.isEmpty && appVM.inboxCount == 0 {
-                    libraryEmptyState
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                } else if !appVM.categorySummaries.isEmpty {
-                    Text("Collections")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(AppTheme.textFaint)
-                        .textCase(.uppercase)
-                        .kerning(1.2)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 8)
+                    if appVM.inboxCount > 0 {
+                        inboxBanner
+                            .padding(.horizontal, 14)
+                            .padding(.bottom, 12)
+                    }
 
-                    CollageLayout(summaries: appVM.categorySummaries)
-                        .padding(.horizontal, 14)
-                } else {
-                    libraryInboxOnlyState
+                    if appVM.categorySummaries.isEmpty && appVM.inboxCount == 0 {
+                        libraryEmptyState
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                    } else if !appVM.categorySummaries.isEmpty {
+                        Text("Collections")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(AppTheme.textFaint)
+                            .textCase(.uppercase)
+                            .kerning(1.2)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 8)
+
+                        CollageLayout(summaries: appVM.categorySummaries)
+                            .padding(.horizontal, 14)
+                    } else {
+                        libraryInboxOnlyState
+                    }
                 }
+                .transition(.opacity)
             }
         }
+        .animation(.easeOut(duration: 0.25), value: appVM.hasLoaded)
         .refreshable { await appVM.load() }
         .background(AppTheme.background.ignoresSafeArea())
         .navigationBarHidden(true)

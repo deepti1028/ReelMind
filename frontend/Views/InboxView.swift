@@ -11,10 +11,15 @@ struct InboxView: View {
         ZStack {
             AppTheme.background.ignoresSafeArea()
 
-            if appVM.inboxReels.isEmpty {
+            if !appVM.hasLoaded {
+                InboxSkeletonContent()
+                    .transition(.opacity)
+            } else if appVM.inboxReels.isEmpty {
                 emptyState
+                    .transition(.opacity)
             } else {
                 reelList
+                    .transition(.opacity)
             }
 
             if appVM.isDeletingReel {
@@ -27,6 +32,7 @@ struct InboxView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
         }
+        .animation(.easeOut(duration: 0.25), value: appVM.hasLoaded)
         .allowsHitTesting(!appVM.isDeletingReel)
         .alert("Delete Reel?", isPresented: Binding(
             get: { reelToDelete != nil },

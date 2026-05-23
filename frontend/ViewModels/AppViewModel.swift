@@ -9,6 +9,7 @@ final class AppViewModel: ObservableObject {
     @Published var showSettings = false
 
     private var isLoading = false
+    @Published private(set) var hasLoaded = false
     @Published private(set) var isDeletingReel = false
 
     var inboxCount: Int { inboxReels.count }
@@ -18,7 +19,7 @@ final class AppViewModel: ObservableObject {
     func load(silent: Bool = false) async {
         guard !isLoading else { return }
         isLoading = true
-        defer { isLoading = false }
+        defer { isLoading = false; hasLoaded = true }
         do {
             async let reelsFetch    = LibraryService.shared.fetchAllReels()
             async let catsFetch     = LibraryService.shared.fetchAllVisibleCategories()
