@@ -33,6 +33,7 @@ final class AppViewModel: ObservableObject {
                     return CategorySummary(
                         id: cat.id,
                         name: cat.name,
+                        icon: cat.icon,
                         reelCount: catReels.count,
                         lastSavedAt: catReels.first?.createdAt
                     )
