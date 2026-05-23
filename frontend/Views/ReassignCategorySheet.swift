@@ -9,7 +9,7 @@ struct ReassignCategorySheet: View {
 
     @State private var defaultCategories: [Category] = []
     @State private var userCategories: [Category] = []
-    @State private var newCategoryName = ""
+    @State private var isLoading = true
     @State private var isWorking = false
     @State private var errorMessage: String?
 
@@ -17,24 +17,31 @@ struct ReassignCategorySheet: View {
         VStack(spacing: 0) {
             dragHandle
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    headerSection
-                        .padding(.horizontal, 20)
-                        .padding(.top, 8)
-                        .padding(.bottom, 20)
+            if isLoading {
+                Spacer()
+                ProgressView()
+                    .tint(AppTheme.accent)
+                    .scaleEffect(1.1)
+                Spacer()
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        headerSection
+                            .padding(.horizontal, 20)
+                            .padding(.top, 8)
+                            .padding(.bottom, 20)
 
-                    categoryList
-                        .padding(.horizontal, 14)
-
-                    newCategoryRow
-                        .padding(.horizontal, 14)
-                        .padding(.top, 12)
-                        .padding(.bottom, 32)
+                        categoryList
+                            .padding(.horizontal, 14)
+                            .padding(.bottom, 32)
+                    }
                 }
             }
         }
+        .frame(maxWidth: .infinity)
         .background(AppTheme.background.ignoresSafeArea())
+        .presentationDetents([.medium, .large])
+        .presentationBackground(AppTheme.background)
         .overlay(alignment: .top) {
             if let msg = errorMessage {
                 Text(msg)
@@ -161,40 +168,6 @@ struct ReassignCategorySheet: View {
         .disabled(isWorking)
     }
 
-    private var newCategoryRow: some View {
-        HStack(spacing: 8) {
-            TextField("New collection name…", text: $newCategoryName)
-                .font(.system(size: 13))
-                .foregroundColor(AppTheme.textPrimary)
-                .tint(AppTheme.accent)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(AppTheme.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(AppTheme.border, lineWidth: 1)
-                )
-
-            Button(action: createAndAssign) {
-                Group {
-                    if isWorking {
-                        ProgressView().tint(.white)
-                    } else {
-                        Text("Add")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
-                }
-                .frame(width: 52, height: 38)
-                .background(newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty ? AppTheme.accent.opacity(0.4) : AppTheme.accent)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
-            .disabled(newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty || isWorking)
-            .buttonStyle(.plain)
-        }
-    }
-
     // MARK: - Actions
 
     private func loadDefaults() async {
@@ -202,6 +175,7 @@ struct ReassignCategorySheet: View {
         async let user = LibraryService.shared.fetchCategories()
         defaultCategories = (try? await defaults) ?? []
         userCategories = (try? await user) ?? []
+        isLoading = false
     }
 
     private func assign(categoryId: UUID) {
@@ -220,23 +194,5 @@ struct ReassignCategorySheet: View {
         }
     }
 
-    private func createAndAssign() {
-        let name = newCategoryName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty else { return }
-        isWorking = true
-        errorMessage = nil
-        Task {
-            do {
-                let newCategory = try await LibraryService.shared.createCategory(name: name, icon: "bookmark")
-                try await LibraryService.shared.assignCategory(reelId: reel.id, categoryId: newCategory.id)
-                await appVM.load(silent: true)
-                onComplete()
-                dismiss()
-            } catch {
-                errorMessage = "Failed to create collection. Please try again."
-            }
-            isWorking = false
-        }
-    }
 }
 
