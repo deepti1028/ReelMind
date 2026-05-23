@@ -13,10 +13,13 @@ struct CategoriseReelView: View {
     @State private var newCategoryName: String = ""
     @State private var isLoading: Bool = true
     @State private var assignError: Bool = false
+    @State private var selectedCreateIcon: String = "bookmark"
+    @State private var showCreateIconPicker: Bool = false
 
     struct CategoryRow: Identifiable, Decodable, Hashable {
         let id: String
         let name: String
+        let icon: String?
     }
 
     var body: some View {
@@ -63,12 +66,29 @@ struct CategoriseReelView: View {
                         Text("Create new category")
                             .font(.headline)
                         HStack {
+                            Button {
+                                showCreateIconPicker.toggle()
+                            } label: {
+                                Image(systemName: selectedCreateIcon)
+                                    .font(.system(size: 16))
+                                    .frame(width: 36, height: 36)
+                                    .background(Color(.secondarySystemBackground))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    .foregroundColor(.primary)
+                            }
+                            .buttonStyle(.plain)
+
                             TextField("e.g. Travel", text: $newCategoryName)
                                 .textFieldStyle(.roundedBorder)
+
                             Button("Add") {
                                 createCategoryAndAssign()
                             }
                             .disabled(newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
+
+                        if showCreateIconPicker {
+                            CategoryIconPicker(selectedIcon: $selectedCreateIcon, isShowing: $showCreateIconPicker)
                         }
                     }
                 }
@@ -149,7 +169,17 @@ struct CategoriseReelView: View {
     private func createCategoryAndAssign() {
         let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        assignAndDismiss(categoryName: trimmed)
+        showCreateIconPicker = false
+        Task {
+            do {
+                let cat = try await LibraryService.shared.createCategory(name: trimmed, icon: selectedCreateIcon)
+                guard let reelUUID = UUID(uuidString: reelId) else { return }
+                try await LibraryService.shared.assignCategory(reelId: reelUUID, categoryId: cat.id)
+                await MainActor.run { dismiss() }
+            } catch {
+                await MainActor.run { assignError = true }
+            }
+        }
     }
 
     private struct ReelMeta: Decodable {
@@ -175,7 +205,7 @@ struct CategoriseReelView: View {
 
             let cats: [CategoryRow] = try await SupabaseManager.shared.client
                 .from("categories")
-                .select("id, name")
+                .select("id, name, icon")
                 .order("name", ascending: true)
                 .execute()
                 .value
