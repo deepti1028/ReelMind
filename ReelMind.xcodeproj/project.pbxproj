@@ -445,7 +445,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 8F0371F9ED165EF2E2D1B549 /* Pods-ReelMind.debug.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = app_logo;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ReelMind.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -482,7 +482,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 93C7CABF7C81DE4DE03EB5A3 /* Pods-ReelMind.release.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = app_logo;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ReelMind.entitlements;
 				CODE_SIGN_STYLE = Automatic;
