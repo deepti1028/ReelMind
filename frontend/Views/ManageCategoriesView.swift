@@ -6,68 +6,24 @@ struct ManageCategoriesView: View {
 
     @State private var categories: [Category] = []
     @State private var isLoading = false
-    @State private var activeAlert: ActiveAlert?
-    @State private var editName = ""
-    @State private var newCategoryName = ""
     @State private var errorMessage: String?
 
-    private enum ActiveAlert: Identifiable {
-        case rename(Category)
-        case confirmDelete(Category)
-        case create
-        var id: String {
-            switch self {
-            case .rename(let c):        return "rename-\(c.id)"
-            case .confirmDelete(let c): return "delete-\(c.id)"
-            case .create:               return "create"
-            }
-        }
-    }
+    // Delete confirmation
+    @State private var deleteTarget: Category?
 
-    private var alertTitle: String {
-        switch activeAlert {
-        case .rename:        return "Rename Collection"
-        case .confirmDelete: return "Delete Collection?"
-        case .create:        return "New Collection"
-        case nil:            return ""
-        }
-    }
-
-    private var renameTarget: Category? {
-        guard case .rename(let cat) = activeAlert else { return nil }
-        return cat
-    }
-
-    private var deleteTarget: Category? {
-        guard case .confirmDelete(let cat) = activeAlert else { return nil }
-        return cat
-    }
-
-    @ViewBuilder
-    private var alertActions: some View {
-        if let cat = renameTarget {
-            TextField("Collection name", text: $editName)
-            Button("Cancel", role: .cancel) { activeAlert = nil }
-            Button("Save") { Task { await rename(cat) } }
-                .disabled(editName.trimmingCharacters(in: .whitespaces).isEmpty)
-        } else if let cat = deleteTarget {
-            Button("Cancel", role: .cancel) { activeAlert = nil }
-            Button("Delete", role: .destructive) { Task { await delete(cat) } }
-        } else {
-            TextField("Collection name", text: $newCategoryName)
-            Button("Cancel", role: .cancel) { activeAlert = nil }
-            Button("Create") { Task { await addCategory() } }
-                .disabled(newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty)
-        }
-    }
+    // Create / rename sheet
+    @State private var showFormSheet = false
+    @State private var formTarget: Category?   // nil = create, non-nil = rename
+    @State private var formName = ""
+    @State private var formIcon = "bookmark"
+    @State private var showIconPicker = false
 
     var body: some View {
         ZStack {
             AppTheme.background.ignoresSafeArea()
 
             if isLoading && categories.isEmpty {
-                ProgressView()
-                    .tint(AppTheme.accent)
+                ProgressView().tint(AppTheme.accent)
             } else if categories.isEmpty {
                 emptyState
             } else {
@@ -82,8 +38,11 @@ struct ManageCategoriesView: View {
                     ProgressView().scaleEffect(0.8).tint(AppTheme.accent)
                 } else {
                     Button {
-                        newCategoryName = ""
-                        activeAlert = .create
+                        formTarget = nil
+                        formName = ""
+                        formIcon = "bookmark"
+                        showIconPicker = false
+                        showFormSheet = true
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 15, weight: .semibold))
@@ -93,11 +52,23 @@ struct ManageCategoriesView: View {
             }
         }
         .task { await load() }
-        .alert(alertTitle, isPresented: Binding(
-            get: { activeAlert != nil },
-            set: { if !$0 { activeAlert = nil } }
+        .alert("Delete Collection?", isPresented: Binding(
+            get: { deleteTarget != nil },
+            set: { if !$0 { deleteTarget = nil } }
         )) {
-            alertActions
+            Button("Cancel", role: .cancel) { deleteTarget = nil }
+            Button("Delete", role: .destructive) {
+                if let cat = deleteTarget { Task { await delete(cat) } }
+            }
+        }
+        .sheet(isPresented: $showFormSheet) {
+            CategoryFormSheet(
+                target: formTarget,
+                name: $formName,
+                icon: $formIcon,
+                showIconPicker: $showIconPicker,
+                onSave: { Task { await saveForm() } }
+            )
         }
     }
 
@@ -121,10 +92,13 @@ struct ManageCategoriesView: View {
                             category: cat,
                             reelCount: appVM.categorySummaries.first(where: { $0.id == cat.id })?.reelCount ?? 0,
                             onEdit: {
-                                editName = cat.name
-                                activeAlert = .rename(cat)
+                                formTarget = cat
+                                formName = cat.name
+                                formIcon = cat.icon ?? "bookmark"
+                                showIconPicker = false
+                                showFormSheet = true
                             },
-                            onDelete: { activeAlert = .confirmDelete(cat) }
+                            onDelete: { deleteTarget = cat }
                         )
 
                         if cat.id != categories.last?.id {
@@ -165,8 +139,11 @@ struct ManageCategoriesView: View {
             }
 
             Button {
-                newCategoryName = ""
-                activeAlert = .create
+                formTarget = nil
+                formName = ""
+                formIcon = "bookmark"
+                showIconPicker = false
+                showFormSheet = true
             } label: {
                 Text("Create collection")
                     .font(.system(size: 14, weight: .semibold))
@@ -193,12 +170,20 @@ struct ManageCategoriesView: View {
         isLoading = false
     }
 
-    private func rename(_ cat: Category) async {
-        let trimmed = editName.trimmingCharacters(in: .whitespaces)
+    private func saveForm() async {
+        let trimmed = formName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
-        activeAlert = nil
+        showFormSheet = false
+        if let cat = formTarget {
+            await rename(cat, newName: trimmed, newIcon: formIcon)
+        } else {
+            await addCategory(name: trimmed, icon: formIcon)
+        }
+    }
+
+    private func rename(_ cat: Category, newName: String, newIcon: String) async {
         do {
-            try await LibraryService.shared.renameCategory(id: cat.id, newName: trimmed)
+            try await LibraryService.shared.renameCategory(id: cat.id, newName: newName, icon: newIcon)
             await appVM.load(silent: true)
             await load()
         } catch {
@@ -207,7 +192,7 @@ struct ManageCategoriesView: View {
     }
 
     private func delete(_ cat: Category) async {
-        activeAlert = nil
+        deleteTarget = nil
         do {
             try await LibraryService.shared.deleteCategory(id: cat.id)
             await appVM.load(silent: true)
@@ -217,16 +202,73 @@ struct ManageCategoriesView: View {
         }
     }
 
-    private func addCategory() async {
-        let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
-        activeAlert = nil
+    private func addCategory(name: String, icon: String) async {
         do {
-            _ = try await LibraryService.shared.createCategory(name: trimmed)
+            _ = try await LibraryService.shared.createCategory(name: name, icon: icon)
             await appVM.load(silent: true)
             await load()
         } catch {
             errorMessage = "Failed to create collection."
+        }
+    }
+}
+
+// MARK: - Form Sheet
+
+private struct CategoryFormSheet: View {
+    let target: Category?
+    @Binding var name: String
+    @Binding var icon: String
+    @Binding var showIconPicker: Bool
+    let onSave: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Button {
+                        showIconPicker.toggle()
+                    } label: {
+                        Image(systemName: icon)
+                            .font(.system(size: 18))
+                            .frame(width: 40, height: 40)
+                            .foregroundColor(AppTheme.accentDark)
+                            .background(AppTheme.surfaceSecondary)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+
+                    TextField("Collection name", text: $name)
+                        .font(.system(size: 15))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(AppTheme.surfaceSecondary)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+
+                if showIconPicker {
+                    CategoryIconPicker(selectedIcon: $icon, isShowing: $showIconPicker)
+                }
+
+                Spacer()
+            }
+            .padding(20)
+            .background(AppTheme.background.ignoresSafeArea())
+            .navigationTitle(target == nil ? "New Collection" : "Rename Collection")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(AppTheme.accentDark)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(target == nil ? "Create" : "Save") { onSave() }
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.accentDark)
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
         }
     }
 }
@@ -245,7 +287,7 @@ private struct CategoryManageRow: View {
                 .fill(AppTheme.surfaceSecondary)
                 .frame(width: 34, height: 34)
                 .overlay(
-                    Image(systemName: "folder")
+                    Image(systemName: category.icon ?? "bookmark")
                         .font(.system(size: 14))
                         .foregroundColor(AppTheme.accentDark)
                 )
@@ -261,9 +303,7 @@ private struct CategoryManageRow: View {
 
             Spacer()
 
-            Button {
-                onEdit()
-            } label: {
+            Button { onEdit() } label: {
                 Image(systemName: "pencil")
                     .font(.system(size: 13))
                     .foregroundColor(AppTheme.textMuted)
@@ -273,9 +313,7 @@ private struct CategoryManageRow: View {
             }
             .buttonStyle(.plain)
 
-            Button {
-                onDelete()
-            } label: {
+            Button { onDelete() } label: {
                 Image(systemName: "trash")
                     .font(.system(size: 13))
                     .foregroundColor(AppTheme.destructive)
