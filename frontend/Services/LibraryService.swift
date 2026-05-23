@@ -23,7 +23,7 @@ struct LibraryService {
     func fetchCategories() async throws -> [Category] {
         return try await client
             .from("categories")
-            .select("id, name, created_at")
+            .select("id, name, icon, created_at")
             .eq("is_default", value: false)
             .order("name", ascending: true)
             .execute()
@@ -58,21 +58,22 @@ struct LibraryService {
     }
 
     /// Creates a new user-owned category and returns it.
-    func createCategory(name: String) async throws -> Category {
+    func createCategory(name: String, icon: String) async throws -> Category {
         let userId = try await client.auth.session.user.id
         struct Payload: Encodable {
             let name: String
+            let icon: String
             let userId: UUID
             let isDefault: Bool
             enum CodingKeys: String, CodingKey {
-                case name
+                case name, icon
                 case userId = "user_id"
                 case isDefault = "is_default"
             }
         }
         return try await client
             .from("categories")
-            .insert(Payload(name: name, userId: userId, isDefault: false))
+            .insert(Payload(name: name, icon: icon, userId: userId, isDefault: false))
             .select()
             .single()
             .execute()
@@ -80,11 +81,14 @@ struct LibraryService {
     }
 
     /// Renames an existing category.
-    func renameCategory(id: UUID, newName: String) async throws {
-        struct Payload: Encodable { let name: String }
+    func renameCategory(id: UUID, newName: String, icon: String) async throws {
+        struct Payload: Encodable {
+            let name: String
+            let icon: String
+        }
         try await client
             .from("categories")
-            .update(Payload(name: newName))
+            .update(Payload(name: newName, icon: icon))
             .eq("id", value: id)
             .execute()
     }
