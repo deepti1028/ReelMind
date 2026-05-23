@@ -6,8 +6,6 @@ struct LibraryView: View {
     @EnvironmentObject private var auth: AuthSession
     var onInboxTap: () -> Void = {}
 
-    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -26,7 +24,7 @@ struct LibraryView: View {
                     libraryEmptyState
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
-                } else {
+                } else if !appVM.categorySummaries.isEmpty {
                     Text("Collections")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(AppTheme.textFaint)
@@ -35,15 +33,8 @@ struct LibraryView: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 8)
 
-                    LazyVGrid(columns: columns, spacing: 9) {
-                        ForEach(appVM.categorySummaries) { summary in
-                            NavigationLink(value: summary) {
-                                CategoryCard(summary: summary)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.horizontal, 14)
+                    CollageLayout(summaries: appVM.categorySummaries)
+                        .padding(.horizontal, 14)
                 }
             }
         }
@@ -142,7 +133,7 @@ struct LibraryView: View {
     }
 }
 
-// MARK: - How-to step row for empty state
+// MARK: - How-to step
 
 private struct LibraryHowToStep: View {
     let number: Int
@@ -166,37 +157,145 @@ private struct LibraryHowToStep: View {
     }
 }
 
-// MARK: - Category card
+// MARK: - Collage Layout
+
+private struct CollageLayout: View {
+    let summaries: [CategorySummary]
+
+    private var sorted: [CategorySummary] {
+        summaries.sorted { $0.reelCount > $1.reelCount }
+    }
+
+    private struct LayoutRow {
+        let items: [CategorySummary]
+        let colorIndices: [Int]
+        let isSolo: Bool
+        let pairIndex: Int
+    }
+
+    private var rows: [LayoutRow] {
+        let items = sorted
+        guard !items.isEmpty else { return [] }
+
+        var result: [LayoutRow] = []
+
+        result.append(LayoutRow(items: [items[0]], colorIndices: [0], isSolo: true, pairIndex: 0))
+        guard items.count > 1 else { return result }
+
+        var remaining = Array(items.dropFirst())
+        var nextColor = 1
+        var pairIdx = 0
+
+        // Odd remainder: prepend one full-width solo before pairing
+        if remaining.count % 2 == 1 {
+            result.append(LayoutRow(items: [remaining.removeFirst()], colorIndices: [nextColor], isSolo: true, pairIndex: 0))
+            nextColor += 1
+        }
+
+        while remaining.count >= 2 {
+            let pair = [remaining.removeFirst(), remaining.removeFirst()]
+            result.append(LayoutRow(items: pair, colorIndices: [nextColor, nextColor + 1], isSolo: false, pairIndex: pairIdx))
+            nextColor += 2
+            pairIdx += 1
+        }
+
+        return result
+    }
+
+    var body: some View {
+        VStack(spacing: 7) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                rowView(row)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func rowView(_ row: LayoutRow) -> some View {
+        if row.isSolo {
+            cardLink(row.items[0], colorIndex: row.colorIndices[0], isNarrow: false)
+        } else {
+            let isWideFirst = row.pairIndex % 2 == 0
+            GeometryReader { geo in
+                HStack(spacing: 7) {
+                    let gap: CGFloat = 7
+                    let wide = (geo.size.width - gap) * 2 / 3
+                    let narrow = (geo.size.width - gap) * 1 / 3
+                    if isWideFirst {
+                        cardLink(row.items[0], colorIndex: row.colorIndices[0], isNarrow: false)
+                            .frame(width: wide)
+                        cardLink(row.items[1], colorIndex: row.colorIndices[1], isNarrow: true)
+                            .frame(width: narrow)
+                    } else {
+                        cardLink(row.items[0], colorIndex: row.colorIndices[0], isNarrow: true)
+                            .frame(width: narrow)
+                        cardLink(row.items[1], colorIndex: row.colorIndices[1], isNarrow: false)
+                            .frame(width: wide)
+                    }
+                }
+            }
+            .frame(height: 116)
+        }
+    }
+
+    private func cardLink(_ summary: CategorySummary, colorIndex: Int, isNarrow: Bool) -> some View {
+        NavigationLink(value: summary) {
+            CategoryCard(summary: summary, colorIndex: colorIndex, isNarrow: isNarrow)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Category Card
 
 private struct CategoryCard: View {
     let summary: CategorySummary
+    let colorIndex: Int
+    var isNarrow: Bool = false
+
+    private var bgColor: Color { AppTheme.cardBackgrounds[colorIndex % 10] }
+    private var iconColor: Color { AppTheme.cardIconColors[colorIndex % 10] }
+    private var iconSize: CGFloat { isNarrow ? 20 : 26 }
+    private var wmFontSize: CGFloat { isNarrow ? 48 : 68 }
+    private var wmOffset: CGFloat { isNarrow ? 8 : 12 }
+    private var nameFontSize: CGFloat { isNarrow ? 12 : 13 }
 
     var body: some View {
-        VStack(alignment: .leading) {
+        ZStack(alignment: .bottomTrailing) {
+            bgColor
+
             Text("\(summary.reelCount)")
-                .font(.system(size: 34, weight: .heavy))
-                .foregroundColor(AppTheme.textPrimary)
-            Spacer()
-            VStack(alignment: .leading, spacing: 2) {
-                Text(summary.name)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(AppTheme.textSecondary)
-                    .lineLimit(1)
-                if let date = summary.lastSavedAt {
-                    Text("Updated \(date.timeAgoString())")
-                        .font(.system(size: 10))
-                        .foregroundColor(AppTheme.textFaint)
+                .font(.system(size: wmFontSize, weight: .heavy))
+                .foregroundColor(AppTheme.textPrimary.opacity(0.065))
+                .offset(x: 3, y: wmOffset)
+                .allowsHitTesting(false)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Image(systemName: summary.icon ?? "bookmark")
+                    .font(.system(size: iconSize))
+                    .foregroundColor(iconColor)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(summary.name)
+                        .font(.system(size: nameFontSize, weight: .bold))
+                        .foregroundColor(AppTheme.textPrimary)
+                        .lineLimit(1)
+                    if let date = summary.lastSavedAt {
+                        Text("Updated \(date.timeAgoString())")
+                            .font(.system(size: 8.5))
+                            .foregroundColor(AppTheme.textFaint)
+                    }
                 }
             }
+            .padding(11)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .aspectRatio(1, contentMode: .fit)
-        .background(AppTheme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .frame(maxWidth: .infinity)
+        .frame(height: 116)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.black.opacity(0.055), lineWidth: 1)
         )
     }
 }
