@@ -24,6 +24,7 @@ struct LibraryService {
         return try await client
             .from("categories")
             .select("id, name, created_at")
+            .eq("is_default", value: false)
             .order("name", ascending: true)
             .execute()
             .value
