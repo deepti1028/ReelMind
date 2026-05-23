@@ -6,6 +6,7 @@ struct ManageCategoriesView: View {
 
     @State private var categories: [Category] = []
     @State private var isLoading = false
+    @State private var isMutating = false
     @State private var errorMessage: String?
 
     // Delete confirmation
@@ -29,14 +30,25 @@ struct ManageCategoriesView: View {
             } else {
                 categoryList
             }
+
+            if isMutating {
+                Color.black.opacity(0.25).ignoresSafeArea()
+                ProgressView()
+                    .tint(AppTheme.accentDark)
+                    .scaleEffect(1.2)
+                    .padding(24)
+                    .background(AppTheme.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
         }
-        .navigationTitle("Collections")
+        .allowsHitTesting(!isMutating)
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(AppTheme.background, for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                if isLoading {
-                    ProgressView().scaleEffect(0.8).tint(AppTheme.accent)
-                } else {
+                if !categories.isEmpty && !isMutating {
                     Button {
                         formTarget = nil
                         formName = ""
@@ -182,6 +194,7 @@ struct ManageCategoriesView: View {
     }
 
     private func rename(_ cat: Category, newName: String, newIcon: String) async {
+        isMutating = true
         do {
             try await LibraryService.shared.renameCategory(id: cat.id, newName: newName, icon: newIcon)
             await appVM.load(silent: true)
@@ -189,10 +202,12 @@ struct ManageCategoriesView: View {
         } catch {
             errorMessage = "Failed to rename collection."
         }
+        isMutating = false
     }
 
     private func delete(_ cat: Category) async {
         deleteTarget = nil
+        isMutating = true
         do {
             try await LibraryService.shared.deleteCategory(id: cat.id)
             await appVM.load(silent: true)
@@ -200,9 +215,11 @@ struct ManageCategoriesView: View {
         } catch {
             errorMessage = "Failed to delete collection."
         }
+        isMutating = false
     }
 
     private func addCategory(name: String, icon: String) async {
+        isMutating = true
         do {
             _ = try await LibraryService.shared.createCategory(name: name, icon: icon)
             await appVM.load(silent: true)
@@ -210,6 +227,7 @@ struct ManageCategoriesView: View {
         } catch {
             errorMessage = "Failed to create collection."
         }
+        isMutating = false
     }
 }
 
@@ -257,6 +275,8 @@ private struct CategoryFormSheet: View {
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle(target == nil ? "New Collection" : "Rename Collection")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(AppTheme.background, for: .navigationBar)
+            .toolbarColorScheme(.light, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { dismiss() }

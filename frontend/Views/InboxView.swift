@@ -16,7 +16,18 @@ struct InboxView: View {
             } else {
                 reelList
             }
+
+            if appVM.isDeletingReel {
+                Color.black.opacity(0.25).ignoresSafeArea()
+                ProgressView()
+                    .tint(AppTheme.accentDark)
+                    .scaleEffect(1.2)
+                    .padding(24)
+                    .background(AppTheme.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
         }
+        .allowsHitTesting(!appVM.isDeletingReel)
         .alert("Delete Reel?", isPresented: Binding(
             get: { reelToDelete != nil },
             set: { if !$0 { reelToDelete = nil } }
@@ -70,7 +81,7 @@ struct InboxView: View {
                 Text("Needs a category")
                     .font(.system(size: 26, weight: .bold))
                     .foregroundColor(AppTheme.textPrimary)
-                Text("The AI wasn't confident about these \(appVM.inboxCount) reels. Pick a home for them.")
+                Text("We weren't confident about these \(appVM.inboxCount) reels. Pick a category for them.")
                     .font(.system(size: 12))
                     .foregroundColor(AppTheme.textMuted)
                     .lineLimit(2)

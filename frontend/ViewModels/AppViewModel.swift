@@ -9,6 +9,7 @@ final class AppViewModel: ObservableObject {
     @Published var showSettings = false
 
     private var isLoading = false
+    @Published private(set) var isDeletingReel = false
 
     var inboxCount: Int { inboxReels.count }
 
@@ -50,6 +51,8 @@ final class AppViewModel: ObservableObject {
 
     /// Soft-deletes a reel then refreshes.
     func deleteReel(_ reelId: UUID) async {
+        isDeletingReel = true
+        defer { isDeletingReel = false }
         do {
             try await LibraryService.shared.softDeleteReel(reelId)
             await load(silent: true)

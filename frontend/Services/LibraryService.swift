@@ -30,6 +30,17 @@ struct LibraryService {
             .value
     }
 
+    /// System-wide default categories (is_default = true), alphabetically.
+    func fetchDefaultCategories() async throws -> [Category] {
+        return try await client
+            .from("categories")
+            .select("id, name, icon, created_at")
+            .eq("is_default", value: true)
+            .order("name", ascending: true)
+            .execute()
+            .value
+    }
+
     /// Reels for a single category, newest first.
     func fetchReelsByCategory(_ categoryId: UUID) async throws -> [Reel] {
         return try await client

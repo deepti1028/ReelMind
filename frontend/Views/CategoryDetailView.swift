@@ -7,6 +7,7 @@ import UIKit
 private final class CategoryDetailViewModel: ObservableObject {
     @Published var reels: [Reel] = []
     @Published var isLoading = false
+    @Published var isDeleting = false
 
     func load(categoryId: UUID) async {
         guard !isLoading else { return }
@@ -20,6 +21,8 @@ private final class CategoryDetailViewModel: ObservableObject {
     }
 
     func deleteReel(_ reelId: UUID) async {
+        isDeleting = true
+        defer { isDeleting = false }
         do {
             try await LibraryService.shared.softDeleteReel(reelId)
             reels.removeAll { $0.id == reelId }
@@ -40,36 +43,49 @@ struct CategoryDetailView: View {
     @State private var reelToReassign: Reel?
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 10) {
-                categoryHeader
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
-                    .padding(.bottom, 8)
+        ZStack {
+            ScrollView {
+                LazyVStack(spacing: 10) {
+                    categoryHeader
+                        .padding(.horizontal, 20)
+                        .padding(.top, 4)
+                        .padding(.bottom, 8)
 
-                if viewModel.reels.isEmpty && !viewModel.isLoading {
-                    categoryEmptyState
-                        .padding(.horizontal, 14)
-                } else {
-                    ForEach(viewModel.reels) { reel in
-                        DetailReelCard(
-                            reel: reel,
-                            onDelete: { reelToDelete = reel.id },
-                            onReassign: { reelToReassign = reel }
-                        )
+                    if viewModel.reels.isEmpty && !viewModel.isLoading {
+                        categoryEmptyState
+                            .padding(.horizontal, 14)
+                    } else {
+                        ForEach(viewModel.reels) { reel in
+                            DetailReelCard(
+                                reel: reel,
+                                onDelete: { reelToDelete = reel.id },
+                                onReassign: { reelToReassign = reel }
+                            )
+                        }
                     }
                 }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 16)
             }
-            .padding(.horizontal, 14)
-            .padding(.bottom, 16)
+            .refreshable { await viewModel.load(categoryId: summary.id) }
+            .safeAreaInset(edge: .bottom, alignment: .trailing, spacing: 0) {
+                chatButton
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 76)
+            }
+            .background(AppTheme.background.ignoresSafeArea())
+
+            if viewModel.isDeleting {
+                Color.black.opacity(0.25).ignoresSafeArea()
+                ProgressView()
+                    .tint(AppTheme.accentDark)
+                    .scaleEffect(1.2)
+                    .padding(24)
+                    .background(AppTheme.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
         }
-        .refreshable { await viewModel.load(categoryId: summary.id) }
-        .safeAreaInset(edge: .bottom, alignment: .trailing, spacing: 0) {
-            chatButton
-                .padding(.trailing, 16)
-                .padding(.bottom, 76)
-        }
-        .background(AppTheme.background.ignoresSafeArea())
+        .allowsHitTesting(!viewModel.isDeleting)
         .navigationBarBackButtonHidden(true)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)

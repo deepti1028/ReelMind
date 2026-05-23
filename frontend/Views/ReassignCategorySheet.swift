@@ -7,6 +7,8 @@ struct ReassignCategorySheet: View {
     @EnvironmentObject private var appVM: AppViewModel
     @Environment(\.dismiss) private var dismiss
 
+    @State private var defaultCategories: [Category] = []
+    @State private var userCategories: [Category] = []
     @State private var newCategoryName = ""
     @State private var isWorking = false
     @State private var errorMessage: String?
@@ -42,6 +44,7 @@ struct ReassignCategorySheet: View {
                     .padding(.top, 52)
             }
         }
+        .task { await loadDefaults() }
     }
 
     // MARK: - Sub-views
@@ -69,40 +72,93 @@ struct ReassignCategorySheet: View {
     }
 
     private var categoryList: some View {
-        VStack(spacing: 8) {
-            ForEach(appVM.categorySummaries) { cat in
-                let isCurrent = reel.categoryId == cat.id
-                Button {
-                    guard !isCurrent else { return }
-                    assign(categoryId: cat.id)
-                } label: {
-                    HStack {
-                        Text(cat.name)
-                            .font(.system(size: 14, weight: isCurrent ? .semibold : .medium))
-                            .foregroundColor(isCurrent ? AppTheme.accent : AppTheme.textPrimary)
-                        Spacer()
-                        Text("\(cat.reelCount) reels")
-                            .font(.system(size: 11))
-                            .foregroundColor(AppTheme.textFaint)
-                        if isCurrent {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(AppTheme.accent)
-                        }
+        VStack(alignment: .leading, spacing: 0) {
+            if !defaultCategories.isEmpty {
+                sectionLabel("Suggested")
+                VStack(spacing: 8) {
+                    ForEach(defaultCategories) { cat in
+                        categoryRow(
+                            id: cat.id,
+                            name: cat.name,
+                            icon: cat.icon ?? "bookmark",
+                            subtitle: nil
+                        )
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(AppTheme.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(isCurrent ? AppTheme.accent : AppTheme.border, lineWidth: isCurrent ? 1.5 : 1)
-                    )
                 }
-                .buttonStyle(.plain)
-                .disabled(isWorking)
+                .padding(.bottom, 20)
+            }
+
+            if !userCategories.isEmpty {
+                sectionLabel("Your collections")
+                VStack(spacing: 8) {
+                    ForEach(userCategories) { cat in
+                        categoryRow(
+                            id: cat.id,
+                            name: cat.name,
+                            icon: cat.icon ?? "bookmark",
+                            subtitle: nil
+                        )
+                    }
+                }
             }
         }
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundColor(AppTheme.textFaint)
+            .textCase(.uppercase)
+            .kerning(1.2)
+            .padding(.bottom, 8)
+    }
+
+    private func categoryRow(id: UUID, name: String, icon: String, subtitle: String?) -> some View {
+        let isCurrent = reel.categoryId == id
+        return Button {
+            guard !isCurrent else { return }
+            assign(categoryId: id)
+        } label: {
+            HStack(spacing: 10) {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isCurrent ? AppTheme.accent.opacity(0.15) : AppTheme.surfaceSecondary)
+                    .frame(width: 36, height: 36)
+                    .overlay(
+                        Image(systemName: icon)
+                            .font(.system(size: 15))
+                            .foregroundColor(isCurrent ? AppTheme.accent : AppTheme.accentDark)
+                    )
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(name)
+                        .font(.system(size: 14, weight: isCurrent ? .semibold : .medium))
+                        .foregroundColor(isCurrent ? AppTheme.accent : AppTheme.textPrimary)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 11))
+                            .foregroundColor(AppTheme.textFaint)
+                    }
+                }
+
+                Spacer()
+
+                if isCurrent {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(AppTheme.accent)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(AppTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(isCurrent ? AppTheme.accent : AppTheme.border, lineWidth: isCurrent ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(isWorking)
     }
 
     private var newCategoryRow: some View {
@@ -140,6 +196,13 @@ struct ReassignCategorySheet: View {
     }
 
     // MARK: - Actions
+
+    private func loadDefaults() async {
+        async let defaults = LibraryService.shared.fetchDefaultCategories()
+        async let user = LibraryService.shared.fetchCategories()
+        defaultCategories = (try? await defaults) ?? []
+        userCategories = (try? await user) ?? []
+    }
 
     private func assign(categoryId: UUID) {
         isWorking = true
