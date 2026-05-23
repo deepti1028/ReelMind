@@ -76,6 +76,29 @@ struct LoginView: View {
                 }
                 .disabled(isSubmitting || !canSubmit)
 
+                SocialAuthDivider()
+
+                VStack(spacing: 12) {
+                    SocialAuthButton(systemIcon: "apple.logo", label: "Continue with Apple") {
+                        errorMessage = nil
+                        do {
+                            try await auth.signInWithApple()
+                        } catch {
+                            errorMessage = error.localizedDescription
+                        }
+                    }
+
+                    SocialAuthButton(textIcon: "G", label: "Continue with Google") {
+                        errorMessage = nil
+                        do {
+                            try await auth.signInWithGoogle()
+                        } catch {
+                            errorMessage = error.localizedDescription
+                        }
+                    }
+                }
+                .disabled(isSubmitting)
+
                 HStack {
                     Text("Don't have an account?")
                         .foregroundColor(AppTheme.textMuted)
