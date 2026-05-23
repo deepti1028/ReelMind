@@ -38,6 +38,7 @@ final class AppViewModel: ObservableObject {
                         lastSavedAt: catReels.first?.createdAt
                     )
                 }
+                .filter { $0.reelCount > 0 }
                 .sorted { ($0.lastSavedAt ?? .distantPast) > ($1.lastSavedAt ?? .distantPast) }
 
             inboxReels  = reels.filter { $0.categoryId == nil }

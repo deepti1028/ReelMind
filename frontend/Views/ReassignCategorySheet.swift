@@ -164,7 +164,7 @@ struct ReassignCategorySheet: View {
         errorMessage = nil
         Task {
             do {
-                let newCategory = try await LibraryService.shared.createCategory(name: name)
+                let newCategory = try await LibraryService.shared.createCategory(name: name, icon: "bookmark")
                 try await LibraryService.shared.assignCategory(reelId: reel.id, categoryId: newCategory.id)
                 await appVM.load(silent: true)
                 onComplete()
@@ -176,3 +176,4 @@ struct ReassignCategorySheet: View {
         }
     }
 }
+
