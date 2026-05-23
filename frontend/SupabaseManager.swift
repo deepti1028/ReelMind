@@ -33,6 +33,7 @@ final class SupabaseManager {
             supabaseKey: AppConfig.supabaseAnonKey,
             options: SupabaseClientOptions(
                 auth: SupabaseClientOptions.AuthOptions(
+                    redirectURL: URL(string: "com.reelmind.app://auth-callback"),
                     // Opt in to the corrected initial-session behavior
                     // (supabase-swift PR #822). Without this, the auth
                     // listener double-emits during bootstrap, causing the
