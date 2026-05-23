@@ -62,12 +62,12 @@ struct ReassignCategorySheet: View {
             Text("Move to collection")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(AppTheme.textPrimary)
-            if let handle = reel.creatorHandle {
-                Text("@\(handle)")
-                    .font(.system(size: 12))
-                    .foregroundColor(AppTheme.textMuted)
-                    .lineLimit(1)
-            }
+            // if let handle = reel.creatorHandle {
+            //     Text("@\(handle)")
+            //         .font(.system(size: 12))
+            //         .foregroundColor(AppTheme.textMuted)
+            //         .lineLimit(1)
+            // }
         }
     }
 
