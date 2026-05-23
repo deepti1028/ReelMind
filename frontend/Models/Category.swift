@@ -5,10 +5,12 @@ struct Category: Identifiable, Decodable, Hashable {
     let name: String
     let icon: String?
     let createdAt: Date
+    let isDefault: Bool
 
     enum CodingKeys: String, CodingKey {
         case id, name, icon
         case createdAt = "created_at"
+        case isDefault = "is_default"
     }
 }
 
@@ -18,4 +20,5 @@ struct CategorySummary: Identifiable, Hashable {
     let icon: String?
     let reelCount: Int
     let lastSavedAt: Date?
+    let isDefault: Bool
 }

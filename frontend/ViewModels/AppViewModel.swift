@@ -21,7 +21,7 @@ final class AppViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             async let reelsFetch    = LibraryService.shared.fetchAllReels()
-            async let catsFetch     = LibraryService.shared.fetchCategories()
+            async let catsFetch     = LibraryService.shared.fetchAllVisibleCategories()
             let (reels, categories) = try await (reelsFetch, catsFetch)
 
             let grouped = Dictionary(
@@ -36,7 +36,8 @@ final class AppViewModel: ObservableObject {
                         name: cat.name,
                         icon: cat.icon,
                         reelCount: catReels.count,
-                        lastSavedAt: catReels.first?.createdAt
+                        lastSavedAt: catReels.first?.createdAt,
+                        isDefault: cat.isDefault
                     )
                 }
                 .filter { $0.reelCount > 0 }

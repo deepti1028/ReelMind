@@ -240,40 +240,103 @@ private struct CategoryFormSheet: View {
     @Binding var showIconPicker: Bool
     let onSave: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var nameFocused: Bool
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 10) {
-                    Button {
-                        showIconPicker.toggle()
-                    } label: {
-                        Image(systemName: icon)
-                            .font(.system(size: 18))
-                            .frame(width: 40, height: 40)
-                            .foregroundColor(AppTheme.accentDark)
-                            .background(AppTheme.surfaceSecondary)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            ZStack {
+                AppTheme.background.ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            cardPreview
+                                .padding(.horizontal, 60)
+                                .padding(.top, 28)
+                                .padding(.bottom, 24)
+
+                            Divider().background(AppTheme.border)
+
+                            HStack(spacing: 10) {
+                                Button {
+                                    nameFocused = false
+                                    showIconPicker.toggle()
+                                } label: {
+                                    ZStack(alignment: .bottomTrailing) {
+                                        Image(systemName: icon)
+                                            .font(.system(size: 18))
+                                            .frame(width: 44, height: 44)
+                                            .foregroundColor(AppTheme.accentDark)
+                                            .background(AppTheme.surfaceSecondary)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                    .stroke(AppTheme.border, lineWidth: 1)
+                                            )
+                                        Image(systemName: "pencil")
+                                            .font(.system(size: 8, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .frame(width: 16, height: 16)
+                                            .background(AppTheme.accentDark)
+                                            .clipShape(Circle())
+                                            .offset(x: 4, y: 4)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+
+                                TextField("Collection name", text: $name)
+                                    .font(.system(size: 15))
+                                    .focused($nameFocused)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 12)
+                                    .background(AppTheme.surfaceSecondary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(AppTheme.border, lineWidth: 1)
+                                    )
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                            .padding(.bottom, 8)
+
+                            if showIconPicker {
+                                Divider()
+                                    .background(AppTheme.border)
+                                    .padding(.top, 12)
+                                CategoryIconPicker(selectedIcon: $icon, isShowing: $showIconPicker)
+                                    .padding(.horizontal, 20)
+                            }
+                        }
                     }
-                    .buttonStyle(.plain)
 
-                    TextField("Collection name", text: $name)
-                        .font(.system(size: 15))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(AppTheme.surfaceSecondary)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    VStack(spacing: 0) {
+                        Divider().background(AppTheme.border)
+                        Button { onSave() } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: target == nil ? "plus.circle.fill" : "checkmark.circle.fill")
+                                    .font(.system(size: 15))
+                                Text(target == nil ? "Create Collection" : "Save Changes")
+                                    .font(.system(size: 15, weight: .semibold))
+                            }
+                            .foregroundColor(name.trimmingCharacters(in: .whitespaces).isEmpty
+                                             ? AppTheme.textFaint : AppTheme.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 15)
+                            .background(name.trimmingCharacters(in: .whitespaces).isEmpty
+                                        ? AppTheme.border : AppTheme.accent)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 28)
+                        .background(AppTheme.background)
+                    }
                 }
-
-                if showIconPicker {
-                    CategoryIconPicker(selectedIcon: $icon, isShowing: $showIconPicker)
-                }
-
-                Spacer()
             }
-            .padding(20)
-            .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle(target == nil ? "New Collection" : "Rename Collection")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(AppTheme.background, for: .navigationBar)
             .toolbarColorScheme(.light, for: .navigationBar)
@@ -282,14 +345,49 @@ private struct CategoryFormSheet: View {
                     Button("Cancel") { dismiss() }
                         .foregroundColor(AppTheme.accentDark)
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(target == nil ? "Create" : "Save") { onSave() }
-                        .fontWeight(.semibold)
-                        .foregroundColor(AppTheme.accentDark)
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
+            }
+            .onAppear {
+                if target == nil { nameFocused = true }
             }
         }
+    }
+
+    private var cardPreview: some View {
+        ZStack(alignment: .bottomTrailing) {
+            AppTheme.cardBackgrounds[2]
+
+            Text("0")
+                .font(.system(size: 52, weight: .heavy))
+                .foregroundColor(AppTheme.textPrimary.opacity(0.065))
+                .offset(x: 3, y: 8)
+                .allowsHitTesting(false)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                    .foregroundColor(AppTheme.cardIconColors[2])
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer()
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(name.isEmpty ? "Collection" : name)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(name.isEmpty ? AppTheme.textFaint : AppTheme.textPrimary)
+                        .lineLimit(1)
+                    Text("0 reels")
+                        .font(.system(size: 8.5))
+                        .foregroundColor(AppTheme.textFaint)
+                }
+            }
+            .padding(11)
+        }
+        .frame(height: 100)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.black.opacity(0.055), lineWidth: 1)
+        )
     }
 }
 

@@ -20,11 +20,23 @@ struct LibraryService {
     }
 
     /// All categories belonging to the signed-in user, alphabetically.
+    /// Excludes default categories — used by ManageCategoriesView where edit/delete are exposed.
     func fetchCategories() async throws -> [Category] {
         return try await client
             .from("categories")
-            .select("id, name, icon, created_at")
+            .select("id, name, icon, created_at, is_default")
             .eq("is_default", value: false)
+            .order("name", ascending: true)
+            .execute()
+            .value
+    }
+
+    /// All categories visible to the user (own + system defaults), alphabetically.
+    /// Used by AppViewModel to build home-screen summaries — reels can be assigned to default categories.
+    func fetchAllVisibleCategories() async throws -> [Category] {
+        return try await client
+            .from("categories")
+            .select("id, name, icon, created_at, is_default")
             .order("name", ascending: true)
             .execute()
             .value
@@ -34,7 +46,7 @@ struct LibraryService {
     func fetchDefaultCategories() async throws -> [Category] {
         return try await client
             .from("categories")
-            .select("id, name, icon, created_at")
+            .select("id, name, icon, created_at, is_default")
             .eq("is_default", value: true)
             .order("name", ascending: true)
             .execute()

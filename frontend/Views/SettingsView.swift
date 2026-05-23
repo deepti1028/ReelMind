@@ -25,8 +25,8 @@ struct SettingsView: View {
                         savingSection
                             .padding(.horizontal, 14)
                             .padding(.bottom, 20)
-                        privacySection
-                            .padding(.horizontal, 14)
+                        // privacySection
+                            // .padding(.horizontal, 14)
                     }
                 }
             }
@@ -108,7 +108,7 @@ struct SettingsView: View {
             NavigationLink(destination: ManageCategoriesView().environmentObject(appVM)) {
                 SettingsRow(icon: "square.grid.2x2", iconBg: AppTheme.surfaceSecondary,
                             label: "Manage categories") {
-                    Text("\(appVM.categorySummaries.count)")
+                    Text("\(appVM.categorySummaries.filter { !$0.isDefault }.count)")
                         .font(.system(size: 12))
                         .foregroundColor(AppTheme.textFaint)
                 }
@@ -131,20 +131,20 @@ struct SettingsView: View {
 
     private var savingSection: some View {
         SettingsSection(title: "Saving") {
-            Button {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            } label: {
-                SettingsRow(icon: "square.and.arrow.up", iconBg: AppTheme.surfaceSecondary,
-                            label: "Share sheet permissions") {
-                    Text("Granted")
-                        .font(.system(size: 12))
-                        .foregroundColor(AppTheme.accent)
-                }
-            }
-            .buttonStyle(.plain)
-            Divider().background(AppTheme.border)
+            // Button {
+            //     if let url = URL(string: UIApplication.openSettingsURLString) {
+            //         UIApplication.shared.open(url)
+            //     }
+            // } label: {
+            //     SettingsRow(icon: "square.and.arrow.up", iconBg: AppTheme.surfaceSecondary,
+            //                 label: "Share sheet permissions") {
+            //         Text("Granted")
+            //             .font(.system(size: 12))
+            //             .foregroundColor(AppTheme.accent)
+            //     }
+            // }
+            // .buttonStyle(.plain)
+            // Divider().background(AppTheme.border)
             HStack {
                 SettingsRowLeft(icon: "bell", iconBg: AppTheme.surfaceSecondary,
                                 label: "Save notifications")

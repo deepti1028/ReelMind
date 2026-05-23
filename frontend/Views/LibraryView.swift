@@ -35,6 +35,8 @@ struct LibraryView: View {
 
                     CollageLayout(summaries: appVM.categorySummaries)
                         .padding(.horizontal, 14)
+                } else {
+                    libraryInboxOnlyState
                 }
             }
         }
@@ -77,6 +79,51 @@ struct LibraryView: View {
                     .stroke(AppTheme.border, lineWidth: 1)
             )
         }
+    }
+
+    private var libraryInboxOnlyState: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Your reels are waiting")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(AppTheme.textPrimary)
+                Text("Once your reels are categorized, collections will appear here. Tap the banner above to sort them now.")
+                    .font(.system(size: 13))
+                    .foregroundColor(AppTheme.textMuted)
+                    .lineSpacing(2)
+            }
+            .padding(.horizontal, 20)
+
+            HStack(spacing: 12) {
+                Image(systemName: "wand.and.stars.inverse")
+                    .font(.system(size: 15))
+                    .foregroundColor(AppTheme.accentDark)
+                    .frame(width: 34, height: 34)
+                    .background(AppTheme.surfaceSecondary)
+                    .clipShape(Circle())
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("AI categorizes automatically")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppTheme.textSecondary)
+                    Text("Collections fill in as reels are sorted.")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.textMuted)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(AppTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(AppTheme.border, lineWidth: 1)
+            )
+            .padding(.horizontal, 14)
+        }
+        .padding(.top, 60)
+        .padding(.bottom, 32)
     }
 
     private var topBar: some View {
