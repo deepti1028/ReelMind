@@ -66,11 +66,22 @@ final class AuthSession: ObservableObject {
         )
     }
 
-    func signUp(email: String, password: String) async throws {
+    func signUp(email: String, password: String, displayName: String) async throws {
         try await SupabaseManager.shared.client.auth.signUp(
             email: email,
-            password: password
+            password: password,
+            data: ["full_name": AnyJSON.string(displayName)]
         )
+    }
+
+    func signInWithGoogle() async throws {
+        try await SupabaseManager.shared.client.auth.signInWithOAuth(
+            provider: .google
+        )
+    }
+
+    func signInWithApple() async throws {
+        try await SupabaseManager.shared.client.auth.signInWithApple()
     }
 
     func signOut() async throws {
