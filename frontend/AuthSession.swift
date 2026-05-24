@@ -1,6 +1,40 @@
+import Auth
+import AuthenticationServices
 import Combine
 import Foundation
 import Supabase
+
+// Bridges ASAuthorizationController's delegate callbacks to async/await.
+// Stored on AuthSession to stay alive for the duration of the sign-in flow.
+private final class AppleSignInCoordinator: NSObject,
+    ASAuthorizationControllerDelegate,
+    ASAuthorizationControllerPresentationContextProviding
+{
+    var continuation: CheckedContinuation<ASAuthorizationAppleIDCredential, Error>?
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.keyWindow ?? UIWindow()
+    }
+
+    func authorizationController(controller: ASAuthorizationController,
+                                 didCompleteWithAuthorization authorization: ASAuthorization) {
+        if let credential = authorization.credential as? ASAuthorizationAppleIDCredential {
+            continuation?.resume(returning: credential)
+        } else {
+            continuation?.resume(throwing: NSError(domain: "AppleSignIn", code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Unexpected credential type"]))
+        }
+        continuation = nil
+    }
+
+    func authorizationController(controller: ASAuthorizationController,
+                                 didCompleteWithError error: Error) {
+        continuation?.resume(throwing: error)
+        continuation = nil
+    }
+}
 
 @MainActor
 final class AuthSession: ObservableObject {
@@ -8,6 +42,7 @@ final class AuthSession: ObservableObject {
     @Published var isBootstrapping = true
 
     private var listenerTask: Task<Void, Never>?
+    private var appleSignInCoordinator: AppleSignInCoordinator?
 
     init() {
         Task { await bootstrap() }
@@ -76,12 +111,35 @@ final class AuthSession: ObservableObject {
 
     func signInWithGoogle() async throws {
         try await SupabaseManager.shared.client.auth.signInWithOAuth(
-            provider: .google
+            provider: .google,
+            queryParams: [("prompt", "select_account")]
         )
     }
 
     func signInWithApple() async throws {
-        try await SupabaseManager.shared.client.auth.signInWithApple()
+        let coordinator = AppleSignInCoordinator()
+        appleSignInCoordinator = coordinator
+
+        let credential = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<ASAuthorizationAppleIDCredential, Error>) in
+            coordinator.continuation = continuation
+            let request = ASAuthorizationAppleIDProvider().createRequest()
+            request.requestedScopes = [.fullName, .email]
+            let controller = ASAuthorizationController(authorizationRequests: [request])
+            controller.delegate = coordinator
+            controller.presentationContextProvider = coordinator
+            controller.performRequests()
+        }
+        appleSignInCoordinator = nil
+
+        guard let tokenData = credential.identityToken,
+              let idToken = String(data: tokenData, encoding: .utf8) else {
+            throw NSError(domain: "AppleSignIn", code: -1,
+                          userInfo: [NSLocalizedDescriptionKey: "Missing identity token"])
+        }
+
+        try await SupabaseManager.shared.client.auth.signInWithIdToken(
+            credentials: OpenIDConnectCredentials(provider: .apple, idToken: idToken)
+        )
     }
 
     func signOut() async throws {
