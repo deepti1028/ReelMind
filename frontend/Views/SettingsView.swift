@@ -31,7 +31,22 @@ struct SettingsView: View {
                 }
             }
         }
-        .task { await notifManager.refresh() }
+        .task {
+            await notifManager.refresh()
+            // Ensure the share extension always has the current preference,
+            // even before the user ever visits Settings.
+            UserDefaults(suiteName: AppConfig.appGroupID)?
+                .set(autoCategorise, forKey: "autoCategorise")
+        }
+        .onChange(of: autoCategorise) { _, newValue in
+            UserDefaults(suiteName: AppConfig.appGroupID)?
+                .set(newValue, forKey: "autoCategorise")
+            if newValue {
+                // User turned auto-categorise back on — reset banner so it
+                // shows again if they later turn it off.
+                UserDefaults.standard.set(false, forKey: "inboxBannerDismissed")
+            }
+        }
     }
 
     // MARK: - Header
