@@ -6,6 +6,8 @@ struct InboxView: View {
 
     @State private var reelToDelete: UUID?
     @State private var reelToReassign: Reel?
+    @AppStorage("autoCategorise") private var autoCategorise = true
+    @AppStorage("inboxBannerDismissed") private var bannerDismissed = false
 
     var body: some View {
         ZStack {
@@ -62,6 +64,16 @@ struct InboxView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 14)
 
+                if !autoCategorise && !bannerDismissed {
+                    AutoCategoriseBanner(
+                        onDismiss: { bannerDismissed = true },
+                        onSettings: { appVM.showSettings = true }
+                    )
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 4)
+                    .transition(.opacity)
+                }
+
                 LazyVStack(spacing: 10) {
                     ForEach(appVM.inboxReels) { reel in
                         InboxReelCard(
@@ -108,17 +120,81 @@ struct InboxView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "checkmark.circle")
-                .font(.system(size: 44))
-                .foregroundColor(AppTheme.accent)
-            Text("All caught up")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(AppTheme.textPrimary)
-            Text("Every reel has been categorised.")
-                .font(.system(size: 13))
-                .foregroundColor(AppTheme.textMuted)
+        VStack(spacing: 16) {
+            if !autoCategorise && !bannerDismissed {
+                AutoCategoriseBanner(
+                    onDismiss: { bannerDismissed = true },
+                    onSettings: { appVM.showSettings = true }
+                )
+                .padding(.horizontal, 20)
+            }
+            VStack(spacing: 12) {
+                Image(systemName: "checkmark.circle")
+                    .font(.system(size: 44))
+                    .foregroundColor(AppTheme.accent)
+                Text("All caught up")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(AppTheme.textPrimary)
+                Text("Every reel has been categorised.")
+                    .font(.system(size: 13))
+                    .foregroundColor(AppTheme.textMuted)
+            }
         }
+    }
+}
+
+private struct AutoCategoriseBanner: View {
+    let onDismiss: () -> Void
+    let onSettings: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 9) {
+            Text("✦")
+                .font(.system(size: 14))
+                .foregroundColor(Color(r: 0x4a, g: 0x64, b: 0x28))
+                .padding(.top, 1)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Want your saved Reels sorted automatically?")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(Color(r: 0x30, g: 0x40, b: 0x20))
+                HStack(spacing: 0) {
+                    Text("Turn on ")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color(r: 0x30, g: 0x40, b: 0x20))
+                    Button("Auto-categorise") { onSettings() }
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(AppTheme.accentDark)
+                    Text(" in Settings.")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color(r: 0x30, g: 0x40, b: 0x20))
+                }
+            }
+
+            Spacer()
+
+            Button { onDismiss() } label: {
+                Text("✕")
+                    .font(.system(size: 13, weight: .light))
+                    .foregroundColor(Color(r: 0x6a, g: 0x82, b: 0x40))
+            }
+        }
+        .padding(12)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(r: 0xdd, g: 0xe8, b: 0xc4),
+                    Color(r: 0xcc, g: 0xd5, b: 0xae),
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(r: 0xb8, g: 0xcc, b: 0x9a), lineWidth: 1)
+        )
     }
 }
 
