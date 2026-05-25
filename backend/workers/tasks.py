@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 @celery_app.task(name="workers.tasks.process_reel", bind=True, max_retries=3)
-def process_reel(self, reel_id: str) -> dict:
+def process_reel(self, reel_id: str, auto_categorise: bool = True) -> dict:
     """Run the ingestion pipeline for a single reel."""
     log = logging.LoggerAdapter(logger, {"reel_id": reel_id})
     log.info(
@@ -190,6 +190,39 @@ def process_reel(self, reel_id: str) -> dict:
         # Step 17 — build classification signal
         # ------------------------------------------------------------------
         _transcript_text = transcription.text if transcription is not None else None
+
+        # ------------------------------------------------------------------
+        # Auto-categorise off — skip classification, land in Inbox
+        # ------------------------------------------------------------------
+        if not auto_categorise:
+            log.info("auto_categorise=False — skipping classification, landing in Inbox")
+            _chunk_text = build_chunk_text(
+                transcript=_transcript_text,
+                caption=meta.caption,
+                hashtags=meta.hashtags,
+            )
+            if _chunk_text:
+                log.info("step 20 | embedding | chars=%d", len(_chunk_text))
+                try:
+                    _embedding = embed_document(_chunk_text)
+                    supabase.table("reel_chunks").upsert({
+                        "reel_id": reel_id,
+                        "user_id": reel_data["user_id"],
+                        "chunk_index": 0,
+                        "content": _chunk_text,
+                        "embedding": _embedding,
+                    }).execute()
+                    log.info("step 20 | chunk stored")
+                except EmbeddingError as exc:
+                    log.warning("step 20 | embedding failed (non-fatal) | %s", exc)
+            supabase.table("reels").update({"status": "ready"}).eq("id", reel_id).execute()
+            send_push_notification(
+                fcm_token=_fcm_token,
+                title="Reel saved!",
+                body="It's waiting in your Inbox.",
+                data={"reel_id": reel_id, "status": "ready"},
+            )
+            return {"reel_id": reel_id, "status": "ready", "auto_categorise": False}
 
         try:
             signal = build_classification_signal(
