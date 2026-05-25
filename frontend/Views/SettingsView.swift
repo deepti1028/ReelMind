@@ -8,6 +8,9 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var notifManager = NotificationPermissionManager()
     @AppStorage("autoCategorise") private var autoCategorise = true
+    @State private var showDeleteConfirmation = false
+    @State private var isDeletingAccount = false
+    @State private var deleteError: String? = nil
 
     var body: some View {
         ZStack {
@@ -25,16 +28,46 @@ struct SettingsView: View {
                         savingSection
                             .padding(.horizontal, 14)
                             .padding(.bottom, 20)
-                        // privacySection
-                            // .padding(.horizontal, 14)
                     }
                 }
             }
+
+            if isDeletingAccount {
+                Color.black.opacity(0.25).ignoresSafeArea()
+                ProgressView()
+                    .tint(AppTheme.accentDark)
+                    .scaleEffect(1.2)
+                    .padding(24)
+                    .background(AppTheme.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+        }
+        .alert("Delete your account?", isPresented: $showDeleteConfirmation) {
+            Button("Delete account", role: .destructive) {
+                Task {
+                    isDeletingAccount = true
+                    do {
+                        try await auth.deleteAccount()
+                    } catch {
+                        deleteError = "Something went wrong. Please try again."
+                    }
+                    isDeletingAccount = false
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("All your reels, categories and data will be permanently removed. This cannot be undone.")
+        }
+        .alert("Couldn't delete account", isPresented: Binding(
+            get: { deleteError != nil },
+            set: { if !$0 { deleteError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteError ?? "")
         }
         .task {
             await notifManager.refresh()
-            // Ensure the share extension always has the current preference,
-            // even before the user ever visits Settings.
             UserDefaults(suiteName: AppConfig.appGroupID)?
                 .set(autoCategorise, forKey: "autoCategorise")
         }
@@ -42,8 +75,6 @@ struct SettingsView: View {
             UserDefaults(suiteName: AppConfig.appGroupID)?
                 .set(newValue, forKey: "autoCategorise")
             if newValue {
-                // User turned auto-categorise back on — reset banner so it
-                // shows again if they later turn it off.
                 UserDefaults.standard.set(false, forKey: "inboxBannerDismissed")
             }
         }
@@ -88,24 +119,23 @@ struct SettingsView: View {
                         .font(.system(size: 17, weight: .bold))
                         .foregroundColor(.white)
                 )
-            VStack(alignment: .leading, spacing: 1) {
-                Text(auth.session?.user.userMetadata["full_name"] as? String
-                     ?? auth.session?.user.email ?? "—")
+            VStack(alignment: .leading, spacing: 2) {
+                Text(auth.session?.user.userMetadata["full_name"] as? String ?? "—")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(AppTheme.textPrimary)
-                Text(auth.session?.user.email ?? "")
+                Text(auth.session?.user.email ?? "—")
                     .font(.system(size: 11))
                     .foregroundColor(AppTheme.textFaint)
             }
             Spacer()
-            Button("Edit") {}
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(AppTheme.textMuted)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 4)
-                .background(AppTheme.surfaceSecondary)
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(AppTheme.sage, lineWidth: 1))
+            Button {
+                showDeleteConfirmation = true
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppTheme.destructive)
+            }
+            .buttonStyle(.plain)
         }
         .padding(16)
         .background(AppTheme.surface)
