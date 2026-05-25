@@ -51,7 +51,7 @@ async def create_reel(
     if result.data:
         # Fresh insert — dispatch Celery task, return 202 (default).
         reel = result.data[0]
-        process_reel.delay(reel["id"])
+        process_reel.delay(reel["id"], payload.auto_categorise)
     else:
         # Duplicate URL — fetch the existing row in full, return 200.
         existing = (
