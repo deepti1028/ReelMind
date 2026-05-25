@@ -45,6 +45,7 @@ class ShareViewController: UIViewController {
         static let backendBaseURL = "https://reelmind-8paz.onrender.com"
         static let pendingURLsKey = "pendingReelURLs"
         static let authTokenKey = "supabaseAuthToken"
+        static let autoCategoriseKey = "autoCategorise"
 
         // Bottom sheet sizing
         static let sheetHeightRatio: CGFloat = 0.55    // 55% of screen (40% + 15% per spec)
@@ -396,7 +397,8 @@ class ShareViewController: UIViewController {
         Log.event("handleURL invoked for: \(url.absoluteString)")
         writeURLToAppGroup(url)
         let token = readAuthToken()
-        postURLToBackend(url: url, authToken: token)
+        let autoCategorise = readAutoCategorise()
+        postURLToBackend(url: url, authToken: token, autoCategorise: autoCategorise)
     }
 
     private func writeURLToAppGroup(_ url: URL) {
@@ -426,9 +428,20 @@ class ShareViewController: UIViewController {
         return token
     }
 
+    private func readAutoCategorise() -> Bool {
+        let value = UserDefaults(suiteName: K.appGroupID)?
+            .object(forKey: K.autoCategoriseKey)
+        // Default true: if the key was never written (user hasn't opened Settings yet),
+        // behave as if auto-categorise is on.
+        if let boolValue = value as? Bool {
+            return boolValue
+        }
+        return true
+    }
+
     // MARK: - Backend POST
 
-    private func postURLToBackend(url: URL, authToken: String) {
+    private func postURLToBackend(url: URL, authToken: String, autoCategorise: Bool) {
         guard let apiURL = URL(string: "\(K.backendBaseURL)/api/v1/reels") else {
             Log.error("Invalid backend URL constant — \(K.backendBaseURL)")
             return
@@ -439,12 +452,14 @@ class ShareViewController: UIViewController {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
         request.timeoutInterval = 10
-        let bodyDict: [String: Any] = ["url": url.absoluteString]
+        let bodyDict: [String: Any] = [
+            "url": url.absoluteString,
+            "auto_categorise": autoCategorise,
+        ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: bodyDict)
 
         Log.net("➡️  POST \(apiURL.absoluteString)")
-        Log.net("    Headers: Content-Type=application/json, Authorization=Bearer \(authToken.isEmpty ? "<empty>" : "<\(authToken.count)-char-token>")")
-        Log.net("    Body: \(bodyDict)")
+        Log.net("    Body: url=\(url.absoluteString) auto_categorise=\(autoCategorise)")
 
         let startTime = Date()
         URLSession.shared.dataTask(with: request) { data, response, error in
