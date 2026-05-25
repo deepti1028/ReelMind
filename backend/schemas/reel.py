@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, HttpUrl
 
 class ReelCreate(BaseModel):
     url: HttpUrl = Field(..., description="The Instagram reel URL")
+    auto_categorise: bool = Field(True, description="When False, skip classification and land in Inbox")
 
 
 class ReelResponse(BaseModel):
