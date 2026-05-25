@@ -1,5 +1,6 @@
 import Auth
 import AuthenticationServices
+import CryptoKit
 import Combine
 import Foundation
 import Supabase
@@ -120,10 +121,14 @@ final class AuthSession: ObservableObject {
         let coordinator = AppleSignInCoordinator()
         appleSignInCoordinator = coordinator
 
+        let rawNonce = randomNonceString()
+        let hashedNonce = sha256(rawNonce)
+
         let credential = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<ASAuthorizationAppleIDCredential, Error>) in
             coordinator.continuation = continuation
             let request = ASAuthorizationAppleIDProvider().createRequest()
             request.requestedScopes = [.fullName, .email]
+            request.nonce = hashedNonce
             let controller = ASAuthorizationController(authorizationRequests: [request])
             controller.delegate = coordinator
             controller.presentationContextProvider = coordinator
@@ -138,11 +143,56 @@ final class AuthSession: ObservableObject {
         }
 
         try await SupabaseManager.shared.client.auth.signInWithIdToken(
-            credentials: OpenIDConnectCredentials(provider: .apple, idToken: idToken)
+            credentials: OpenIDConnectCredentials(provider: .apple, idToken: idToken, nonce: rawNonce)
         )
+    }
+
+    private func randomNonceString(length: Int = 32) -> String {
+        let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        var result = ""
+        var remainingLength = length
+        while remainingLength > 0 {
+            let randoms: [UInt8] = (0 ..< 16).map { _ in
+                var random: UInt8 = 0
+                _ = SecRandomCopyBytes(kSecRandomDefault, 1, &random)
+                return random
+            }
+            randoms.forEach { random in
+                if remainingLength == 0 { return }
+                if random < charset.count {
+                    result.append(charset[Int(random)])
+                    remainingLength -= 1
+                }
+            }
+        }
+        return result
+    }
+
+    private func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashed = SHA256.hash(data: inputData)
+        return hashed.compactMap { String(format: "%02x", $0) }.joined()
     }
 
     func signOut() async throws {
         try await SupabaseManager.shared.client.auth.signOut()
+    }
+
+    func deleteAccount() async throws {
+        guard let token = session?.accessToken else {
+            throw URLError(.userAuthenticationRequired)
+        }
+        var request = URLRequest(
+            url: AppConfig.backendBaseURL.appendingPathComponent("/api/v1/account")
+        )
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 15
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 204 else {
+            throw URLError(.badServerResponse)
+        }
+        // The authStateChanges listener fires automatically when Supabase
+        // invalidates the session server-side. No explicit signOut() needed.
     }
 }
