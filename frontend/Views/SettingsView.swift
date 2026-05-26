@@ -6,6 +6,7 @@ struct SettingsView: View {
     @EnvironmentObject private var auth: AuthSession
     @EnvironmentObject private var appVM: AppViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var notifManager = NotificationPermissionManager()
     @AppStorage("autoCategorise") private var autoCategorise = true
     @State private var showDeleteConfirmation = false
@@ -76,6 +77,11 @@ struct SettingsView: View {
                 .set(newValue, forKey: "autoCategorise")
             if newValue {
                 UserDefaults.standard.set(false, forKey: "inboxBannerDismissed")
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                Task { await notifManager.refresh() }
             }
         }
     }
