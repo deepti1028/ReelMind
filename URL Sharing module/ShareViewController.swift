@@ -138,6 +138,11 @@ class ShareViewController: UIViewController {
     // Read by applyResultLabels() to choose the right heading and subtitle.
     private var duplicateSaveDetected = false
 
+    // Set to true when the backend returns HTTP 422 (invalid URL).
+    private var saveRejected = false
+    private var rejectTitle = "Not a Reel"
+    private var rejectSubtitle = "ReelMind only saves Instagram Reels"
+
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
@@ -500,6 +505,30 @@ class ShareViewController: UIViewController {
                         Log.info("Duplicate reel — labels updated to 'Already saved'")
                     }
                 }
+
+                if status == 422 {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        self.saveRejected = true
+                        if let data = data,
+                           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                           let detail = json["detail"] as? [String: Any],
+                           let reason = detail["reason"] as? String {
+                            switch reason {
+                            case "not_instagram":
+                                self.rejectTitle = "Not Instagram"
+                                self.rejectSubtitle = "ReelMind only saves Instagram Reels"
+                            case "not_a_reel":
+                                self.rejectTitle = "Not a Reel"
+                                self.rejectSubtitle = "Open the Reel in Instagram and try again"
+                            default:
+                                break
+                            }
+                        }
+                        self.applyResultLabels()
+                        Log.warn("URL rejected by backend (422) — labels updated to '\(self.rejectTitle)'")
+                    }
+                }
             } else {
                 Log.warn("⬅️  POST returned non-HTTP response (\(elapsed)ms)")
             }
@@ -512,7 +541,10 @@ class ShareViewController: UIViewController {
     /// Called from transitionToSavedState() (labels invisible, about to fade in) and
     /// from the network callback (labels may already be animating in — text update is instant).
     private func applyResultLabels() {
-        if duplicateSaveDetected {
+        if saveRejected {
+            savedTitleLabel.text = rejectTitle
+            savedInfoLabel.text = rejectSubtitle
+        } else if duplicateSaveDetected {
             savedTitleLabel.text = "Already saved"
             savedInfoLabel.text = "Check your ReelMind library"
         } else {
