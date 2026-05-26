@@ -35,7 +35,7 @@ async def send_feedback(
 
     sender_label = user.email if user.email else f"user:{user.id}"
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(
             _RESEND_URL,
             headers={"Authorization": f"Bearer {api_key}"},
