@@ -163,11 +163,22 @@ class DownloadError(Exception):
     `is_retryable` mirrors the contract used by the Celery task in
     workers/tasks.py — transient (network) failures get retried, permanent
     failures (private/deleted/region-blocked) do not.
+
+    `is_private_content` is True when the failure is specifically because the
+    content is private or login-walled — the Celery task uses this to delete
+    the reel row instead of marking it failed.
     """
 
-    def __init__(self, message: str, *, is_retryable: bool = False):
+    def __init__(
+        self,
+        message: str,
+        *,
+        is_retryable: bool = False,
+        is_private_content: bool = False,
+    ):
         super().__init__(message)
         self.is_retryable = is_retryable
+        self.is_private_content = is_private_content
 
 
 # ---------------------------------------------------------------------------
@@ -318,6 +329,7 @@ def _fetch_reel_html(url: str, log: logging.LoggerAdapter) -> str:
         raise DownloadError(
             f"Instagram HTTP {resp.status_code} — private reel / login required / IP rate-limited",
             is_retryable=False,
+            is_private_content=True,
         )
     if resp.status_code == 404:
         log.error(
@@ -363,6 +375,7 @@ def _fetch_reel_html(url: str, log: logging.LoggerAdapter) -> str:
         raise DownloadError(
             "Instagram redirected to login — reel is private or session required",
             is_retryable=False,
+            is_private_content=True,
         )
 
     return resp.text
