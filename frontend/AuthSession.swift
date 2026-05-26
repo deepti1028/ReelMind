@@ -89,6 +89,7 @@ final class AuthSession: ObservableObject {
             }
         } else {
             defaults.removeObject(forKey: AppConfig.authTokenKey)
+            UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
             print("[AuthSession] token cleared from App Group")
         }
     }
