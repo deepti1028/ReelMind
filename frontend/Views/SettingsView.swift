@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var showDeleteConfirmation = false
     @State private var isDeletingAccount = false
     @State private var deleteError: String? = nil
+    @State private var showFeedbackForm = false
 
     var body: some View {
         ZStack {
@@ -27,6 +28,9 @@ struct SettingsView: View {
                             .padding(.horizontal, 14)
                             .padding(.bottom, 20)
                         savingSection
+                            .padding(.horizontal, 14)
+                            .padding(.bottom, 20)
+                        supportSection
                             .padding(.horizontal, 14)
                             .padding(.bottom, 20)
                     }
@@ -66,6 +70,9 @@ struct SettingsView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(deleteError ?? "")
+        }
+        .sheet(isPresented: $showFeedbackForm) {
+            FeedbackFormView()
         }
         .task {
             await notifManager.refresh()
@@ -210,6 +217,20 @@ struct SettingsView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 13)
+        }
+    }
+
+    private var supportSection: some View {
+        SettingsSection(title: "Support") {
+            Button {
+                showFeedbackForm = true
+            } label: {
+                SettingsRow(icon: "paperplane", iconBg: AppTheme.surfaceSecondary,
+                            label: "Send feedback") {
+                    EmptyView()
+                }
+            }
+            .buttonStyle(.plain)
         }
     }
 
