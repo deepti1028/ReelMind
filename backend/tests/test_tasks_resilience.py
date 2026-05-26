@@ -41,6 +41,8 @@ def _make_download_result(audio_path="/tmp/audio.m4a", temp_dir="/tmp/reel_test"
     result.metadata.hashtags = ["tag1"]
     result.metadata.caption = "Test caption #tag1"
     result.metadata.thumbnail_url = None
+    result.metadata.user.is_private = False
+    result.metadata.product_type = "clips"
     return result
 
 

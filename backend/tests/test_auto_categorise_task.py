@@ -44,6 +44,8 @@ def _make_download_result():
     r.metadata.hashtags = ["cooking"]
     r.metadata.caption = "My reel caption"
     r.metadata.thumbnail_url = None
+    r.metadata.user.is_private = False
+    r.metadata.product_type = "clips"
     return r
 
 

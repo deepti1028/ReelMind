@@ -109,8 +109,21 @@ def process_reel(self, reel_id: str, auto_categorise: bool = True) -> dict:
             download_result = download_reel(url, reel_id)
         except DownloadError as exc:
             log.warning(
-                "download failed | retryable=%s | %s", exc.is_retryable, exc
+                "download failed | retryable=%s | private=%s | %s",
+                exc.is_retryable,
+                exc.is_private_content,
+                exc,
             )
+            if exc.is_private_content:
+                log.warning("step 15 | private content — deleting reel row | reel_id=%s", reel_id)
+                supabase.table("reels").delete().eq("id", reel_id).execute()
+                send_push_notification(
+                    fcm_token=_fcm_token,
+                    title="Can't save this",
+                    body="That's a private reel — ReelMind can only save Reels from public accounts.",
+                    data={"type": "rejected_private"},
+                )
+                return {"reel_id": reel_id, "status": "rejected_private"}
             return _handle_pipeline_error(
                 self, supabase, reel_id, exc, exc.is_retryable, log, _fcm_token
             )
@@ -131,6 +144,37 @@ def process_reel(self, reel_id: str, auto_categorise: bool = True) -> dict:
             "thumbnail_url": meta.thumbnail_url,
         }).eq("id", reel_id).execute()
         log.info("step 15 | metadata saved to DB")
+
+        # Post-download guards — private account or wrong content type means
+        # zero trace: delete the row and push a descriptive notification.
+        if meta.user.is_private:
+            log.warning(
+                "step 15 | private account | creator=@%s — deleting row",
+                meta.creator_handle,
+            )
+            supabase.table("reels").delete().eq("id", reel_id).execute()
+            send_push_notification(
+                fcm_token=_fcm_token,
+                title="Can't save this",
+                body="That's a private reel — ReelMind can only save Reels from public accounts.",
+                data={"type": "rejected_private"},
+            )
+            return {"reel_id": reel_id, "status": "rejected_private"}
+
+        if meta.product_type and meta.product_type != "clips":
+            log.warning(
+                "step 15 | wrong product_type=%s | creator=@%s — deleting row",
+                meta.product_type,
+                meta.creator_handle,
+            )
+            supabase.table("reels").delete().eq("id", reel_id).execute()
+            send_push_notification(
+                fcm_token=_fcm_token,
+                title="Can't save this",
+                body="That doesn't look like a Reel — ReelMind only saves Instagram Reels.",
+                data={"type": "rejected_not_reel"},
+            )
+            return {"reel_id": reel_id, "status": "rejected_not_reel"}
 
         # ------------------------------------------------------------------
         # Step 16 — transcribe audio
