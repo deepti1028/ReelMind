@@ -30,7 +30,22 @@ struct ThumbnailView: View {
     }
 
     private var placeholder: some View {
-        AppTheme.thumbnailGradient
+        ZStack {
+            AppTheme.surface
+            // Subtle ink-splatter texture feel via layered circles
+            Circle()
+                .fill(AppTheme.accent.opacity(0.06))
+                .frame(width: width * 1.1, height: width * 1.1)
+                .offset(x: width * 0.22, y: -height * 0.18)
+            Circle()
+                .fill(AppTheme.sage.opacity(0.18))
+                .frame(width: width * 0.55, height: width * 0.55)
+                .offset(x: -width * 0.28, y: height * 0.22)
+            // Clapperboard icon
+            Image(systemName: "movieclapper")
+                .font(.system(size: min(width, height) * 0.30, weight: .light))
+                .foregroundColor(AppTheme.textFaint.opacity(0.7))
+        }
     }
 }
 

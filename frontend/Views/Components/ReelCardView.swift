@@ -17,24 +17,56 @@ struct InboxReelCard: View {
             UIApplication.shared.open(url)
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top, spacing: 10) {
-                    ThumbnailView(urlString: reel.thumbnailUrl, width: 54, height: 80)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(reel.creatorHandle.map { "@\($0)" } ?? "@unknown")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(AppTheme.accent)
+                HStack(alignment: .top, spacing: 12) {
+                    // Thumbnail stretches to match content height — no fixed height anchor
+                    inboxThumbnail
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        (Text("@").foregroundColor(AppTheme.accent)
+                            + Text(reel.creatorHandle ?? "unknown").foregroundColor(AppTheme.accentDark))
+                            .font(.system(size: 13, weight: .bold))
                             .lineLimit(1)
+
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 9))
+                                .foregroundColor(AppTheme.textFaint)
+                            Text("Saved \(reel.createdAt.timeAgoString())")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(AppTheme.textFaint)
+                        }
+
                         if let caption = reel.caption, !caption.isEmpty {
                             Text(caption)
                                 .font(.system(size: 11))
                                 .foregroundColor(AppTheme.textMuted)
-                                .lineLimit(2)
+                                .lineLimit(3)
+                                .lineSpacing(1.5)
+                        }
+
+                        if !reel.hashtags.isEmpty {
+                            HStack(spacing: 5) {
+                                ForEach(reel.hashtags.prefix(3), id: \.self) { tag in
+                                    Text("#\(tag)")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundColor(AppTheme.accentDark)
+                                        .padding(.horizontal, 7)
+                                        .padding(.vertical, 3)
+                                        .background(AppTheme.accent.opacity(0.12))
+                                        .clipShape(Capsule())
+                                }
+                            }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .padding(.vertical, 12)
                 }
                 .padding(.horizontal, 12)
-                .padding(.top, 11)
-                .padding(.bottom, 8)
+
+                Rectangle()
+                    .fill(AppTheme.border)
+                    .frame(height: 1)
+                    .padding(.leading, 12)
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
@@ -53,7 +85,7 @@ struct InboxReelCard: View {
                         }
                     }
                     .padding(.horizontal, 12)
-                    .padding(.bottom, 11)
+                    .padding(.vertical, 9)
                 }
             }
             .background(AppTheme.surface)
@@ -79,6 +111,47 @@ struct InboxReelCard: View {
             }
         }
     }
+
+    // Thumbnail with no fixed height — stretches to match the content column
+    private var inboxThumbnail: some View {
+        Group {
+            if let str = reel.thumbnailUrl, let url = URL(string: str) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    case .empty:
+                        inboxThumbnailPlaceholder
+                            .overlay(ProgressView().scaleEffect(0.6).tint(AppTheme.textFaint))
+                    default:
+                        inboxThumbnailPlaceholder
+                    }
+                }
+            } else {
+                inboxThumbnailPlaceholder
+            }
+        }
+        .frame(width: 72)
+        .frame(maxHeight: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private var inboxThumbnailPlaceholder: some View {
+        ZStack {
+            AppTheme.surface
+            Circle()
+                .fill(AppTheme.accent.opacity(0.06))
+                .frame(width: 60, height: 60)
+                .offset(x: 14, y: -10)
+            Circle()
+                .fill(AppTheme.sage.opacity(0.18))
+                .frame(width: 32, height: 32)
+                .offset(x: -16, y: 14)
+            Image(systemName: "movieclapper")
+                .font(.system(size: 20, weight: .light))
+                .foregroundColor(AppTheme.textFaint.opacity(0.7))
+        }
+    }
 }
 
 // MARK: - Detail variant (thumbnail + creator + caption + hashtags + time footer)
@@ -100,56 +173,71 @@ struct DetailReelCard: View {
                 if !success { openFailed = true }
             }
         } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top, spacing: 10) {
-                    ThumbnailView(urlString: reel.thumbnailUrl, width: 58, height: 88)
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(reel.creatorHandle.map { "@\($0)" } ?? "@unknown")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(AppTheme.accent)
-                            .lineLimit(1)
+            HStack(alignment: .top, spacing: 12) {
+                ThumbnailView(urlString: reel.thumbnailUrl, width: 90, height: 130)
+                    .padding(.vertical, 10)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    // Creator — bold and unmissable
+                    (Text("@").foregroundColor(AppTheme.accent)
+                        + Text(reel.creatorHandle ?? "unknown").foregroundColor(AppTheme.accentDark))
+                        .font(.system(size: 14, weight: .bold))
+                        .lineLimit(1)
+
+                    Spacer().frame(height: 6)
+
+                    // Caption — fixed-height area so all cards align regardless of content
+                    Group {
                         if let caption = reel.caption, !caption.isEmpty {
                             Text(caption)
-                                .font(.system(size: 11))
+                                .font(.system(size: 12))
                                 .foregroundColor(AppTheme.textMuted)
-                                .lineLimit(2)
+                                .lineLimit(3)
+                                .lineSpacing(1.5)
+                        } else {
+                            Color.clear
                         }
-                        if !reel.hashtags.isEmpty {
-                            HStack(spacing: 5) {
-                                ForEach(reel.hashtags.prefix(3), id: \.self) { tag in
-                                    Text("#\(tag)")
-                                        .font(.system(size: 10, weight: .medium))
-                                        .foregroundColor(AppTheme.accentDark)
-                                        .padding(.horizontal, 7)
-                                        .padding(.vertical, 2)
-                                        .background(AppTheme.accent.opacity(0.12))
-                                        .clipShape(Capsule())
-                                }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 50, alignment: .topLeading)
+
+                    // Hashtags — only when present, no layout penalty when absent
+                    if !reel.hashtags.isEmpty {
+                        Spacer().frame(height: 6)
+                        HStack(spacing: 5) {
+                            ForEach(reel.hashtags.prefix(3), id: \.self) { tag in
+                                Text("#\(tag)")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(AppTheme.accentDark)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .background(AppTheme.accent.opacity(0.12))
+                                    .clipShape(Capsule())
                             }
                         }
                     }
-                }
-                .padding(.horizontal, 12)
-                .padding(.top, 11)
 
-                HStack {
-                    Text(reel.createdAt.timeAgoString())
-                        .font(.system(size: 10))
-                        .foregroundColor(AppTheme.textFaint)
-                    Spacer()
+                    Spacer(minLength: 8)
+
+                    // Time footer — anchored to bottom of card
                     if isContentUnavailable {
                         Label("Content may be unavailable", systemImage: "exclamationmark.triangle")
                             .font(.system(size: 10))
                             .foregroundColor(AppTheme.destructive.opacity(0.75))
                     } else {
-                        Label("tap to watch", systemImage: "arrow.up.forward")
-                            .font(.system(size: 10))
-                            .foregroundColor(AppTheme.textFaint)
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 9))
+                                .foregroundColor(AppTheme.textFaint)
+                            Text("Saved \(reel.createdAt.timeAgoString())")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(AppTheme.textFaint)
+                        }
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
             }
+            .padding(.horizontal, 12)
             .background(AppTheme.surface)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
