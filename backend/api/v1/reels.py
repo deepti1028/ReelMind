@@ -1,5 +1,6 @@
 """Reels endpoints — capture and processing pipeline entry."""
 
+from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -23,6 +24,24 @@ def _normalize_url(url_str: str) -> str:
     p = urlparse(url_str)
     path = p.path.rstrip("/") or "/"
     return urlunparse((p.scheme, p.netloc.lower(), path, "", "", ""))
+
+
+def _is_instagram_reel_url(url_str: str) -> Optional[str]:
+    """Returns None if the URL is a valid Instagram reel URL.
+
+    Returns a reason string ('not_instagram' or 'not_a_reel') if it should
+    be rejected before touching the database.
+    """
+    parsed = urlparse(url_str)
+    host = parsed.netloc.lower()
+    if host.startswith("www."):
+        host = host[4:]
+    if host != "instagram.com":
+        return "not_instagram"
+    path = parsed.path.rstrip("/")
+    if not (path.startswith("/reel/") or path.startswith("/reels/")):
+        return "not_a_reel"
+    return None
 
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED, response_model=ReelResponse)
