@@ -9,7 +9,7 @@ struct CategoryIconPicker: View {
         "drop", "house", "scissors", "face.smiling", "music.note",
         "headphones", "bolt", "briefcase", "banknote", "cpu",
         "paintpalette", "camera", "leaf", "heart", "figure.and.child.holdinghands",
-        "pawprint", "book.open", "gamecontroller", "graduationcap", "trophy",
+        "pawprint", "book", "gamecontroller", "graduationcap", "trophy",
         "bookmark"
     ]
 
