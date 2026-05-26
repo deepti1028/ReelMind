@@ -133,7 +133,7 @@ struct SettingsView: View {
                         .foregroundColor(.white)
                 )
             VStack(alignment: .leading, spacing: 2) {
-                Text(auth.session?.user.userMetadata["full_name"] as? String ?? "—")
+                Text(auth.session?.user.userMetadata["full_name"]?.stringValue ?? "—")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text(auth.session?.user.email ?? "—")
