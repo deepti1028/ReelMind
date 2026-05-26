@@ -9,7 +9,7 @@ from api.deps import get_current_user_id
 from schemas.reel import CategoryChoiceRequest, ReelCreate, ReelResponse
 from supabase_client import get_supabase
 from services.notifier import send_push_notification
-from workers.tasks import notify_duplicate_reel, process_reel
+from workers.tasks import notify_duplicate_reel, notify_invalid_url, process_reel
 
 router = APIRouter()
 
@@ -57,6 +57,21 @@ async def create_reel(
     """
     supabase = get_supabase()
     url_str = _normalize_url(str(payload.url))
+
+    rejection_reason = _is_instagram_reel_url(url_str)
+    if rejection_reason:
+        notify_invalid_url.delay(user_id, rejection_reason)
+        _rejection_messages = {
+            "not_instagram": "That doesn't look like an Instagram link. ReelMind only saves Instagram Reels.",
+            "not_a_reel": "That looks like a post or story, not a Reel. Find the Reel in Instagram and share it from there.",
+        }
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "reason": rejection_reason,
+                "message": _rejection_messages[rejection_reason],
+            },
+        )
 
     # Ensure a profile row exists for this user. Idempotent — service role
     # bypasses RLS. We do this here (rather than via a trigger on auth.users)
