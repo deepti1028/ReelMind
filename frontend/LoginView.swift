@@ -13,125 +13,134 @@ struct LoginView: View {
         ZStack {
             AppTheme.background.ignoresSafeArea()
 
-            VStack(spacing: 24) {
-                Spacer()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
 
-                Text("Login")
-                    .font(.system(size: 36, weight: .bold, design: .serif))
-                    .foregroundColor(AppTheme.textPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                VStack(spacing: 16) {
-                    TextField("Email", text: $email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                        .foregroundColor(AppTheme.textPrimary)
-                        .tint(AppTheme.accent)
-                        .padding()
-                        .background(AppTheme.surface)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(AppTheme.border, lineWidth: 0.5)
-                        )
-
-                    SecureField("Password", text: $password)
-                        .textContentType(.password)
-                        .foregroundColor(AppTheme.textPrimary)
-                        .tint(AppTheme.accent)
-                        .padding()
-                        .background(AppTheme.surface)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(AppTheme.border, lineWidth: 0.5)
-                        )
-                }
-
-                if let errorMessage = errorMessage {
-                    Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundColor(AppTheme.destructive)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                Button(action: submit) {
-                    ZStack {
-                        Text("LOGIN")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
-                            .opacity(isSubmitting ? 0 : 1)
-                        if isSubmitting {
-                            ProgressView()
-                                .tint(.white)
-                        }
+                    // Wordmark
+                    HStack(spacing: 0) {
+                        Text("Reel")
+                            .font(.system(size: 38, weight: .bold, design: .serif))
+                            .foregroundColor(AppTheme.textPrimary)
+                        Text("Mind")
+                            .font(.system(size: 38, weight: .bold, design: .serif))
+                            .italic()
+                            .foregroundColor(AppTheme.accentDark)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(AppTheme.accentDark)
-                    .clipShape(Capsule())
-                    .shadow(color: AppTheme.accentDark.opacity(0.25), radius: 10, x: 0, y: 5)
-                }
-                .disabled(isSubmitting || !canSubmit)
+                    .padding(.bottom, 5)
 
-                SocialAuthDivider()
-
-                VStack(spacing: 12) {
-                    SocialAuthButton(systemIcon: "apple.logo", label: "Continue with Apple") {
-                        errorMessage = nil
-                        do {
-                            try await auth.signInWithApple()
-                        } catch {
-                            errorMessage = error.localizedDescription
-                        }
-                    }
-
-                    SocialAuthButton(textIcon: "G", label: "Continue with Google") {
-                        errorMessage = nil
-                        do {
-                            try await auth.signInWithGoogle()
-                        } catch {
-                            errorMessage = error.localizedDescription
-                        }
-                    }
-                }
-                .disabled(isSubmitting)
-
-                HStack {
-                    Text("Don't have an account?")
+                    Text("Save what inspires you.")
+                        .font(.system(size: 14, weight: .regular, design: .serif))
+                        .italic()
                         .foregroundColor(AppTheme.textMuted)
-                    Button("Sign Up") { showSignup = true }
-                        .foregroundColor(AppTheme.accentDark)
-                        .fontWeight(.semibold)
-                }
-                .font(.footnote)
+                        .padding(.bottom, 32)
 
-                Spacer()
+                    Text("Welcome back")
+                        .font(.system(size: 22, weight: .semibold, design: .serif))
+                        .foregroundColor(AppTheme.textPrimary)
+                        .padding(.bottom, 20)
+
+                    // Fields
+                    VStack(spacing: 14) {
+                        LabeledAuthField(label: "EMAIL ADDRESS") {
+                            TextField("", text: $email)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                        }
+
+                        LabeledAuthField(label: "PASSWORD") {
+                            SecureField("", text: $password)
+                                .textContentType(.password)
+                        }
+                    }
+                    .padding(.bottom, 10)
+
+                    // Forgot password
+                    HStack {
+                        Spacer()
+                        Button("Forgot password?") { }
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(AppTheme.accentDark)
+                    }
+                    .padding(.bottom, 22)
+
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundColor(AppTheme.destructive)
+                            .padding(.bottom, 10)
+                    }
+
+                    // Primary button
+                    Button(action: submit) {
+                        ZStack {
+                            Text("Log in")
+                                .font(.system(size: 17, weight: .semibold, design: .serif))
+                                .foregroundColor(Color(r: 0xfd, g: 0xf4, b: 0xe3))
+                                .opacity(isSubmitting ? 0 : 1)
+                            if isSubmitting {
+                                ProgressView().tint(Color(r: 0xfd, g: 0xf4, b: 0xe3))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(AppTheme.buttonGradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .shadow(color: AppTheme.accentDark.opacity(0.35), radius: 12, x: 0, y: 6)
+                    }
+                    .disabled(isSubmitting || !canSubmit)
+                    .padding(.bottom, 22)
+
+                    SocialAuthDivider()
+                        .padding(.bottom, 14)
+
+                    VStack(spacing: 11) {
+                        GoogleSignInButton {
+                            errorMessage = nil
+                            do { try await auth.signInWithGoogle() }
+                            catch { errorMessage = error.localizedDescription }
+                        }
+                        AppleSignInButton {
+                            errorMessage = nil
+                            do { try await auth.signInWithApple() }
+                            catch { errorMessage = error.localizedDescription }
+                        }
+                    }
+                    .disabled(isSubmitting)
+                    .padding(.bottom, 32)
+
+                    HStack {
+                        Spacer()
+                        Text("New here?")
+                            .foregroundColor(AppTheme.textMuted)
+                        Button("Create an account") { showSignup = true }
+                            .foregroundColor(AppTheme.accentDark)
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+                    .font(.footnote)
+                }
+                .padding(.horizontal, 26)
+                .padding(.top, 80)
+                .padding(.bottom, 40)
             }
-            .padding(.horizontal, 24)
         }
         .sheet(isPresented: $showSignup) {
-            SignupView()
-                .environmentObject(auth)
+            SignupView().environmentObject(auth)
         }
     }
 
     private var canSubmit: Bool {
-        !email.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !password.isEmpty
+        !email.trimmingCharacters(in: .whitespaces).isEmpty && !password.isEmpty
     }
 
     private func submit() {
         errorMessage = nil
         isSubmitting = true
         Task {
-            do {
-                try await auth.signIn(email: email, password: password)
-            } catch {
-                errorMessage = error.localizedDescription
-            }
+            do { try await auth.signIn(email: email, password: password) }
+            catch { errorMessage = error.localizedDescription }
             isSubmitting = false
         }
     }

@@ -33,7 +33,8 @@ final class SupabaseManager {
             supabaseKey: AppConfig.supabaseAnonKey,
             options: SupabaseClientOptions(
                 auth: SupabaseClientOptions.AuthOptions(
-                    redirectToURL: URL(string: "com.reelmind.app://auth-callback")
+                    redirectToURL: URL(string: "com.reelmind.app://auth-callback"),
+                    emitLocalSessionAsInitialSession: true
                 )
             )
         )

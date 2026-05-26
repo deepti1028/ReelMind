@@ -5,6 +5,7 @@ struct LibraryView: View {
     @EnvironmentObject private var appVM: AppViewModel
     @EnvironmentObject private var auth: AuthSession
     var onInboxTap: () -> Void = {}
+    @State private var bannerPulse = false
 
     var body: some View {
         ScrollView {
@@ -139,51 +140,85 @@ struct LibraryView: View {
                 Text("Your library")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(AppTheme.textPrimary)
-                Text("\(appVM.totalCount) reels saved")
+                (Text("\(appVM.totalCount)")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(AppTheme.accent)
+                + Text(" reels saved")
                     .font(.system(size: 13))
-                    .foregroundColor(AppTheme.textFaint)
+                    .foregroundColor(AppTheme.textFaint))
             }
             Spacer()
             Button { appVM.showSettings = true } label: {
-                Circle()
-                    .fill(AppTheme.avatarGradient)
-                    .frame(width: 36, height: 36)
-                    .overlay(
-                        Text(auth.session?.user.email?.prefix(1).uppercased() ?? "?")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white)
-                    )
+                ZStack {
+                    Circle()
+                        .strokeBorder(AppTheme.accent.opacity(0.45), lineWidth: 1.5)
+                        .frame(width: 42, height: 42)
+                    Circle()
+                        .fill(AppTheme.avatarGradient)
+                        .frame(width: 36, height: 36)
+                        .overlay(
+                            Text(auth.session?.user.email?.prefix(1).uppercased() ?? "?")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                        )
+                }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AvatarPressStyle())
         }
     }
 
     private var inboxBanner: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(AppTheme.accent)
+        ZStack(alignment: .leading) {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.accent)
+                        .opacity(bannerPulse ? 0 : 0.35)
+                        .scaleEffect(bannerPulse ? 2.2 : 1.0)
+                        .animation(
+                            .easeOut(duration: 1.4).repeatForever(autoreverses: false),
+                            value: bannerPulse
+                        )
+                    Circle()
+                        .fill(AppTheme.accent)
+                        .frame(width: 7, height: 7)
+                }
                 .frame(width: 7, height: 7)
-            (Text("\(appVM.inboxCount) reels")
-                .fontWeight(.bold)
-                .foregroundColor(AppTheme.accent)
-            + Text(" need a category")
-                .foregroundColor(AppTheme.textMuted))
-            .font(.system(size: 12))
-            Spacer()
-            Text("›")
-                .font(.system(size: 16))
-                .foregroundColor(AppTheme.textFaint)
+
+                (Text("\(appVM.inboxCount) reels")
+                    .fontWeight(.bold)
+                    .foregroundColor(AppTheme.accent)
+                + Text(" need a category")
+                    .foregroundColor(AppTheme.textMuted))
+                .font(.system(size: 12))
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(AppTheme.textFaint)
+            }
+            .padding(.leading, 16)
+            .padding(.trailing, 13)
+            .padding(.vertical, 10)
+
+            Rectangle()
+                .fill(AppTheme.accent)
+                .frame(width: 3)
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 10)
         .background(AppTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(AppTheme.border, lineWidth: 1)
+                .stroke(AppTheme.accent.opacity(0.35), lineWidth: 1)
         )
         .contentShape(Rectangle())
         .onTapGesture { onInboxTap() }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                bannerPulse = true
+            }
+        }
     }
 }
 
@@ -351,6 +386,14 @@ private struct CategoryCard: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.black.opacity(0.055), lineWidth: 1)
         )
+    }
+}
+
+private struct AvatarPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 

@@ -1,14 +1,28 @@
 """Reels endpoints — capture and processing pipeline entry."""
 
+from urllib.parse import urlparse, urlunparse
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from api.deps import get_current_user_id
 from schemas.reel import CategoryChoiceRequest, ReelCreate, ReelResponse
 from supabase_client import get_supabase
 from services.notifier import send_push_notification
-from workers.tasks import process_reel
+from workers.tasks import notify_duplicate_reel, process_reel
 
 router = APIRouter()
+
+
+def _normalize_url(url_str: str) -> str:
+    """Strip query params, fragment, and trailing path slash for URL dedup.
+
+    Instagram share URLs embed per-share tracking params (e.g. igsh=...) that
+    differ on every copy of the same reel, bypassing the unique(user_id, url)
+    constraint.  Normalising before upsert ensures the constraint fires correctly.
+    """
+    p = urlparse(url_str)
+    path = p.path.rstrip("/") or "/"
+    return urlunparse((p.scheme, p.netloc.lower(), path, "", "", ""))
 
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED, response_model=ReelResponse)
@@ -23,7 +37,7 @@ async def create_reel(
     Returns 200 when the URL already exists for this user (duplicate — no task queued).
     """
     supabase = get_supabase()
-    url_str = str(payload.url)
+    url_str = _normalize_url(str(payload.url))
 
     # Ensure a profile row exists for this user. Idempotent — service role
     # bypasses RLS. We do this here (rather than via a trigger on auth.users)
@@ -64,6 +78,10 @@ async def create_reel(
         )
         reel = existing.data
         response.status_code = status.HTTP_200_OK
+
+        # Push notification dispatched to Celery — the worker has Firebase
+        # credentials and logging; FastAPI has neither.
+        notify_duplicate_reel.delay(user_id, str(reel["id"]))
 
     return reel
 

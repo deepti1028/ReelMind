@@ -42,12 +42,10 @@ final class NotificationPermissionManager: ObservableObject {
             } catch {
                 status = .denied
             }
-        case .denied:
+        case .authorized, .denied:
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 await UIApplication.shared.open(url)
             }
-        case .authorized:
-            break
         }
     }
 }

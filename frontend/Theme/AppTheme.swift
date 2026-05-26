@@ -23,6 +23,13 @@ enum AppTheme {
     static let destructive       = Color(r: 0xcc, g: 0x44, b: 0x44) // #cc4444
 
     // Gradients
+    static var buttonGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(r: 0xc4, g: 0x84, b: 0x3a), accentDark],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
     static var avatarGradient: LinearGradient {
         LinearGradient(colors: [accent, accentDark],
                        startPoint: .topLeading, endPoint: .bottomTrailing)

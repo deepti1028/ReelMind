@@ -16,135 +16,126 @@ struct SignupView: View {
         ZStack {
             AppTheme.background.ignoresSafeArea()
 
-            VStack(spacing: 24) {
-                Spacer()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
 
-                Text("Create an account")
-                    .font(.system(size: 30, weight: .bold, design: .serif))
-                    .foregroundColor(AppTheme.textPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    // Wordmark
+                    HStack(spacing: 0) {
+                        Text("Reel")
+                            .font(.system(size: 34, weight: .bold, design: .serif))
+                            .foregroundColor(AppTheme.textPrimary)
+                        Text("Mind")
+                            .font(.system(size: 34, weight: .bold, design: .serif))
+                            .italic()
+                            .foregroundColor(AppTheme.accentDark)
+                    }
+                    .padding(.bottom, 4)
 
-                VStack(spacing: 16) {
-                    TextField("Display Name", text: $displayName)
-                        .textContentType(.name)
-                        .autocapitalization(.words)
-                        .disableAutocorrection(true)
-                        .foregroundColor(AppTheme.textPrimary)
-                        .tint(AppTheme.accent)
-                        .padding()
-                        .background(AppTheme.surface)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(AppTheme.border, lineWidth: 0.5)
-                        )
-
-                    TextField("Email", text: $email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                        .foregroundColor(AppTheme.textPrimary)
-                        .tint(AppTheme.accent)
-                        .padding()
-                        .background(AppTheme.surface)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(AppTheme.border, lineWidth: 0.5)
-                        )
-
-                    SecureField("Password", text: $password)
-                        .textContentType(.newPassword)
-                        .foregroundColor(AppTheme.textPrimary)
-                        .tint(AppTheme.accent)
-                        .padding()
-                        .background(AppTheme.surface)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(AppTheme.border, lineWidth: 0.5)
-                        )
-
-                    SecureField("Confirm Password", text: $confirmPassword)
-                        .textContentType(.newPassword)
-                        .foregroundColor(AppTheme.textPrimary)
-                        .tint(AppTheme.accent)
-                        .padding()
-                        .background(AppTheme.surface)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(AppTheme.border, lineWidth: 0.5)
-                        )
-                }
-
-                if let errorMessage = errorMessage {
-                    Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundColor(AppTheme.destructive)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                } else if let infoMessage = infoMessage {
-                    Text(infoMessage)
-                        .font(.footnote)
+                    Text("Your personal reel library.")
+                        .font(.system(size: 13.5, weight: .regular, design: .serif))
+                        .italic()
                         .foregroundColor(AppTheme.textMuted)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                        .padding(.bottom, 26)
 
-                Button(action: submit) {
-                    ZStack {
-                        Text("SIGN UP")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
-                            .opacity(isSubmitting ? 0 : 1)
-                        if isSubmitting {
-                            ProgressView()
-                                .tint(.white)
+                    Text("Create account")
+                        .font(.system(size: 20, weight: .semibold, design: .serif))
+                        .foregroundColor(AppTheme.textPrimary)
+                        .padding(.bottom, 18)
+
+                    // Fields
+                    VStack(spacing: 12) {
+                        LabeledAuthField(label: "DISPLAY NAME") {
+                            TextField("", text: $displayName)
+                                .textContentType(.name)
+                                .autocapitalization(.words)
+                                .disableAutocorrection(true)
+                        }
+
+                        LabeledAuthField(label: "EMAIL ADDRESS") {
+                            TextField("", text: $email)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                        }
+
+                        LabeledAuthField(label: "PASSWORD") {
+                            SecureField("", text: $password)
+                                .textContentType(.newPassword)
+                        }
+
+                        LabeledAuthField(label: "CONFIRM PASSWORD") {
+                            SecureField("", text: $confirmPassword)
+                                .textContentType(.newPassword)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(AppTheme.accentDark)
-                    .clipShape(Capsule())
-                    .shadow(color: AppTheme.accentDark.opacity(0.25), radius: 10, x: 0, y: 5)
-                }
-                .disabled(isSubmitting || !canSubmit)
+                    .padding(.bottom, 18)
 
-                SocialAuthDivider()
-
-                VStack(spacing: 12) {
-                    SocialAuthButton(systemIcon: "apple.logo", label: "Continue with Apple") {
-                        errorMessage = nil
-                        do {
-                            try await auth.signInWithApple()
-                        } catch {
-                            errorMessage = error.localizedDescription
-                        }
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundColor(AppTheme.destructive)
+                            .padding(.bottom, 10)
+                    } else if let infoMessage {
+                        Text(infoMessage)
+                            .font(.footnote)
+                            .foregroundColor(AppTheme.textMuted)
+                            .padding(.bottom, 10)
                     }
 
-                    SocialAuthButton(textIcon: "G", label: "Continue with Google") {
-                        errorMessage = nil
-                        do {
-                            try await auth.signInWithGoogle()
-                        } catch {
-                            errorMessage = error.localizedDescription
+                    // Primary button
+                    Button(action: submit) {
+                        ZStack {
+                            Text("Create account")
+                                .font(.system(size: 16, weight: .semibold, design: .serif))
+                                .foregroundColor(Color(r: 0xfd, g: 0xf4, b: 0xe3))
+                                .opacity(isSubmitting ? 0 : 1)
+                            if isSubmitting {
+                                ProgressView().tint(Color(r: 0xfd, g: 0xf4, b: 0xe3))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(AppTheme.buttonGradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .shadow(color: AppTheme.accentDark.opacity(0.35), radius: 10, x: 0, y: 5)
+                    }
+                    .disabled(isSubmitting || !canSubmit)
+                    .padding(.bottom, 20)
+
+                    SocialAuthDivider()
+                        .padding(.bottom, 13)
+
+                    VStack(spacing: 10) {
+                        GoogleSignInButton {
+                            errorMessage = nil
+                            do { try await auth.signInWithGoogle() }
+                            catch { errorMessage = error.localizedDescription }
+                        }
+                        AppleSignInButton {
+                            errorMessage = nil
+                            do { try await auth.signInWithApple() }
+                            catch { errorMessage = error.localizedDescription }
                         }
                     }
-                }
-                .disabled(isSubmitting)
+                    .disabled(isSubmitting)
+                    .padding(.bottom, 28)
 
-                HStack {
-                    Text("Already have an account?")
-                        .foregroundColor(AppTheme.textMuted)
-                    Button("Login") { dismiss() }
-                        .foregroundColor(AppTheme.accentDark)
-                        .fontWeight(.semibold)
+                    HStack {
+                        Spacer()
+                        Text("Already a member?")
+                            .foregroundColor(AppTheme.textMuted)
+                        Button("Log in") { dismiss() }
+                            .foregroundColor(AppTheme.accentDark)
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+                    .font(.footnote)
                 }
-                .font(.footnote)
-
-                Spacer()
+                .padding(.horizontal, 26)
+                .padding(.top, 70)
+                .padding(.bottom, 40)
             }
-            .padding(.horizontal, 24)
         }
     }
 

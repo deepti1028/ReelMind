@@ -134,6 +134,10 @@ class ShareViewController: UIViewController {
     private var hasStartedSlideUp = false
     private var hasStartedTimeline = false
 
+    // Set to true when the backend returns HTTP 200 (duplicate reel).
+    // Read by applyResultLabels() to choose the right heading and subtitle.
+    private var duplicateSaveDetected = false
+
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
@@ -292,13 +296,12 @@ class ShareViewController: UIViewController {
         checkmarkLabel.translatesAutoresizingMaskIntoConstraints = false
         checkmarkCircle.addSubview(checkmarkLabel)
 
-        savedTitleLabel.text = "Saved!"
         savedTitleLabel.font = .systemFont(ofSize: 17, weight: .bold)
         savedTitleLabel.textColor = .white
         savedTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         savedContainer.addSubview(savedTitleLabel)
 
-        savedInfoLabel.text = "Reel added to Reelmind"
+        savedInfoLabel.text = ""
         savedInfoLabel.font = .systemFont(ofSize: 12, weight: .regular)
         savedInfoLabel.textColor = ShareViewController.secondaryTextColor
         savedInfoLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -485,10 +488,37 @@ class ShareViewController: UIViewController {
                    let bodyStr = String(data: data, encoding: .utf8) {
                     Log.net("    Response body: \(bodyStr.prefix(500))")
                 }
+
+                // HTTP 200 = duplicate: backend found an existing row for this URL.
+                // Update labels immediately; if transitionToSavedState() hasn't fired
+                // yet the labels will pick this up when they fade in.
+                if status == 200 {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        self.duplicateSaveDetected = true
+                        self.applyResultLabels()
+                        Log.info("Duplicate reel — labels updated to 'Already saved'")
+                    }
+                }
             } else {
                 Log.warn("⬅️  POST returned non-HTTP response (\(elapsed)ms)")
             }
         }.resume()
+    }
+
+    // MARK: - Result Labels
+
+    /// Sets the saved-state labels based on whether this is a fresh save or a duplicate.
+    /// Called from transitionToSavedState() (labels invisible, about to fade in) and
+    /// from the network callback (labels may already be animating in — text update is instant).
+    private func applyResultLabels() {
+        if duplicateSaveDetected {
+            savedTitleLabel.text = "Already saved"
+            savedInfoLabel.text = "Check your ReelMind library"
+        } else {
+            savedTitleLabel.text = "Saved!"
+            savedInfoLabel.text = "Reel added to ReelMind"
+        }
     }
 
     // MARK: - Animation Sequence
@@ -522,6 +552,9 @@ class ShareViewController: UIViewController {
         savedTitleLabel.alpha = 0
         savedInfoLabel.alpha = 0
         checkmarkCircle.transform = CGAffineTransform(scaleX: 0.001, y: 0.001)
+        // Set label text before the fade-in animation starts so the correct
+        // wording is visible from the first frame.
+        applyResultLabels()
 
         // Fade the saving content out completely BEFORE the checkmark pops.
         // Sequential transition keeps the spinner and checkmark from ever

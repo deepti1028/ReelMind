@@ -435,6 +435,56 @@ def _cleanup(result: DownloadResult, log: logging.LoggerAdapter) -> None:
         log.warning("could not remove temp_dir %s: %s", temp_dir, exc)
 
 
+@celery_app.task(name="workers.tasks.notify_duplicate_reel")
+def notify_duplicate_reel(user_id: str, reel_id: str) -> bool:
+    """Send FCM push when a user tries to save a reel they already have.
+
+    Runs in the Celery worker (not FastAPI) so Firebase credentials and
+    logging are available.  Non-fatal: any failure is caught and logged.
+    """
+    supabase = get_supabase()
+
+    _fcm_token: str | None = None
+    try:
+        _profile = (
+            supabase.table("profiles")
+            .select("fcm_token")
+            .eq("id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        if _profile.data:
+            _fcm_token = _profile.data.get("fcm_token")
+    except Exception as exc:
+        logger.warning("notify_duplicate_reel | could not fetch fcm_token | %s", exc)
+
+    category_name: str | None = None
+    try:
+        _reel = (
+            supabase.table("reels")
+            .select("id, categories(name)")
+            .eq("id", reel_id)
+            .maybe_single()
+            .execute()
+        )
+        if _reel.data:
+            category_name = (_reel.data.get("categories") or {}).get("name")
+    except Exception as exc:
+        logger.warning("notify_duplicate_reel | could not fetch reel/category | %s", exc)
+
+    push_body = (
+        f"Already in {category_name}"
+        if category_name
+        else "Already saved — open the app to categorise it"
+    )
+    return send_push_notification(
+        fcm_token=_fcm_token,
+        title="Already saved",
+        body=push_body,
+        data={"reel_id": reel_id, "type": "duplicate"},
+    )
+
+
 @celery_app.task(name="workers.tasks.ping")
 def ping() -> str:
     """Simple smoke test — verifies workers are alive."""
