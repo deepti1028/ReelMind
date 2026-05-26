@@ -485,6 +485,50 @@ def notify_duplicate_reel(user_id: str, reel_id: str) -> bool:
     )
 
 
+@celery_app.task(name="workers.tasks.notify_invalid_url")
+def notify_invalid_url(user_id: str, reason: str) -> bool:
+    """Send FCM push when a user submits a URL that isn't a public Instagram Reel.
+
+    `reason` is 'not_instagram' or 'not_a_reel'. Non-fatal: any failure is
+    caught and logged.
+    """
+    _MESSAGES = {
+        "not_instagram": (
+            "Can't save this",
+            "That doesn't look like an Instagram link. ReelMind only saves Instagram Reels.",
+        ),
+        "not_a_reel": (
+            "Can't save this",
+            "That looks like a post or story, not a Reel. Find the Reel in Instagram and share it from there.",
+        ),
+    }
+    supabase = get_supabase()
+    _fcm_token = None
+    try:
+        _profile = (
+            supabase.table("profiles")
+            .select("fcm_token")
+            .eq("id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        if _profile.data:
+            _fcm_token = _profile.data.get("fcm_token")
+    except Exception as exc:
+        logger.warning("notify_invalid_url | could not fetch fcm_token | %s", exc)
+
+    title, body = _MESSAGES.get(
+        reason,
+        ("Can't save this", "ReelMind only saves Instagram Reels."),
+    )
+    return send_push_notification(
+        fcm_token=_fcm_token,
+        title=title,
+        body=body,
+        data={"type": "invalid_url", "reason": reason},
+    )
+
+
 @celery_app.task(name="workers.tasks.ping")
 def ping() -> str:
     """Simple smoke test — verifies workers are alive."""
