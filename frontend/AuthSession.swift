@@ -44,6 +44,7 @@ final class AuthSession: ObservableObject {
 
     private var listenerTask: Task<Void, Never>?
     private var appleSignInCoordinator: AppleSignInCoordinator?
+    private let seenOnboardingUsersKey = "seenOnboardingUsers"
 
     init() {
         Task { await bootstrap() }
@@ -58,6 +59,9 @@ final class AuthSession: ObservableObject {
         // in its own keychain-backed storage between launches).
         let restored = try? await SupabaseManager.shared.client.auth.session
         self.session = restored
+        if let userId = restored?.user.id.uuidString {
+            restoreOnboardingFlagIfNeeded(for: userId)
+        }
         syncToken(restored?.accessToken)
         self.isBootstrapping = false
 
@@ -67,6 +71,9 @@ final class AuthSession: ObservableObject {
                 await MainActor.run {
                     self?.session = newSession
                     self?.syncToken(newSession?.accessToken)
+                    if let userId = newSession?.user.id.uuidString {
+                        self?.handleOnboardingTracking(for: userId)
+                    }
                 }
             }
         }
@@ -91,6 +98,30 @@ final class AuthSession: ObservableObject {
             defaults.removeObject(forKey: AppConfig.authTokenKey)
             UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
             print("[AuthSession] token cleared from App Group")
+        }
+    }
+
+    // MARK: - Onboarding tracking
+
+    // Called during bootstrap when a persisted session is found.
+    // Restores the flag so RootView skips OnboardingFlow without flashing it.
+    private func restoreOnboardingFlagIfNeeded(for userId: String) {
+        let seen = UserDefaults.standard.stringArray(forKey: seenOnboardingUsersKey) ?? []
+        if seen.contains(userId) {
+            UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        }
+    }
+
+    // Called on every sign-in event.
+    // Returning user: restores the flag (cleared on sign-out).
+    // New user who just finished onboarding: records their ID so future sign-ins skip it.
+    private func handleOnboardingTracking(for userId: String) {
+        var seen = UserDefaults.standard.stringArray(forKey: seenOnboardingUsersKey) ?? []
+        if seen.contains(userId) {
+            UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        } else if UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
+            seen.append(userId)
+            UserDefaults.standard.set(seen, forKey: seenOnboardingUsersKey)
         }
     }
 
