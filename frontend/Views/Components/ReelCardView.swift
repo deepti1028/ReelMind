@@ -173,9 +173,8 @@ struct DetailReelCard: View {
                 if !success { openFailed = true }
             }
         } label: {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
                 ThumbnailView(urlString: reel.thumbnailUrl, width: 90, height: 130)
-                    .padding(.vertical, 10)
 
                 VStack(alignment: .leading, spacing: 0) {
                     // Creator — bold and unmissable
