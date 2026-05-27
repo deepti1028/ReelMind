@@ -414,6 +414,18 @@ def _extract_media_item(html: str, log: logging.LoggerAdapter) -> dict[str, Any]
             log.info("media item located in JSON blob #%d", candidates)
             return item
 
+    if _html_signals_private_content(html):
+        log.error(
+            "JSON locate failed | candidates_scanned=%d | "
+            "private_marker=True | reel is from a private account",
+            candidates,
+        )
+        raise DownloadError(
+            "Instagram returned a private-account page — no media payload present",
+            is_retryable=False,
+            is_private_content=True,
+        )
+
     log.error(
         "JSON locate failed | candidates_scanned=%d | likely_cause=IG served "
         "degraded HTML (no JSON blob), changed their page structure, or "
@@ -451,6 +463,27 @@ def _walk_dicts(node: Any) -> Iterator[dict[str, Any]]:
     elif isinstance(node, list):
         for v in node:
             yield from _walk_dicts(v)
+
+
+def _html_signals_private_content(html: str) -> bool:
+    """Return True if any <script type=application/json> block contains a dict
+    where ``is_private`` is True.
+
+    Instagram serves private-account reel pages as HTTP 200 with user metadata
+    JSON (including is_private=True) but no media payload. Scanning for this
+    flag lets us distinguish a definitive private-content rejection from a
+    transient parse failure.
+    """
+    selector = Selector(html)
+    for raw in selector.css('script[type="application/json"]::text').getall():
+        try:
+            blob = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        for node in _walk_dicts(blob):
+            if node.get("is_private") is True:
+                return True
+    return False
 
 
 # ---------------------------------------------------------------------------
