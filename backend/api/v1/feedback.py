@@ -12,7 +12,7 @@ from api.deps import CurrentUser, get_current_user
 router = APIRouter()
 
 _RESEND_URL = "https://api.resend.com/emails"
-_FEEDBACK_TO = "deepti.jain2810@gmail.com"
+_FEEDBACK_TO = "deeptihnd000@gmail.com"
 _FEEDBACK_FROM = "onboarding@resend.dev"
 
 
