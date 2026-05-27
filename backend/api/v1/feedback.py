@@ -48,9 +48,10 @@ async def send_feedback(
         )
 
     if not resp.is_success:
+        print(f"[feedback] Resend error {resp.status_code}: {resp.text}")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to send feedback",
+            detail=f"Resend error {resp.status_code}: {resp.text}",
         )
 
     return {"ok": True}
