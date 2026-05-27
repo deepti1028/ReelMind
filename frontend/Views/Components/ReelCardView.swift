@@ -18,8 +18,8 @@ struct InboxReelCard: View {
         } label: {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: 12) {
-                    // Thumbnail stretches to match content height — no fixed height anchor
                     inboxThumbnail
+                        .padding(.vertical, 10)
 
                     VStack(alignment: .leading, spacing: 5) {
                         (Text("@").foregroundColor(AppTheme.accent)
@@ -48,12 +48,15 @@ struct InboxReelCard: View {
                             HStack(spacing: 5) {
                                 ForEach(reel.hashtags.prefix(3), id: \.self) { tag in
                                     Text("#\(tag)")
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
                                         .font(.system(size: 10, weight: .medium))
                                         .foregroundColor(AppTheme.accentDark)
                                         .padding(.horizontal, 7)
                                         .padding(.vertical, 3)
                                         .background(AppTheme.accent.opacity(0.12))
                                         .clipShape(Capsule())
+                                        .frame(maxWidth: 90)
                                 }
                             }
                         }
@@ -119,7 +122,7 @@ struct InboxReelCard: View {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
-                        image.resizable().scaledToFill()
+                        image.resizable().scaledToFill().clipped()
                     case .empty:
                         inboxThumbnailPlaceholder
                             .overlay(ProgressView().scaleEffect(0.6).tint(AppTheme.textFaint))
@@ -131,8 +134,7 @@ struct InboxReelCard: View {
                 inboxThumbnailPlaceholder
             }
         }
-        .frame(width: 72)
-        .frame(maxHeight: .infinity)
+        .frame(width: 72, height: 90)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
