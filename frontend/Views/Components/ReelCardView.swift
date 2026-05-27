@@ -134,7 +134,8 @@ struct InboxReelCard: View {
                 inboxThumbnailPlaceholder
             }
         }
-        .frame(width: 72, height: 90)
+        .frame(width: 72)
+        .frame(maxHeight: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
