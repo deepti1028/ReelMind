@@ -1290,7 +1290,7 @@ story.append(sp(4))
     "send_push_notification(",
     "    fcm_token=_fcm_token,",
     "    title='Help us categorise this reel',",
-    "    body='Your reel is saved — which fits best? Ignoring saves it to Uncategorised.',",
+    "    body='Your reel is safely saved - but weren’t fully sure about its category. Mind picking one?',",
     "    data={",
     "        'reel_id': reel_id,",
     "        'suggestions': json.dumps(suggestions),  # JSON string — parsed by iOS",
