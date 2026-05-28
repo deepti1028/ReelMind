@@ -414,6 +414,18 @@ def _extract_media_item(html: str, log: logging.LoggerAdapter) -> dict[str, Any]
             log.info("media item located in JSON blob #%d", candidates)
             return item
 
+        # DIAGNOSTIC: log what shortcode keys contain when media isn't found
+        for node in _walk_dicts(blob):
+            for key in _SHORTCODE_INFO_KEYS:
+                inner = node.get(key)
+                if inner is not None:
+                    items_val = inner.get("items") if isinstance(inner, dict) else "NOT_A_DICT"
+                    log.warning(
+                        "DIAG candidate #%d | key=%s | inner_type=%s | items=%s",
+                        candidates, key, type(inner).__name__,
+                        repr(items_val)[:300],
+                    )
+
     if _html_signals_private_content(html):
         log.error(
             "JSON locate failed | candidates_scanned=%d | "
