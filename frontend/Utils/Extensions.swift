@@ -3,7 +3,7 @@ import UIKit
 
 // Re-enables the swipe-back gesture on any NavigationController even when
 // navigationBarBackButtonHidden(true) is used to show a custom back button.
-extension UINavigationController: UIGestureRecognizerDelegate {
+extension UINavigationController: @retroactive UIGestureRecognizerDelegate {
     override open func viewDidLoad() {
         super.viewDidLoad()
         interactivePopGestureRecognizer?.delegate = self
