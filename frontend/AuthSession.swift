@@ -224,7 +224,9 @@ final class AuthSession: ObservableObject {
         guard let http = response as? HTTPURLResponse, http.statusCode == 204 else {
             throw URLError(.badServerResponse)
         }
-        // The authStateChanges listener fires automatically when Supabase
-        // invalidates the session server-side. No explicit signOut() needed.
+        // admin.delete_user() is a direct DB operation — it does NOT push an
+        // authStateChanges event to the iOS client. Sign out explicitly so the
+        // local session is cleared and RootView navigates to LoginView.
+        try await SupabaseManager.shared.client.auth.signOut()
     }
 }
