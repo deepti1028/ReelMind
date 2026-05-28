@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReelMind — Privacy Policy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --background: #fefae0;
+      --surface:    #faedcd;
+      --border:     #e5d5b8;
+      --accent:     #d4a373;
+      --accent-dark:#9a6a35;
+      --text-primary:   #2c1f0e;
+      --text-secondary: #5a3e28;
+      --text-muted:     #9a7654;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--background);
+      color: var(--text-primary);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Sticky site header ── */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(254, 250, 224, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .site-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 40px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .site-logo {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 20px;
+      font-weight: 600;
+      font-style: italic;
+      color: var(--accent-dark);
+      letter-spacing: -0.3px;
+      white-space: nowrap;
+    }
+
+    .header-center {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.2px;
+    }
+
+    .header-date {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 13px;
+      white-space: nowrap;
+    }
+
+    /* ── Page wrapper ── */
+    .page-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    /* ── Intro banner ── */
+    .intro-banner {
+      padding: 60px 0 48px;
+      border-bottom: 1px solid var(--border);
+      max-width: 700px;
+    }
+
+    .intro-banner h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 44px;
+      font-weight: 600;
+      font-style: italic;
+      color: var(--accent-dark);
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+      line-height: 1.15;
+    }
+
+    .intro-banner p {
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* ── Two-column layout ── */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      gap: 72px;
+      padding: 52px 0 80px;
+      align-items: start;
+    }
+
+    /* ── Sidebar TOC ── */
+    .sidebar {
+      position: sticky;
+      top: 76px;
+      align-self: start;
+    }
+
+    .toc-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .toc {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toc a {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      font-size: 12.5px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 7px 12px 7px 0;
+      border-right: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s, padding-left 0.2s;
+      line-height: 1.4;
+    }
+
+    .toc a:hover {
+      color: var(--accent-dark);
+      padding-left: 4px;
+    }
+
+    .toc a.active {
+      color: var(--accent-dark);
+      font-weight: 700;
+      border-right-color: var(--accent);
+      padding-left: 4px;
+    }
+
+    .toc-num {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      min-width: 16px;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    /* ── Content ── */
+    .content-area { min-width: 0; }
+
+    .section {
+      padding: 52px 0;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 76px;
+    }
+
+    .section:last-child { border-bottom: none; }
+
+    .section-eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 26px;
+      line-height: 1.25;
+      letter-spacing: -0.2px;
+    }
+
+    .section-body {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      max-width: 680px;
+    }
+
+    .section-body p { margin-bottom: 16px; }
+    .section-body p:last-child { margin-bottom: 0; }
+
+    /* Data group */
+    .data-group { margin-bottom: 28px; }
+    .data-group:last-child { margin-bottom: 0; }
+
+    .data-group-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .data-list {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .data-list li {
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text-secondary);
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .data-list li::before {
+      content: '–';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid rgba(212, 163, 115, 0.2);
+      margin: 28px 0;
+    }
+
+    /* Service table */
+    .service-table {
+      margin-top: 24px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 680px;
+    }
+
+    .service-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .service-row:last-child { border-bottom: none; }
+
+    .service-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+      padding: 16px 20px;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .service-desc {
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text-secondary);
+      padding: 16px 20px;
+    }
+
+    /* Highlight box */
+    .highlight-box {
+      background: rgba(212, 163, 115, 0.1);
+      border: 1px solid rgba(212, 163, 115, 0.3);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-top: 20px;
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: var(--text-secondary);
+      max-width: 680px;
+    }
+
+    .highlight-box strong { color: var(--accent-dark); }
+
+    /* Contact cards */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 16px;
+      margin-top: 8px;
+      max-width: 680px;
+    }
+
+    .contact-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+
+    .contact-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 7px;
+    }
+
+    .contact-link {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--accent-dark);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .contact-link:hover { color: var(--text-primary); }
+
+    .contact-text {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .inline-link {
+      color: var(--accent-dark);
+      font-weight: 500;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(154, 106, 53, 0.3);
+      transition: border-color 0.2s;
+    }
+
+    .inline-link:hover { border-color: var(--accent-dark); }
+
+    /* ── Footer ── */
+    .site-footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+
+    .site-footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 22px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-copy {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .footer-links a {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--accent-dark); }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+      .sidebar { display: none; }
+      .header-center { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      .site-header-inner,
+      .page-wrapper,
+      .site-footer-inner { padding-left: 20px; padding-right: 20px; }
+
+      .intro-banner h1 { font-size: 34px; }
+
+      .service-row { grid-template-columns: 1fr; }
+      .service-name { border-right: none; border-bottom: 1px solid var(--border); }
+
+      .contact-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky header -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-logo">ReelMind</div>
+      <div class="header-center">Privacy Policy</div>
+      <div class="header-date">Effective June 1, 2026</div>
+    </div>
+  </header>
+
+  <div class="page-wrapper">
+
+    <!-- Intro -->
+    <div class="intro-banner">
+      <h1>Privacy Policy</h1>
+      <p>We built ReelMind to help you organize the content you love — and we take your privacy seriously. Here is a clear, honest account of how we handle your data.</p>
+    </div>
+
+    <div class="main-layout">
+
+      <!-- Sidebar TOC -->
+      <aside class="sidebar">
+        <div class="toc-label">On this page</div>
+        <nav class="toc" id="toc">
+          <a href="#s1"><span class="toc-num">1</span>Introduction</a>
+          <a href="#s2"><span class="toc-num">2</span>What Data We Collect</a>
+          <a href="#s3"><span class="toc-num">3</span>How We Use Your Data</a>
+          <a href="#s4"><span class="toc-num">4</span>AI Processing &amp; External Services</a>
+          <a href="#s5"><span class="toc-num">5</span>Data Retention</a>
+          <a href="#s6"><span class="toc-num">6</span>Your Rights</a>
+          <a href="#s7"><span class="toc-num">7</span>Security</a>
+          <a href="#s8"><span class="toc-num">8</span>Children's Privacy</a>
+          <a href="#s9"><span class="toc-num">9</span>Changes to This Policy</a>
+          <a href="#s10"><span class="toc-num">10</span>Contact Us</a>
+        </nav>
+      </aside>
+
+      <!-- Main content -->
+      <main class="content-area">
+
+        <!-- 1. Introduction -->
+        <section class="section" id="s1">
+          <div class="section-eyebrow">Section 01</div>
+          <h2 class="section-title">Introduction</h2>
+          <div class="section-body">
+            <p>ReelMind ("we", "our", or "us") is an iOS app that lets you save, transcribe, and organize Instagram Reels via the iOS Share Sheet. This Privacy Policy explains what data we collect when you use ReelMind, how we use it, and your rights over it.</p>
+            <p>By using ReelMind, you agree to the practices described in this policy. If you have questions, you can always reach us at <a href="mailto:deepti.jain2810@gmail.com" class="inline-link">deepti.jain2810@gmail.com</a>.</p>
+          </div>
+        </section>
+
+        <!-- 2. What We Collect -->
+        <section class="section" id="s2">
+          <div class="section-eyebrow">Section 02</div>
+          <h2 class="section-title">What Data We Collect</h2>
+          <div class="section-body">
+
+            <div class="data-group">
+              <div class="data-group-label">Your Account</div>
+              <ul class="data-list">
+                <li><strong>Email address</strong> — required to create and sign in to your account</li>
+                <li><strong>Display name</strong> — optional, set during sign-up or via Sign in with Apple / Google</li>
+                <li><strong>User ID</strong> — a unique identifier assigned to your account when you register</li>
+              </ul>
+            </div>
+
+            <hr class="section-divider">
+
+            <div class="data-group">
+              <div class="data-group-label">Reels You Save</div>
+              <ul class="data-list">
+                <li><strong>Instagram Reel URL</strong> — the link of the Reel you chose to save</li>
+                <li><strong>Audio transcript</strong> — a text version of the Reel's audio, created by our processing pipeline</li>
+                <li><strong>Caption and hashtags</strong> — the text content published with the Reel on Instagram</li>
+                <li><strong>Creator handle</strong> — the username of the Instagram account that posted the Reel</li>
+                <li><strong>Thumbnail image</strong> — a preview image of the Reel, fetched from Instagram</li>
+              </ul>
+            </div>
+
+            <hr class="section-divider">
+
+            <div class="data-group">
+              <div class="data-group-label">Automatically Collected</div>
+              <ul class="data-list">
+                <li><strong>Push notification token</strong> — a device token used to send you save-confirmation notifications via Firebase Cloud Messaging</li>
+                <li><strong>Basic app usage</strong> — session opens, screen views, and app interactions automatically recorded by Firebase Analytics (bundled in the app)</li>
+                <li><strong>Device info</strong> — device model and iOS version, collected by Firebase Analytics</li>
+              </ul>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 3. How We Use Your Data -->
+        <section class="section" id="s3">
+          <div class="section-eyebrow">Section 03</div>
+          <h2 class="section-title">How We Use Your Data</h2>
+          <div class="section-body">
+            <ul class="data-list">
+              <li><strong>Authentication</strong> — your email and user ID let you sign in and keep your library private</li>
+              <li><strong>Processing your Reels</strong> — transcripts, captions, and hashtags are used to categorize and index your saved Reels so you can search and browse them</li>
+              <li><strong>Push notifications</strong> — your device token is used solely to notify you when a Reel has been processed</li>
+              <li><strong>App improvement</strong> — Firebase Analytics usage data helps us understand which features are used so we can improve the app</li>
+              <li><strong>Customer support</strong> — if you contact us, we use your email to respond</li>
+            </ul>
+            <div class="highlight-box">
+              <strong>We do not sell your data.</strong> We do not use your data for advertising. We do not share your data with third parties for their own marketing purposes.
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. AI Processing & External Services -->
+        <section class="section" id="s4">
+          <div class="section-eyebrow">Section 04</div>
+          <h2 class="section-title">AI Processing &amp; External Services</h2>
+          <div class="section-body">
+            <p>To power ReelMind's core features, we send portions of your Reel data to external services for processing. Here is exactly what each service receives and why:</p>
+
+            <div class="service-table">
+              <div class="service-row">
+                <div class="service-name">Groq (Whisper)</div>
+                <div class="service-desc">Receives the audio file from your saved Reel to produce a text transcript. Groq processes the audio and returns the transcript — they do not retain your audio or transcript data beyond the duration of that request.</div>
+              </div>
+              <div class="service-row">
+                <div class="service-name">Groq (Llama 3.3)</div>
+                <div class="service-desc">Receives the transcript, caption, and hashtags from your Reel to determine the most appropriate category. This text is processed and the category result is returned — it is not stored by Groq.</div>
+              </div>
+              <div class="service-row">
+                <div class="service-name">Google Gemini</div>
+                <div class="service-desc">Receives the transcript, caption, and hashtags to create a semantic fingerprint (embedding) of your Reel. This fingerprint powers search and organization within your library. Google processes the text and returns the embedding — the raw text is not retained by Google.</div>
+              </div>
+              <div class="service-row">
+                <div class="service-name">Firebase (Google)</div>
+                <div class="service-desc">Used for push notifications (Firebase Cloud Messaging) and basic usage analytics (Firebase Analytics). Firebase collects app interaction data such as session opens and screen views, linked to your device.</div>
+              </div>
+              <div class="service-row">
+                <div class="service-name">Supabase</div>
+                <div class="service-desc">Stores your account information, saved Reels, transcripts, and all other app data in an encrypted, secure cloud database. Supabase is our primary data store.</div>
+              </div>
+            </div>
+
+            <div class="highlight-box">
+              <strong>Your consent:</strong> When you first use ReelMind, we will ask for your consent before any Reel data is processed by these services. You can withdraw consent at any time by deleting your account.
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. Data Retention -->
+        <section class="section" id="s5">
+          <div class="section-eyebrow">Section 05</div>
+          <h2 class="section-title">Data Retention</h2>
+          <div class="section-body">
+            <ul class="data-list">
+              <li><strong>Account data and saved Reels</strong> — kept for as long as your account is active. When you delete your account, all of this data is permanently and immediately removed from our servers.</li>
+              <li><strong>Firebase Analytics usage data</strong> — retained according to Google's standard Firebase Analytics retention period (up to 14 months by default), after which it is automatically deleted.</li>
+              <li><strong>Push notification tokens</strong> — deleted when your account is deleted.</li>
+            </ul>
+            <p style="margin-top: 16px;">To delete your account and all associated data, go to <strong>Settings → Delete Account</strong> inside the ReelMind app. Deletion is immediate and permanent.</p>
+          </div>
+        </section>
+
+        <!-- 6. Your Rights -->
+        <section class="section" id="s6">
+          <div class="section-eyebrow">Section 06</div>
+          <h2 class="section-title">Your Rights</h2>
+          <div class="section-body">
+            <ul class="data-list">
+              <li><strong>Access</strong> — you can view all your saved Reels and account information directly in the app</li>
+              <li><strong>Deletion</strong> — delete your account and all associated data at any time via <strong>Settings → Delete Account</strong></li>
+              <li><strong>Analytics opt-out</strong> — to opt out of Firebase Analytics data collection, contact us at <a href="mailto:deepti.jain2810@gmail.com" class="inline-link">deepti.jain2810@gmail.com</a> and we will disable it for your account</li>
+              <li><strong>Questions or requests</strong> — for any privacy-related request, email us and we will respond within 48 hours</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- 7. Security -->
+        <section class="section" id="s7">
+          <div class="section-eyebrow">Section 07</div>
+          <h2 class="section-title">Security</h2>
+          <div class="section-body">
+            <ul class="data-list">
+              <li>All data is transmitted over encrypted HTTPS connections</li>
+              <li>Your data is stored in Supabase with encryption at rest and row-level security — only you can access your own Reels</li>
+              <li>Authentication is handled via Supabase Auth with industry-standard JWT tokens</li>
+              <li>We do not log or store passwords in plain text</li>
+            </ul>
+            <p style="margin-top: 14px;">While we take reasonable precautions, no system is completely immune to risk. If you believe your account has been compromised, contact us immediately.</p>
+          </div>
+        </section>
+
+        <!-- 8. Children's Privacy -->
+        <section class="section" id="s8">
+          <div class="section-eyebrow">Section 08</div>
+          <h2 class="section-title">Children's Privacy</h2>
+          <div class="section-body">
+            <p>ReelMind is designed for use alongside Instagram. Because Instagram requires users to meet their platform's minimum age requirements, you must be old enough to have an Instagram account in your country to use ReelMind.</p>
+            <p>We do not knowingly collect personal data from children below Instagram's minimum age requirement. If you are a parent or guardian and believe your child has created a ReelMind account, please contact us at <a href="mailto:deepti.jain2810@gmail.com" class="inline-link">deepti.jain2810@gmail.com</a> and we will delete the account promptly.</p>
+          </div>
+        </section>
+
+        <!-- 9. Changes to This Policy -->
+        <section class="section" id="s9">
+          <div class="section-eyebrow">Section 09</div>
+          <h2 class="section-title">Changes to This Policy</h2>
+          <div class="section-body">
+            <p>We may update this Privacy Policy from time to time. When we make significant changes, we will update the "Effective" date at the top of this page. For major changes that affect how we use your personal data, we will notify you through the app or by email before the changes take effect.</p>
+            <p>Continued use of ReelMind after a policy update constitutes your acceptance of the updated terms.</p>
+          </div>
+        </section>
+
+        <!-- 10. Contact -->
+        <section class="section" id="s10">
+          <div class="section-eyebrow">Section 10</div>
+          <h2 class="section-title">Contact Us</h2>
+          <div class="section-body">
+            <p style="margin-bottom: 24px;">If you have any questions, concerns, or requests about this Privacy Policy or your data, please get in touch:</p>
+            <div class="contact-grid">
+              <div class="contact-card">
+                <div class="contact-label">Email</div>
+                <a href="mailto:deepti.jain2810@gmail.com" class="contact-link">deepti.jain2810@gmail.com</a>
+              </div>
+              <div class="contact-card">
+                <div class="contact-label">Support Page</div>
+                <a href="https://deepti1028.github.io/appstore-hosting-pages/reelwind-support-page/" class="contact-link" target="_blank">ReelMind Support &amp; FAQ</a>
+              </div>
+              <div class="contact-card">
+                <div class="contact-label">Response Time</div>
+                <div class="contact-text">We respond to all privacy inquiries within 24–48 hours.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-copy">&copy; 2026 ReelMind. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="https://deepti1028.github.io/appstore-hosting-pages/reelwind-support-page/">Support</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const sections = document.querySelectorAll('.section[id]');
+    const tocLinks = document.querySelectorAll('.toc a');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          tocLinks.forEach(l => l.classList.remove('active'));
+          const active = document.querySelector(`.toc a[href="#${entry.target.id}"]`);
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-76px 0px -65% 0px', threshold: 0 });
+
+    sections.forEach(s => observer.observe(s));
+  </script>
+
+</body>
+</html>

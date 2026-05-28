@@ -1,0 +1,492 @@
+REELMIND — APP STORE READINESS ASSESSMENT
+Honest answers to every section of the App Store Publishment Guide
+Generated: 2026-05-27
+================================================================================
+
+PART 1 — APPLE DEVELOPER PROGRAM + BUILD REQUIREMENTS
+================================================================================
+
+1.1 Apple Developer Program
+-----------------------------
+STATUS: UNKNOWN — not tracked in the codebase.
+You need to confirm whether the $99/year Apple Developer Program account is
+active and whether all agreements in App Store Connect have been accepted.
+If you haven't enrolled yet, do that first. Everything else blocks on it.
+
+1.2 2026 Mandatory Build Requirements (Xcode 26 + iOS 26 SDK)
+---------------------------------------------------------------
+STATUS: NOT MET — BLOCKING.
+
+The Podfile sets:
+  platform :ios, '14.0'
+  IPHONEOS_DEPLOYMENT_TARGET = '14.0'
+
+As of April 28, 2026, Apple auto-rejects any binary NOT built with the
+iOS 26 SDK / Xcode 26. The project has not been updated to meet this.
+
+Also: Firebase/Analytics and Firebase/Messaging (the only two CocoaPods) must
+be verified as compatible with the iOS 26 SDK before submission.
+
+The deployment target can stay at iOS 14 if Apple allows it for the minimum
+supported version, but the BUILD must use Xcode 26. This has not been done.
+
+
+PART 2 — PREPARING YOUR APP
+================================================================================
+
+2.1 Privacy Manifest (PrivacyInfo.xcprivacy)
+--------------------------------------------
+STATUS: MISSING FOR MAIN APP — BLOCKING.
+
+The following Pods do have their own manifests (good):
+  - nanopb
+  - GoogleDataTransport
+  - FirebaseMessaging
+  - GoogleUtilities
+  - FirebaseCore
+  - PromisesObjC
+  - FirebaseCoreInternal
+  - FirebaseInstallations
+
+However, there is NO PrivacyInfo.xcprivacy file for the ReelMind main app
+target itself. Apple's automated scanner (ITMS-91053) will reject the upload
+before any human reviewer sees it.
+
+Additionally, Supabase (likely added via Swift Package Manager, not CocoaPods)
+needs its own manifest verified. It is not visible in the Podfile.
+
+What you need to do:
+  - Add a PrivacyInfo.xcprivacy to the main ReelMind app target in Xcode.
+  - Declare all NSPrivacyAccessedAPITypes your code touches.
+  - Run Product → Generate Privacy Report in Xcode and fix every red flag.
+
+2.2 AI Data Disclosure (Guideline 5.1.2 — Enforced November 2025)
+------------------------------------------------------------------
+STATUS: NOT IMPLEMENTED — BLOCKING.
+
+ReelMind sends user data to external AI services on every reel save:
+  - Groq Whisper (whisper-large-v3): receives the reel's audio (.m4a file)
+  - Groq Llama 3.3 70B: receives transcript + caption + hashtags for classification
+  - Google Gemini (gemini-embedding-2): receives transcript + caption + hashtags
+
+None of this is disclosed to the user in a consent modal before it happens.
+The iOS app shows no consent screen at any point in the flow — not during
+onboarding, not at first save, not anywhere.
+
+This is a hard rejection under Guideline 5.1.2 as of November 2025.
+
+What you need:
+  A modal (shown before the first reel is ever processed) that names each
+  AI provider (Groq, Google Gemini) and explains what data is sent to each.
+  User must actively accept before any reel is submitted to the backend.
+
+Note: the processing happens on the backend (Celery worker), not in the iOS
+app. But the iOS app initiates the flow, so the disclosure obligation falls
+on the iOS app.
+
+2.3 Sign in with Apple
+-----------------------
+STATUS: IMPLEMENTED — but the button styling is a compliance risk.
+
+Sign in with Apple is fully implemented in AuthSession.swift using the proper
+ASAuthorizationAppleIDProvider flow with nonce/PKCE. The logic is correct.
+
+RISK: The "Continue with Apple" button in SocialAuthViews.swift is a custom
+SwiftUI button (black background, SF Symbols apple.logo, white text). Apple's
+guidelines say to use the official ASAuthorizationAppleIDButton or SignInWithAppleButton
+assets. A custom-styled button is grounds for rejection. The Google Sign-In
+button is custom too, but that's allowed — only the Apple button must follow
+Apple's official asset guidelines.
+
+Fix: Replace AppleSignInButton with SwiftUI's built-in SignInWithAppleButton.
+
+2.4 Account Deletion
+--------------------
+STATUS: IMPLEMENTED and functional.
+
+SettingsView.swift has a trash icon in the user card that triggers a
+confirmation dialog, which calls auth.deleteAccount(). That method sends
+DELETE /api/v1/account with the Bearer token. The backend endpoint deletes
+the account server-side. This satisfies Guideline 5.1.1.
+
+One caveat: the backend DELETE /api/v1/account endpoint is referenced in
+AuthSession.swift but I cannot verify the endpoint is fully implemented on
+the Render backend without checking backend/api/v1/. You should confirm
+this actually deletes all user data (profiles, reels, reel_chunks, chat
+sessions, etc.) in the database, not just the auth record.
+
+2.5 Permission Strings in Info.plist
+-------------------------------------
+STATUS: INCOMPLETE — likely a problem.
+
+The main app's Info.plist was not found as a standalone file — it is embedded
+inside the Xcode project. The only standalone Info.plist found is for the
+Share Extension (URL Sharing module/Info.plist), which only declares
+NSExtensionActivationRule for web URLs and images.
+
+The main app requests push notifications (via NotificationPermissionManager.swift).
+Push notifications do not require an Info.plist key — they use the UNUserNotificationCenter
+API. So that's fine.
+
+No camera, location, contacts, or photo library permissions are used — which
+is honest because the app doesn't need them. Good. No unnecessary permissions.
+
+However, you should open the Xcode project and verify the Info.plist has no
+leftover or auto-generated permission keys from templates.
+
+2.6 In-App Purchases
+--------------------
+STATUS: NOT APPLICABLE.
+
+There are no StoreKit imports, no purchase flows, and no digital goods in the
+app. This section can be skipped.
+
+
+PART 3 — APP STORE CONNECT SETUP
+================================================================================
+
+3.1 App Record
+--------------
+STATUS: UNKNOWN — not in codebase.
+
+You need to create the app record in App Store Connect if you haven't already.
+The bundle ID from the Xcode project should match exactly — confirm this before
+creating the record, because it cannot be changed after creation.
+
+3.2 App Metadata
+----------------
+STATUS: NOT WRITTEN.
+
+None of these exist yet (need to be written for App Store Connect):
+  - App Name (30 chars max) — suggest "ReelMind - Save Reels"
+  - Subtitle (30 chars max) — suggest "Organize Your Inspiration"
+  - Description — needs to be written
+  - Keywords (100 chars) — none chosen yet
+  - Promotional Text — none written
+  - Support URL — NO real support website exists. FeedbackFormView sends
+    email via Resend, but that is not a public support page. You need a
+    public URL (even a simple landing page) or Apple will reject.
+  - Privacy Policy URL — DOES NOT EXIST anywhere. This is blocking.
+    Apple requires a privacy policy for ALL apps with user accounts.
+    You must host one at a public HTTPS URL.
+
+3.3 Screenshots
+---------------
+STATUS: NONE EXIST.
+
+No screenshots have been taken. You need:
+  Required:
+    - iPhone 6.9" (1320×2868 or 1290×2796)
+    - iPhone 6.5" (1284×2778)
+    - iPhone 5.5" (1242×2208)
+
+  These must show the actual current app UI — not mockups. You should take
+  them from a real device. Key screens to capture:
+    - Onboarding flow
+    - Login/Signup screen
+    - Library / home view (with actual saved reels)
+    - Category view
+    - Settings screen
+    - Share sheet in action (if possible)
+
+  App Preview Video (optional but recommended): 15–30 seconds of real in-app
+  footage showing the share-to-save flow. No copyrighted music.
+
+3.4 Age Rating
+--------------
+STATUS: NOT COMPLETED.
+
+Honest assessment:
+  - The app does not have social features (ReelMind users cannot interact
+    with each other inside the app).
+  - The app saves Instagram Reels, which can contain any content Instagram
+    allows. The ReelMind app does not show the reel video itself — it saves
+    a link and shows a thumbnail + transcript. It does not render arbitrary
+    web content.
+  - No user-generated content within ReelMind itself.
+  - No location, gambling, alcohol, or explicit content features.
+
+Suggested rating: 12+ (to account for the fact that Instagram content
+varies in maturity). You should complete the questionnaire honestly — if you
+answer that there is no user-to-user interaction and no mature content
+explicitly surfaced in the app itself, 12+ is defensible.
+
+The age rating questionnaire MUST be updated to the 2025+ categories (13+,
+16+, 18+ tiers). This is required before any new submission will be accepted.
+
+3.5 Privacy Nutrition Labels
+----------------------------
+STATUS: NOT FILLED IN.
+
+Here is an honest declaration of what ReelMind collects, based on the code:
+
+  Contact Info:
+    - Email address — collected at signup, linked to identity, used for
+      App Functionality (authentication). Source: Supabase auth.
+    - Full name — collected optionally at signup, linked to identity.
+      Source: Supabase auth metadata.
+
+  Identifiers:
+    - User ID — Supabase UUID assigned at signup, linked to identity.
+    - Device ID — Firebase Messaging registration token (FCM token) is
+      stored in profiles table and used to send push notifications.
+      Linked to identity (tied to the user's profile row).
+
+  User Content:
+    - Other user content — Instagram Reel URLs saved by the user are stored
+      in the reels table. Linked to identity (user_id foreign key).
+
+  Usage Data:
+    - App interactions — Firebase Analytics (bundled via Firebase/Analytics
+      CocoaPod, which includes GoogleAppMeasurement) collects app interaction
+      data. This is a significant data collector. You MUST declare this.
+      It is linked to device/user identity by Firebase.
+
+  Diagnostics:
+    - Crash data — Firebase Analytics may collect crash signals depending on
+      configuration. Check Firebase console settings.
+
+  Data NOT collected:
+    - Location: not requested, not collected.
+    - Camera, microphone, photos: not requested, not collected.
+    - Contacts: not used.
+    - Financial info: no payments of any kind.
+    - Health & fitness: none.
+    - Sensitive info: none.
+
+  Note on AI processing: The transcript generated from reel audio is stored
+  in Supabase (reels.transcript column), linked to the user's identity.
+  This transcript is derived from Instagram content the user chose to save,
+  not from personal communications. Declare it under "User Content."
+
+3.6 App Review Information
+--------------------------
+STATUS: NOT WRITTEN.
+
+You will need to write these for every submission. Template to fill in:
+
+  TEST ACCOUNT:
+    Email: [create a demo account before submission]
+    Password: [set a fixed, non-expiring password]
+    (Make sure this account has at least a few saved reels with processed
+    transcripts and categories so reviewers can see the core feature.)
+
+  TESTING INSTRUCTIONS:
+    1. Tap through the onboarding flow.
+    2. Sign in with the test credentials above.
+    3. Go to the Library tab — you will see pre-saved reels organized by category.
+    4. To test saving: open Instagram on the device, find any public reel,
+       tap Share → ReelMind. The reel will be queued for processing.
+    5. After 30–60 seconds, a push notification will arrive confirming the reel
+       was saved and categorized.
+    6. Return to the app — the reel will appear in the appropriate category.
+
+  THIRD-PARTY SERVICES:
+    - Supabase: authentication and database
+    - Groq: audio transcription (Whisper) and content classification (Llama 3.3 70B)
+    - Google Gemini: semantic embeddings for search/organization
+    - Firebase Messaging: push notifications for save confirmation
+    - Firebase Analytics: app usage analytics
+
+  NOTES FOR REVIEWER:
+    - The core feature (saving a reel) requires the iOS Share Sheet. The app's
+      main value is demonstrated by sharing an Instagram Reel URL from within
+      the Instagram app to ReelMind via the system share sheet.
+    - No in-app purchases.
+    - The app requires internet access at all times (no offline mode).
+    - The backend is hosted on Render (production URL hardcoded in the share
+      extension). Processing takes 30–90 seconds after saving.
+
+
+PART 4 — TESTFLIGHT
+================================================================================
+
+STATUS: NOT DONE (as far as can be determined from codebase).
+
+No evidence of TestFlight builds or beta testing history in the project.
+
+Before submitting for production review, you should:
+  1. Upload a TestFlight build.
+  2. Test the full new-user flow: install fresh, onboarding, signup, first reel save.
+  3. Test push notifications end-to-end on a real physical device.
+  4. Test account deletion (creates account → deletes account → confirm Supabase
+     row is gone).
+  5. Test with airplane mode (app should degrade gracefully, not crash).
+  6. Test on at least two different iPhone models and iOS versions.
+  7. Minimum 5 business days before production submission.
+
+
+PART 5 — BUILD UPLOAD
+================================================================================
+
+STATUS: NOT DONE.
+
+The app has never been submitted to App Store Connect based on available
+information. Build requirements for submission:
+
+  - Must use Xcode 26 + iOS 26 SDK (not currently done — see Part 1)
+  - CFBundleShortVersionString: set to 1.0 for first submission
+  - CFBundleVersion (build number): must increment from any TestFlight builds
+  - Verify no hardcoded development URLs in the share extension
+    (K.backendBaseURL must point to the production Render URL, not localhost
+    or an ngrok tunnel)
+  - Remove any placeholder content (the TempReels/ folder in frontend/ is named
+    "TempReels" — verify these views are not using placeholder data in the
+    production build)
+
+
+PART 6 — SUBMISSION
+================================================================================
+
+STATUS: NOT DONE.
+
+Timeline expectations for first submission:
+  - First-time submission: 2–4 business days.
+  - Submit Monday or Tuesday for fastest turnaround.
+  - Have the test account and reviewer notes ready before clicking Submit.
+
+
+PART 7 — KNOWN REJECTION RISKS (HONEST LIST)
+================================================================================
+
+HIGH PROBABILITY REJECTIONS (must fix before submitting):
+
+  1. NO MAIN APP PrivacyInfo.xcprivacy
+     Apple's automated scanner rejects before human review. ITMS-91053.
+     Fix: add PrivacyInfo.xcprivacy to the ReelMind target in Xcode.
+
+  2. NO AI CONSENT MODAL
+     App sends audio and text data to Groq and Google Gemini with no user
+     disclosure. Hard rejection under Guideline 5.1.2.
+     Fix: Add a consent screen shown before the first reel is processed.
+
+  3. NO PRIVACY POLICY
+     No Privacy Policy URL exists anywhere. Required for all apps.
+     Fix: Write and host a privacy policy at a public HTTPS URL. Link it in
+     App Store Connect metadata AND add a link in the Settings screen.
+
+  4. NO SUPPORT URL
+     App Store Connect requires a real support URL. FeedbackFormView is
+     in-app feedback, not a public support page.
+     Fix: Create a landing page (even a simple one) with contact information.
+
+  5. XCODE 26 + iOS 26 SDK NOT USED
+     Auto-rejected post April 28, 2026 if built with older toolchain.
+     Fix: Update build pipeline.
+
+  6. INACCURATE PRIVACY NUTRITION LABELS (when you fill them in)
+     Firebase Analytics (GoogleAppMeasurement) collects usage data. If you
+     declare "no data collected" or leave it blank, Apple will flag it.
+     Fix: Declare Firebase Analytics data collection honestly.
+
+MEDIUM PROBABILITY REJECTIONS (should fix):
+
+  7. CUSTOM APPLE SIGN-IN BUTTON STYLING
+     AppleSignInButton in SocialAuthViews.swift uses a custom SwiftUI
+     implementation instead of the official SignInWithAppleButton.
+     Apple's guidelines require using their official button assets.
+     Fix: Replace with SwiftUI's SignInWithAppleButton.
+
+  8. "FORGOT PASSWORD" BUTTON DOES NOTHING
+     LoginView.swift line 62: Button("Forgot password?") { }
+     The action is completely empty — tapping it does nothing. If a reviewer
+     taps it expecting a password reset flow, it will look broken.
+     Fix: Implement Supabase resetPasswordForEmail, or remove the button.
+
+  9. DEMO ACCOUNT NOT SET UP
+     No demo account exists yet for App Review. If the reviewer can't log in,
+     the core features are inaccessible → Guideline 4.2 rejection.
+     Fix: Create a permanent demo account with pre-processed reels before
+     submitting reviewer notes.
+
+LOW PROBABILITY REJECTIONS (worth noting):
+
+  10. TempReels/ FOLDER NAME
+      The folder frontend/TempReels/ and associated files (ReelsTheme.swift,
+      ReelsHomeView.swift, ReelsListView.swift, Reel.swift, EmptyReelsView.swift,
+      ReelsService.swift) are named "Temp." If any placeholder content surfaces
+      in the reviewer's experience, it will be flagged. Verify this content
+      is real and production-ready, or rename the folder.
+
+  11. SHARE EXTENSION SHOWS "Saved!" REGARDLESS OF NETWORK RESPONSE
+      Per CLAUDE.md: "the extension still animates 'Saved!' because the
+      animation timeline runs in parallel and does not wait for the network
+      response." If the user is not logged in or the backend is down, they
+      see a success message for a failed operation. This is dishonest UX
+      and may be flagged in review.
+
+  12. BACKEND URL HARDCODED IN SHARE EXTENSION
+      K.backendBaseURL is hardcoded. Before submission, confirm it points to
+      the production Render URL, not a development tunnel. Reviewers will
+      test on a real device that cannot reach localhost or ngrok.
+
+
+PART 8 — PRE-SUBMISSION CHECKLIST (CURRENT STATUS)
+================================================================================
+
+BUILD
+  [ ] Built with Xcode 26 + iOS 26 SDK                    — NOT DONE
+  [ ] Tested on real physical devices (min 2 models)       — UNKNOWN
+  [ ] Zero crashes on all supported iOS versions           — UNKNOWN
+  [ ] All APIs use HTTPS                                   — YES (Supabase, Render, Groq, Gemini are all HTTPS)
+  [ ] No placeholder or "Coming Soon" content              — PARTIAL RISK (TempReels folder)
+  [ ] All third-party API keys are production keys         — UNKNOWN (check .env)
+
+PRIVACY & LEGAL
+  [ ] PrivacyInfo.xcprivacy for main app target            — MISSING
+  [ ] Every bundled SDK has its own manifest               — Pods: YES. SPM packages: UNVERIFIED
+  [ ] Privacy Nutrition Labels accurately filled in        — NOT DONE
+  [ ] AI consent modal present                             — NOT IMPLEMENTED
+  [ ] Privacy Policy at a public HTTPS URL                 — DOES NOT EXIST
+  [ ] Privacy Policy linked in-app (Settings screen)       — NOT LINKED
+  [ ] Account deletion available in-app                    — YES (SettingsView trash icon)
+  [ ] Age rating questionnaire completed (2025+ categories)— NOT DONE
+
+AUTHENTICATION
+  [ ] Sign in with Apple implemented                       — YES (logic correct, button styling at risk)
+  [ ] Demo account credentials for App Review              — NOT SET UP
+  [ ] Demo account has full access to all features         — NOT SET UP
+  [ ] Account creation and deletion both work              — Creation YES, Deletion code exists but backend endpoint needs verification
+
+APP STORE CONNECT METADATA
+  [ ] App name, subtitle, description, keywords            — NONE WRITTEN
+  [ ] Support URL leads to a real page                     — NO SUPPORT PAGE EXISTS
+  [ ] Privacy Policy URL is live and accessible            — DOES NOT EXIST
+  [ ] Screenshots show real current UI                     — NONE TAKEN
+  [ ] Required screenshot sizes uploaded                   — NONE
+  [ ] Age rating questionnaire completed                   — NOT DONE
+
+IN-APP PURCHASES
+  [N/A] Not applicable — no paid features in the app.
+
+REVIEW
+  [ ] App Review Information with test credentials         — NOT WRITTEN
+  [ ] TestFlight beta completed on real devices            — NOT DONE
+  [ ] All crash reports from TestFlight addressed          — N/A (TestFlight not run yet)
+
+
+SUMMARY — WHAT BLOCKS LAUNCH
+================================================================================
+
+Must-fix before any submission attempt (would auto-reject or near-certain reject):
+
+  1. Add PrivacyInfo.xcprivacy to the main ReelMind app target.
+  2. Build with Xcode 26 + iOS 26 SDK.
+  3. Implement an AI data disclosure/consent modal (Groq + Gemini disclosure).
+  4. Write and host a Privacy Policy at a public HTTPS URL.
+  5. Create a support URL (public page with contact info).
+  6. Replace the custom Apple Sign-In button with SignInWithAppleButton.
+  7. Fix or remove the non-functional "Forgot password?" button.
+  8. Fill in Privacy Nutrition Labels in App Store Connect (declare Firebase Analytics).
+  9. Complete the age rating questionnaire in App Store Connect.
+  10. Set up a demo account with pre-processed reels for the reviewer.
+  11. Write App Review Information (test credentials + step-by-step notes).
+  12. Run a TestFlight build and test on real devices before production submission.
+  13. Take screenshots for all required device sizes.
+
+Nice-to-fix before submission:
+  - Write compelling App Name, Subtitle, Description, Keywords.
+  - Verify backend DELETE /api/v1/account actually purges all user data.
+  - Rename TempReels/ folder if content is production-ready.
+  - Fix share extension showing "Saved!" before network confirmation.
+  - Verify Supabase Swift package has a PrivacyInfo manifest.
