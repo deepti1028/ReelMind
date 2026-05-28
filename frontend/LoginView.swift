@@ -8,6 +8,7 @@ struct LoginView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
     @State private var showSignup = false
+    @State private var showPassword = false
 
     var body: some View {
         ZStack {
@@ -50,8 +51,21 @@ struct LoginView: View {
                         }
 
                         LabeledAuthField(label: "PASSWORD") {
-                            SecureField("", text: $password)
+                            HStack {
+                                Group {
+                                    if showPassword {
+                                        TextField("", text: $password)
+                                    } else {
+                                        SecureField("", text: $password)
+                                    }
+                                }
                                 .textContentType(.password)
+                                Button(action: { showPassword.toggle() }) {
+                                    Image(systemName: showPassword ? "eye.slash" : "eye")
+                                        .foregroundColor(AppTheme.textMuted)
+                                        .font(.system(size: 15))
+                                }
+                            }
                         }
                     }
                     .padding(.bottom, 10)

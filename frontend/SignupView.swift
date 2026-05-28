@@ -11,6 +11,8 @@ struct SignupView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
     @State private var infoMessage: String?
+    @State private var showPassword = false
+    @State private var showConfirmPassword = false
 
     var body: some View {
         ZStack {
@@ -60,13 +62,39 @@ struct SignupView: View {
                         }
 
                         LabeledAuthField(label: "PASSWORD") {
-                            SecureField("", text: $password)
+                            HStack {
+                                Group {
+                                    if showPassword {
+                                        TextField("", text: $password)
+                                    } else {
+                                        SecureField("", text: $password)
+                                    }
+                                }
                                 .textContentType(.newPassword)
+                                Button(action: { showPassword.toggle() }) {
+                                    Image(systemName: showPassword ? "eye.slash" : "eye")
+                                        .foregroundColor(AppTheme.textMuted)
+                                        .font(.system(size: 15))
+                                }
+                            }
                         }
 
                         LabeledAuthField(label: "CONFIRM PASSWORD") {
-                            SecureField("", text: $confirmPassword)
+                            HStack {
+                                Group {
+                                    if showConfirmPassword {
+                                        TextField("", text: $confirmPassword)
+                                    } else {
+                                        SecureField("", text: $confirmPassword)
+                                    }
+                                }
                                 .textContentType(.newPassword)
+                                Button(action: { showConfirmPassword.toggle() }) {
+                                    Image(systemName: showConfirmPassword ? "eye.slash" : "eye")
+                                        .foregroundColor(AppTheme.textMuted)
+                                        .font(.system(size: 15))
+                                }
+                            }
                         }
                     }
                     .padding(.bottom, 18)
