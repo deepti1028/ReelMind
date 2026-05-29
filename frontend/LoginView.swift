@@ -9,6 +9,7 @@ struct LoginView: View {
     @State private var errorMessage: String?
     @State private var showSignup = false
     @State private var showPassword = false
+    @State private var showForgotPassword = false
 
     var body: some View {
         ZStack {
@@ -73,7 +74,7 @@ struct LoginView: View {
                     // Forgot password
                     HStack {
                         Spacer()
-                        Button("Forgot password?") { }
+                        Button("Forgot password?") { showForgotPassword = true }
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(AppTheme.accentDark)
                     }
@@ -142,6 +143,10 @@ struct LoginView: View {
         }
         .sheet(isPresented: $showSignup) {
             SignupView().environmentObject(auth)
+        }
+        .sheet(isPresented: $showForgotPassword) {
+            ForgotPasswordView(initialState: .enterEmail, prefillEmail: email)
+                .environmentObject(auth)
         }
     }
 
