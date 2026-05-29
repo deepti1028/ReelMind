@@ -1,4 +1,5 @@
 import Auth
+import SafariServices
 import SwiftUI
 import UIKit
 
@@ -13,6 +14,7 @@ struct SettingsView: View {
     @State private var isDeletingAccount = false
     @State private var deleteError: String? = nil
     @State private var showFeedbackForm = false
+    @State private var safariURL: URL? = nil
 
     var body: some View {
         ZStack {
@@ -73,6 +75,15 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showFeedbackForm) {
             FeedbackFormView()
+        }
+        .sheet(isPresented: Binding(
+            get: { safariURL != nil },
+            set: { if !$0 { safariURL = nil } }
+        )) {
+            if let url = safariURL {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
         }
         .task {
             await notifManager.refresh()
@@ -232,17 +243,31 @@ struct SettingsView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            Divider().background(AppTheme.border)
+            Button {
+                safariURL = URL(string: "https://deepti1028.github.io/appstore-hosting-pages/ReelMind/reelwind-support-page/")
+            } label: {
+                SettingsRow(icon: "questionmark.circle", iconBg: AppTheme.surfaceSecondary,
+                            label: "Support & FAQ") {
+                    EmptyView()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            Divider().background(AppTheme.border)
+            Button {
+                safariURL = URL(string: "https://deepti1028.github.io/appstore-hosting-pages/ReelMind/reelmind-privacy-page/")
+            } label: {
+                SettingsRow(icon: "lock.shield", iconBg: AppTheme.surfaceSecondary,
+                            label: "Privacy Policy") {
+                    EmptyView()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 
-    private var privacySection: some View {
-        SettingsSection(title: "Privacy") {
-            SettingsRow(icon: "lock.shield", iconBg: Color(r: 0xfa, g: 0xed, b: 0xcd),
-                        label: "Data & privacy") {
-                EmptyView()
-            }
-        }
-    }
 }
 
 // MARK: - Reusable sub-components
@@ -290,6 +315,7 @@ private struct SettingsRow<Trailing: View>: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 13)
+        .contentShape(Rectangle())
     }
 }
 
@@ -313,6 +339,12 @@ private struct SettingsRowLeft: View {
                 .foregroundColor(AppTheme.textPrimary)
         }
     }
+}
+
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+    func makeUIViewController(context: Context) -> SFSafariViewController { SFSafariViewController(url: url) }
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
 
 #Preview {
