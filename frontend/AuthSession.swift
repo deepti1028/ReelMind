@@ -41,6 +41,7 @@ private final class AppleSignInCoordinator: NSObject,
 final class AuthSession: ObservableObject {
     @Published var session: Session?
     @Published var isBootstrapping = true
+    @Published var isRecovering = false
 
     private var listenerTask: Task<Void, Never>?
     private var appleSignInCoordinator: AppleSignInCoordinator?
@@ -67,10 +68,13 @@ final class AuthSession: ObservableObject {
 
         // Listen for sign-in / sign-out / token-refresh events forever.
         listenerTask = Task { [weak self] in
-            for await (_, newSession) in SupabaseManager.shared.client.auth.authStateChanges {
+            for await (event, newSession) in SupabaseManager.shared.client.auth.authStateChanges {
                 await MainActor.run {
                     self?.session = newSession
                     self?.syncToken(newSession?.accessToken)
+                    if event == .passwordRecovery {
+                        self?.isRecovering = true
+                    }
                     if let userId = newSession?.user.id.uuidString {
                         self?.handleOnboardingTracking(for: userId)
                     }
@@ -140,6 +144,20 @@ final class AuthSession: ObservableObject {
             password: password,
             data: ["full_name": AnyJSON.string(displayName)]
         )
+    }
+
+    func resetPassword(email: String) async throws {
+        try await SupabaseManager.shared.client.auth.resetPasswordForEmail(
+            email,
+            redirectTo: URL(string: "com.reelmind.app://auth-callback")
+        )
+    }
+
+    func updatePassword(_ newPassword: String) async throws {
+        try await SupabaseManager.shared.client.auth.update(
+            user: UserAttributes(password: newPassword)
+        )
+        isRecovering = false
     }
 
     func signInWithGoogle() async throws {
