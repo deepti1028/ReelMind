@@ -128,7 +128,7 @@ struct SignupView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .shadow(color: AppTheme.accentDark.opacity(0.35), radius: 10, x: 0, y: 5)
                     }
-                    .disabled(isSubmitting || !canSubmit)
+                    .disabled(isSubmitting)
                     .padding(.bottom, 20)
 
                     SocialAuthDivider()
@@ -167,24 +167,19 @@ struct SignupView: View {
         }
     }
 
-    private var canSubmit: Bool {
-        !displayName.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !email.trimmingCharacters(in: .whitespaces).isEmpty &&
-        password.count >= 6 &&
-        password == confirmPassword
-    }
-
     private func submit() {
         errorMessage = nil
         infoMessage = nil
-        guard password == confirmPassword else {
-            errorMessage = "Passwords do not match"
-            return
-        }
+        let trimmedName = displayName.trimmingCharacters(in: .whitespaces)
+        let trimmedEmail = email.trimmingCharacters(in: .whitespaces)
+        guard !trimmedName.isEmpty else { errorMessage = "Please enter your display name."; return }
+        guard !trimmedEmail.isEmpty else { errorMessage = "Please enter your email address."; return }
+        guard password.count >= 6 else { errorMessage = "Password must be at least 6 characters."; return }
+        guard password == confirmPassword else { errorMessage = "Passwords do not match."; return }
         isSubmitting = true
         Task {
             do {
-                try await auth.signUp(email: email, password: password, displayName: displayName)
+                try await auth.signUp(email: trimmedEmail, password: password, displayName: trimmedName)
                 if auth.session == nil {
                     infoMessage = "Check your email to confirm your account, then log in."
                 } else {
