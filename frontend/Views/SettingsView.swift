@@ -229,6 +229,7 @@ struct SettingsView: View {
                             label: "Send feedback") {
                     EmptyView()
                 }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }

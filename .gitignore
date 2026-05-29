@@ -1,5 +1,6 @@
 .claude/
 .superpowers/
+.firecrawl/
 .DS_Store
 xcuserdata/
 *.xcuserstate
