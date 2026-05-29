@@ -245,6 +245,9 @@ final class AuthSession: ObservableObject {
         // admin.delete_user() is a direct DB operation — it does NOT push an
         // authStateChanges event to the iOS client. Sign out explicitly so the
         // local session is cleared and RootView navigates to LoginView.
-        try await SupabaseManager.shared.client.auth.signOut()
+        // signOut() clears local state before its network call, so we swallow
+        // any throw from the logout request — GoTrue returns 422 for a deleted
+        // user's session, which is not in the SDK's built-in ignore list.
+        try? await SupabaseManager.shared.client.auth.signOut()
     }
 }
