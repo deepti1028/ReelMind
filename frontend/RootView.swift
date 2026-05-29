@@ -6,6 +6,13 @@ struct RootView: View {
 
     @State private var categoriseTarget: CategoriseTarget? = nil
 
+    private var isRecoveringBinding: Binding<Bool> {
+        Binding(
+            get: { auth.isRecovering },
+            set: { auth.isRecovering = $0 }
+        )
+    }
+
     /// Identifiable payload for the `.categoriseReel` sheet binding.
     private struct CategoriseTarget: Identifiable {
         let id = UUID()
@@ -19,7 +26,7 @@ struct RootView: View {
                 ProgressView()
             } else if !hasCompletedOnboarding {
                 OnboardingFlow()
-            } else if auth.session != nil {
+            } else if auth.session != nil && !auth.isRecovering {
                 ContentView()
             } else {
                 LoginView()
@@ -35,6 +42,10 @@ struct RootView: View {
         }
         .fullScreenCover(item: $categoriseTarget) { target in
             CategoriseReelView(reelId: target.reelId, suggestions: target.suggestions)
+        }
+        .sheet(isPresented: isRecoveringBinding) {
+            ForgotPasswordView(initialState: .setNewPassword)
+                .environmentObject(auth)
         }
     }
 }
