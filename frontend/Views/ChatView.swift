@@ -284,46 +284,12 @@ struct ChatView: View {
 
     private func inlineReels(_ sources: [ReelSource]) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 ForEach(sources) { source in
-                    VStack(alignment: .leading, spacing: 0) {
-                        ThumbnailView(urlString: source.thumbnailUrl, width: 130, height: 80)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(source.creatorHandle.map { "@\($0)" } ?? "@unknown")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundColor(AppTheme.accent)
-                            if let caption = source.caption {
-                                Text(caption)
-                                    .font(.system(size: 10))
-                                    .foregroundColor(AppTheme.textMuted)
-                                    .lineLimit(2)
-                                    .padding(.bottom, 6)
-                            }
-                            Text("Watch reel")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundColor(AppTheme.textSecondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 5)
-                                .background(AppTheme.surfaceSecondary)
-                                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .stroke(AppTheme.sage, lineWidth: 1)
-                                )
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.top, 7)
-                        .padding(.bottom, 8)
-                    }
-                    .frame(width: 130)
-                    .background(AppTheme.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(AppTheme.border, lineWidth: 1)
-                    )
+                    ChatReelCard(source: source)
                 }
             }
+            .padding(.vertical, 2)
         }
     }
 
@@ -394,6 +360,130 @@ private struct TypingDotsView: View {
         Timer.scheduledTimer(withTimeInterval: 0.45, repeats: true) { _ in
             phase = (phase + 1) % 3
         }
+    }
+}
+
+// MARK: - Chat Reel Card
+
+private struct ChatReelCard: View {
+    let source: ReelSource
+
+    private static let cardW: CGFloat = 90
+    private static let cardH: CGFloat = 130
+
+    private var reelURL: URL? { source.url.flatMap { URL(string: $0) } }
+
+    var body: some View {
+        Button {
+            guard let url = reelURL else { return }
+            UIApplication.shared.open(url)
+        } label: {
+            ZStack(alignment: .bottom) {
+                thumbnailLayer
+                gradientScrim
+                creatorRow
+                instaBadge
+            }
+            .frame(width: Self.cardW, height: Self.cardH)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AppTheme.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(ReelCardPressStyle())
+    }
+
+    private var thumbnailLayer: some View {
+        Group {
+            if let str = source.thumbnailUrl, let url = URL(string: str) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let img):
+                        img.resizable().scaledToFill()
+                    case .empty:
+                        cardPlaceholder
+                            .overlay(ProgressView().scaleEffect(0.55).tint(AppTheme.textFaint))
+                    default:
+                        cardPlaceholder
+                    }
+                }
+            } else {
+                cardPlaceholder
+            }
+        }
+        .frame(width: Self.cardW, height: Self.cardH)
+        .clipped()
+    }
+
+    private var cardPlaceholder: some View {
+        ZStack {
+            AppTheme.surfaceSecondary
+            Circle()
+                .fill(AppTheme.accent.opacity(0.07))
+                .frame(width: 80, height: 80)
+                .offset(x: 18, y: -20)
+            Circle()
+                .fill(AppTheme.sage.opacity(0.20))
+                .frame(width: 44, height: 44)
+                .offset(x: -20, y: 24)
+            Image(systemName: "movieclapper")
+                .font(.system(size: 22, weight: .light))
+                .foregroundColor(AppTheme.textFaint.opacity(0.65))
+        }
+    }
+
+    private var gradientScrim: some View {
+        LinearGradient(
+            colors: [.clear, Color(red: 0.17, green: 0.12, blue: 0.05).opacity(0.82)],
+            startPoint: .init(x: 0.5, y: 0.4),
+            endPoint: .bottom
+        )
+        .frame(width: Self.cardW, height: Self.cardH)
+        .allowsHitTesting(false)
+    }
+
+    private var creatorRow: some View {
+        HStack(spacing: 2) {
+            Text("@")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(AppTheme.accent)
+            Text(source.creatorHandle ?? "unknown")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 8)
+        .padding(.bottom, 9)
+        .frame(maxWidth: .infinity, alignment: .bottomLeading)
+        .allowsHitTesting(false)
+    }
+
+    private var instaBadge: some View {
+        VStack {
+            HStack {
+                Spacer()
+                Image("instagram-logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 12, height: 12)
+                    .padding(5)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+            }
+            Spacer()
+        }
+        .padding(7)
+        .allowsHitTesting(false)
+    }
+}
+
+private struct ReelCardPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
+            .animation(.spring(response: 0.22, dampingFraction: 0.65), value: configuration.isPressed)
     }
 }
 

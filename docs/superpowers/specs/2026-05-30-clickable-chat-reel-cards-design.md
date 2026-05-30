@@ -161,6 +161,54 @@ private struct ChatReelCard: View {
 
 ---
 
+---
+
+## Card Visual Design — `ChatReelCard`
+
+**Aesthetic direction:** "Story Frame" — portrait-oriented card that mirrors the shape of an Instagram Reel. Full-bleed thumbnail, warm gradient scrim, creator name overlaid at the bottom. Feels native to the reel format.
+
+### Layout
+
+```
+┌──────────────────┐  ← 90 × 130 pt, radius 14
+│                  │
+│   [thumbnail]    │  full-bleed, scaledToFill
+│                  │
+│ ┌──────────────┐ │  ← instagram badge, top-right
+│ │  ig icon     │ │     ultraThinMaterial circle, 12 pt icon
+│ └──────────────┘ │
+│                  │
+│                  │
+│ gradient scrim   │  ← warm dark gradient, top 40% → bottom
+│                  │
+│ @creator         │  ← "@" in AppTheme.accent, name in white, size 10 semibold
+└──────────────────┘
+```
+
+### Specs
+
+| Property | Value |
+|---|---|
+| Size | 90 × 130 pt (portrait) |
+| Corner radius | 14 |
+| Thumbnail | `AsyncImage`, `scaledToFill`, clipped |
+| Gradient scrim | `AppTheme.textPrimary`-based warm dark → clear, starts at 40% |
+| Creator label | `@` in `AppTheme.accent`, handle in `.white`, size 10 semibold, 8pt leading padding, 9pt bottom |
+| Instagram badge | `Image("instagram-logo")` 12 pt, 5pt padding, `ultraThinMaterial` circle, 7pt from top-right corner |
+| Press animation | Spring scale to 0.94, response 0.22s, damping 0.65 via custom `ButtonStyle` |
+| Placeholder | `AppTheme.surfaceSecondary` + layered circles + `movieclapper` icon |
+| Border | `AppTheme.border`, 1pt |
+
+### Tap action
+
+`UIApplication.shared.open(url)` — guard against nil URL; no `openFailed` state needed since the card has no error indicator (compact size makes it impractical).
+
+### Implementation location
+
+`ChatReelCard` and `ReelCardPressStyle` are private structs at the bottom of `ChatView.swift`. No new file needed.
+
+---
+
 ## What Does NOT Change
 
 - The "Watch reel" label text and styling — unchanged.
