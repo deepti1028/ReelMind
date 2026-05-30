@@ -59,22 +59,28 @@ final class AuthSession: ObservableObject {
         // Try to restore an existing session (Supabase SDK persists tokens
         // in its own keychain-backed storage between launches).
         let restored = try? await SupabaseManager.shared.client.auth.session
+        print("[AuthSession] bootstrap: restored session present = \(restored != nil)")
         self.session = restored
         if let userId = restored?.user.id.uuidString {
             restoreOnboardingFlagIfNeeded(for: userId)
         }
         syncToken(restored?.accessToken)
         self.isBootstrapping = false
+        print("[AuthSession] bootstrap complete. isBootstrapping=false, session=\(self.session != nil)")
 
         // Listen for sign-in / sign-out / token-refresh events forever.
         listenerTask = Task { [weak self] in
             for await (event, newSession) in SupabaseManager.shared.client.auth.authStateChanges {
+                print("[AuthSession] authStateChanges event: \(event)")
+                print("[AuthSession] session present: \(newSession != nil)")
                 await MainActor.run {
                     self?.session = newSession
                     self?.syncToken(newSession?.accessToken)
                     if event == .passwordRecovery {
+                        print("[AuthSession] passwordRecovery detected — setting isRecovering = true")
                         self?.isRecovering = true
                     }
+                    print("[AuthSession] isRecovering after event: \(self?.isRecovering ?? false)")
                     if let userId = newSession?.user.id.uuidString {
                         self?.handleOnboardingTracking(for: userId)
                     }
@@ -149,7 +155,7 @@ final class AuthSession: ObservableObject {
     func resetPassword(email: String) async throws {
         try await SupabaseManager.shared.client.auth.resetPasswordForEmail(
             email,
-            redirectTo: URL(string: "com.reelmind.app://auth-callback")
+            redirectTo: URL(string: "com.reelmind.app://reset-password")
         )
     }
 

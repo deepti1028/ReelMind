@@ -159,7 +159,21 @@ struct ReelMindApp: App {
             RootView()
                 .environmentObject(auth)
                 .onOpenURL { url in
+                    print("[DeepLink] onOpenURL fired")
+                    print("[DeepLink] full URL: \(url.absoluteString)")
+                    print("[DeepLink] scheme: \(url.scheme ?? "nil")")
+                    print("[DeepLink] host: \(url.host ?? "nil")")
+                    print("[DeepLink] path: \(url.path)")
+                    print("[DeepLink] query: \(url.query ?? "nil")")
+                    print("[DeepLink] fragment: \(url.fragment ?? "nil")")
+                    // SDK PKCE path only emits .signedIn, never .passwordRecovery.
+                    // Detect the recovery callback by its unique host and set the
+                    // flag before handle(url) signs the user in.
+                    if url.host == "reset-password" {
+                        auth.isRecovering = true
+                    }
                     SupabaseManager.shared.client.auth.handle(url)
+                    print("[DeepLink] handle(url) called")
                 }
         }
     }
