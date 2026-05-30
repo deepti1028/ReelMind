@@ -54,14 +54,8 @@ def process_reel(self, reel_id: str, auto_categorise: bool = True) -> dict:
 
     try:
         # ------------------------------------------------------------------
-        # Mark processing + fetch URL
+        # Fetch URL + guard, then mark processing
         # ------------------------------------------------------------------
-        log.info("marking status=processing")
-        supabase.table("reels").update({
-            "status": "processing",
-            "retry_count": self.request.retries,
-        }).eq("id", reel_id).execute()
-
         log.info("fetching reel row from DB")
         row = (
             supabase.table("reels")
@@ -75,10 +69,17 @@ def process_reel(self, reel_id: str, auto_categorise: bool = True) -> dict:
         log.info("reel url loaded | url=%s | current_status=%s", url, reel_data.get("status"))
 
         # Guard: if the reel is already in a terminal success state (e.g. from a
-        # duplicate task dispatch), skip processing entirely.
+        # duplicate task dispatch), skip processing entirely. Must run before the
+        # status=processing update so we can still read the pre-existing status.
         if reel_data.get("status") == "ready":
             log.info("reel already ready — skipping duplicate task dispatch")
             return {"reel_id": reel_id, "status": "already_ready"}
+
+        log.info("marking status=processing")
+        supabase.table("reels").update({
+            "status": "processing",
+            "retry_count": self.request.retries,
+        }).eq("id", reel_id).execute()
 
         # FCM token — fetched once for Step 22 pushes. Non-critical: a fetch
         # failure or missing profile row should not abort the pipeline.
