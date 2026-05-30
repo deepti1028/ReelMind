@@ -10,6 +10,8 @@ enum AppConfig {
     static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwZHFuZmhmcmhuemlmZ2Ztc2JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Nzk1NzUsImV4cCI6MjA5MzE1NTU3NX0.I4g18tsh3-RN7XjsECWsLBZlFDgCnJBnFMEoLZ_Ii6o"
 
     static let backendBaseURL = URL(string: "https://reelmind-8paz.onrender.com")!
+    // static let backendBaseURL = URL(string: "https://beaulah-insuperable-accentually.ngrok-free.dev")!
+    
 
     // App Group identifier — must match what's in BOTH:
     //   1. Main app target's Signing & Capabilities → App Groups
