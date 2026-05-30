@@ -119,6 +119,33 @@ def test_send_message_returns_content_and_sources(mock_rag, mock_get_supabase):
 
 
 @patch("api.v1.chat.get_supabase")
+@patch("api.v1.chat.rag")
+def test_send_message_sources_include_url(mock_rag, mock_get_supabase):
+    mock_get_supabase.return_value = _make_chat_db()
+    mock_rag.answer.return_value = {
+        "content": "Use SPF 50",
+        "sources": [{
+            "reel_id": "r1",
+            "creator_handle": "skincareguru",
+            "thumbnail_url": "https://cdn.example.com/thumb.jpg",
+            "caption": "Best sunscreen",
+            "url": "https://www.instagram.com/reel/abc123/",
+        }],
+    }
+
+    client = _build_client()
+    resp = client.post(
+        f"/api/v1/chat/sessions/{SESSION_ID}/messages",
+        json={"content": "sunscreen for oily skin"},
+    )
+
+    assert resp.status_code == 200
+    sources = resp.json()["sources"]
+    assert len(sources) == 1
+    assert sources[0]["url"] == "https://www.instagram.com/reel/abc123/"
+
+
+@patch("api.v1.chat.get_supabase")
 def test_send_message_to_other_users_session_returns_403(mock_get_supabase):
     mock_get_supabase.return_value = _make_chat_db(session_user_id="other-user")
 

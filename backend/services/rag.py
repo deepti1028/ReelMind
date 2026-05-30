@@ -156,6 +156,7 @@ def answer(
                 "creator_handle": r.get("creator_handle"),
                 "thumbnail_url": r.get("thumbnail_url"),
                 "caption": r.get("caption"),
+                "url": r.get("url"),
             }
             for r in chunks
         ],

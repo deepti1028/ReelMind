@@ -28,6 +28,7 @@ class ReelSource(BaseModel):
     creator_handle: Optional[str] = None
     thumbnail_url: Optional[str] = None
     caption: Optional[str] = None
+    url: Optional[str] = None
 
 
 class MessageResponse(BaseModel):
