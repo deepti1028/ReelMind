@@ -400,18 +400,10 @@ def _extract_media_item(html: str, log: logging.LoggerAdapter) -> dict[str, Any]
     log.info("found %d JSON script blocks", len(blocks))
 
     candidates = 0
-    xdt_api_seen = False  # True once any block contains the full xdt_api key string
     for raw in blocks:
         if "video_versions" not in raw and "shortcode" not in raw:
             continue
         candidates += 1
-        # Track whether the actual media-payload key appears anywhere in this block.
-        # Public reels always have a small (~1–2KB) block whose raw text contains
-        # "xdt_api__v1__media__shortcode" (the GraphQL operation key). Private reel
-        # pages only contain "shortcode" inside SEO-config blocks and never have
-        # the xdt_api key at all.
-        if "xdt_api__v1__media__shortcode" in raw:
-            xdt_api_seen = True
         try:
             blob = json.loads(raw)
         except json.JSONDecodeError:
@@ -434,50 +426,32 @@ def _extract_media_item(html: str, log: logging.LoggerAdapter) -> dict[str, Any]
                         repr(items_val)[:300],
                     )
 
-    if _html_signals_private_content(html):
+    # Instagram no longer embeds the GraphQL media payload in the page HTML.
+    # Use og:image presence to distinguish private/deleted from public reels:
+    # public reel pages always have og:image (for link previews), private/deleted
+    # pages serve a bare shell with no og: tags.
+    if not _html_is_public_reel(html):
         log.error(
-            "JSON locate failed | candidates_scanned=%d | "
-            "private_marker=True | reel is from a private account",
-            candidates,
-        )
-        raise DownloadError(
-            "Instagram returned a private-account page — no media payload present",
-            is_retryable=False,
-            is_private_content=True,
-        )
-
-    # Instagram serves private-account reel pages as HTTP 200 with a full page
-    # shell but the xdt_api GraphQL response block is simply absent. Public reel
-    # pages always include at least one block that contains the string
-    # "xdt_api__v1__media__shortcode" (the operation key, even if only in an
-    # error path). Private pages never include it. When it's absent on a
-    # substantial page (many blocks = full shell served, not a degraded stub),
-    # this is the private/deleted pattern, not a transient structure change.
-    # A genuine structure change would still emit the xdt_api key string in the
-    # GraphQL error paths even if the data shape changed.
-    if not xdt_api_seen and len(blocks) > 5:
-        log.error(
-            "JSON locate failed | xdt_api_seen=False | blocks=%d | candidates=%d | "
-            "no xdt_api key in any block — private account or reel no longer available",
+            "JSON locate failed | og_image=absent | blocks=%d | candidates=%d | "
+            "private, deleted, or login-walled content — no og:image in page",
             len(blocks),
             candidates,
         )
         raise DownloadError(
             "Instagram served a page with no reel data — "
-            "reel is likely from a private account or is no longer available",
+            "reel is likely from a private account, deleted, or requires login",
             is_retryable=False,
             is_private_content=True,
         )
 
     log.error(
-        "JSON locate failed | candidates_scanned=%d | xdt_api_seen=%s | "
-        "likely_cause=IG changed item structure or returned a degraded response",
+        "JSON locate failed | og_image=present (public reel) | blocks=%d | candidates=%d | "
+        "Instagram changed their page structure — media payload no longer embedded in HTML",
+        len(blocks),
         candidates,
-        xdt_api_seen,
     )
     raise DownloadError(
-        "could not locate reel media payload in HTML — Instagram likely changed "
-        "their page structure or returned a degraded response",
+        "could not locate reel media payload in HTML — Instagram changed their page structure",
         is_retryable=True,
     )
 
@@ -508,25 +482,18 @@ def _walk_dicts(node: Any) -> Iterator[dict[str, Any]]:
             yield from _walk_dicts(v)
 
 
-def _html_signals_private_content(html: str) -> bool:
-    """Return True if any <script type=application/json> block contains a dict
-    where ``is_private`` is True.
+def _html_is_public_reel(html: str) -> bool:
+    """Return True if the page has og:image, indicating a publicly viewable reel.
 
-    Instagram serves private-account reel pages as HTTP 200 with user metadata
-    JSON (including is_private=True) but no media payload. Scanning for this
-    flag lets us distinguish a definitive private-content rejection from a
-    transient parse failure.
+    Instagram populates og:image (and og:title, og:description) for public reels —
+    these tags power iMessage / Twitter / Slack link previews.  Private reels,
+    deleted reels, and login-wall pages omit all og: meta tags entirely, leaving
+    only a bare <title>Instagram</title>.
+
+    This is the reliable public/private signal now that Instagram no longer embeds
+    the GraphQL media payload in the page HTML.
     """
-    selector = Selector(html)
-    for raw in selector.css('script[type="application/json"]::text').getall():
-        try:
-            blob = json.loads(raw)
-        except json.JSONDecodeError:
-            continue
-        for node in _walk_dicts(blob):
-            if node.get("is_private") is True:
-                return True
-    return False
+    return bool(Selector(html).css('meta[property="og:image"]').get())
 
 
 # ---------------------------------------------------------------------------
