@@ -52,7 +52,7 @@ def upload_thumbnail(
             supabase.storage.from_(_BUCKET).upload(
                 path=storage_path,
                 file=file_bytes,
-                file_options={"content-type": "image/jpeg", "upsert": "true"},
+                file_options={"content-type": "image/jpeg", "upsert": True},
             )
         except Exception as exc:
             # attempt is 1-indexed (range starts at 1), so backoff gives 2s, 4s, 8s
