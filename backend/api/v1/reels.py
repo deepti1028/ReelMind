@@ -1,9 +1,12 @@
 """Reels endpoints — capture and processing pipeline entry."""
 
+import logging
 from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+
+logger = logging.getLogger(__name__)
 
 from api.deps import get_current_user_id
 from schemas.reel import CategoryChoiceRequest, ReelCreate, ReelResponse
@@ -99,7 +102,18 @@ async def create_reel(
     if result.data:
         # Fresh insert — dispatch Celery task, return 202 (default).
         reel = result.data[0]
-        process_reel.delay(reel["id"], payload.auto_categorise)
+        try:
+            process_reel.delay(reel["id"], payload.auto_categorise)
+        except Exception as exc:
+            # Broker (Redis) is unreachable. Delete the row so the user can
+            # retry — leaving it at status="queued" would strand it forever,
+            # and leaving it at all would block retries via the upsert dedup.
+            logger.error("broker unavailable | reel_id=%s | %s", reel["id"], exc)
+            supabase.table("reels").delete().eq("id", reel["id"]).execute()
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Task queue unavailable — please try again shortly.",
+            )
     else:
         # Duplicate URL — fetch the existing row in full, return 200.
         existing = (
