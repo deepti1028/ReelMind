@@ -37,6 +37,7 @@ def _make_download_result(audio_path="/tmp/audio.m4a", temp_dir="/tmp/reel_test"
     result = MagicMock()
     result.audio_path = audio_path
     result.temp_dir = temp_dir
+    result.thumbnail_path = None  # no local thumbnail; skips Step 15b upload
     result.metadata.creator_handle = "testuser"
     result.metadata.hashtags = ["tag1"]
     result.metadata.caption = "Test caption #tag1"

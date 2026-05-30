@@ -40,6 +40,7 @@ def _make_download_result():
     r = MagicMock()
     r.audio_path = "/tmp/audio.m4a"
     r.temp_dir = "/tmp/reel_test"
+    r.thumbnail_path = None  # no local thumbnail; skips Step 15b upload
     r.metadata.creator_handle = "testuser"
     r.metadata.hashtags = ["cooking"]
     r.metadata.caption = "My reel caption"

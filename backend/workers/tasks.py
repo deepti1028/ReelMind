@@ -32,6 +32,7 @@ from services.embedder import EmbeddingError, build_chunk_text, embed_document
 from services.signal_builder import NoSignalError, build_classification_signal
 from services.classifier import ClassificationError, ClassificationResult, classify_reel
 from services.notifier import send_push_notification
+from services.storage import upload_thumbnail
 from services.transcriber import TranscriptionError, TranscriptionResult, transcribe_audio
 from supabase_client import get_supabase
 from workers.celery_app import celery_app
@@ -138,11 +139,37 @@ def process_reel(self, reel_id: str, auto_categorise: bool = True) -> dict:
             len(meta.caption or ""),
             bool(meta.thumbnail_url),
         )
+
+        # ------------------------------------------------------------------
+        # Step 15b — upload thumbnail to permanent Supabase Storage
+        # ------------------------------------------------------------------
+        permanent_thumb_url = meta.thumbnail_url  # Instagram CDN URL as default fallback
+        if download_result.thumbnail_path:
+            log.info(
+                "step 15b | uploading thumbnail to storage | reel_id=%s", reel_id
+            )
+            permanent_thumb_url = upload_thumbnail(
+                reel_id=reel_id,
+                user_id=reel_data["user_id"],
+                thumbnail_path=download_result.thumbnail_path,
+                fallback_url=meta.thumbnail_url,
+            )
+            log.info(
+                "step 15b | thumbnail url resolved | reel_id=%s | url=%s",
+                reel_id,
+                permanent_thumb_url,
+            )
+        else:
+            log.warning(
+                "step 15b | no thumbnail_path, skipping storage upload | reel_id=%s",
+                reel_id,
+            )
+
         supabase.table("reels").update({
             "caption": meta.caption,
             "hashtags": meta.hashtags,
             "creator_handle": meta.creator_handle or None,
-            "thumbnail_url": meta.thumbnail_url,
+            "thumbnail_url": permanent_thumb_url,
         }).eq("id", reel_id).execute()
         log.info("step 15 | metadata saved to DB")
 
