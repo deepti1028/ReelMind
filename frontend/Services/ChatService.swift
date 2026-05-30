@@ -8,12 +8,14 @@ struct ReelSource: Decodable, Identifiable {
     let creatorHandle: String?
     let thumbnailUrl: String?
     let caption: String?
+    let url: String?
 
     enum CodingKeys: String, CodingKey {
         case reelId = "reel_id"
         case creatorHandle = "creator_handle"
         case thumbnailUrl = "thumbnail_url"
         case caption
+        case url
     }
 }
 
