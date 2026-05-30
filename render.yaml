@@ -32,7 +32,7 @@ services:
     region: oregon
     plan: free
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && celery -A workers.celery_app worker --loglevel=info --concurrency=1
+    startCommand: cd backend && celery -A workers.celery_app worker --loglevel=info --concurrency=1 --without-gossip --without-mingle
     envVars:
       - key: ENVIRONMENT
         value: production

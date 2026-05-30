@@ -282,18 +282,18 @@ def process_reel(self, reel_id: str, auto_categorise: bool = True) -> dict:
         except NoSignalError:
             log.warning(
                 "step 17 | no usable signal (transcript=None, caption=None, "
-                "hashtags=[]) — marking uncategorised"
+                "hashtags=[]) — marking ready"
             )
             supabase.table("reels").update(
-                {"status": "uncategorised"}
+                {"status": "ready"}
             ).eq("id", reel_id).execute()
             send_push_notification(
                 fcm_token=_fcm_token,
                 title="Reel saved",
-                body="We couldn't categorise it — no audio or caption found",
-                data={"reel_id": reel_id, "status": "uncategorised"},
+                body="Added to your inbox",
+                data={"reel_id": reel_id, "status": "ready"},
             )
-            return {"reel_id": reel_id, "status": "uncategorised"}
+            return {"reel_id": reel_id, "status": "ready"}
 
         # ------------------------------------------------------------------
         # Step 20 — embed reel content + store chunk
@@ -394,39 +394,24 @@ def process_reel(self, reel_id: str, auto_categorise: bool = True) -> dict:
                 "category": classification.category,
             }
         else:
-            suggestions = [classification.category] + classification.alternatives[:2]
-            if resolved_category_id is None and classification.confidence >= _CONFIDENCE_THRESHOLD:
-                log.warning(
-                    "step 19 | category=%s not in DB map — routing to pending_category",
-                    classification.category,
-                )
-            else:
-                log.info(
-                    "step 19 | low confidence=%.2f — pending_category | suggestions=%s",
-                    classification.confidence,
-                    suggestions,
-                )
+            log.info(
+                "step 19 | low confidence=%.2f — marking ready without category",
+                classification.confidence,
+            )
             supabase.table("reels").update({
-                "status": "pending_category",
-                "suggested_categories": suggestions,
                 "confidence": classification.confidence,
+                "status": "ready",
             }).eq("id", reel_id).execute()
-            import json as _json
             send_push_notification(
                 fcm_token=_fcm_token,
-                title="Help us categorise this reel",
-                body="Your reel is saved — which fits best? Ignoring this saves it to Uncategorised.",
-                data={
-                    "reel_id": reel_id,
-                    "suggestions": _json.dumps(suggestions),
-                },
-                category_id="CATEGORISE",
+                title="Reel saved",
+                body="Added to your inbox",
+                data={"reel_id": reel_id, "status": "ready"},
             )
-            log.info("step 19 | status=pending_category")
+            log.info("step 19 | status=ready")
             return {
                 "reel_id": reel_id,
-                "status": "pending_category",
-                "suggestions": suggestions,
+                "status": "ready",
             }
 
     finally:

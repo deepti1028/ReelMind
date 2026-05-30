@@ -15,8 +15,7 @@ config = get_config()
 celery_app = Celery(
     "reelmind",
     broker=config.REDIS_URL,
-    backend=config.REDIS_URL,
-    include=["workers.tasks", "workers.beat_tasks"],
+    include=["workers.tasks"],
 )
 
 celery_app.conf.update(
@@ -25,11 +24,17 @@ celery_app.conf.update(
     accept_content=["json"],
     timezone="UTC",
     enable_utc=True,
-    task_track_started=True,
+    task_track_started=False,
+    task_ignore_result=True,
     task_time_limit=600,
     task_soft_time_limit=540,
     worker_prefetch_multiplier=1,
-    task_acks_late=True,
+    task_acks_late=False,
+    worker_heartbeat=0,
+    worker_send_task_events=False,
+    task_send_sent_event=False,
+    broker_transport_options={"socket_timeout": 300, "socket_connect_timeout": 10},
+    broker_pool_limit=1,
 )
 
 # Upstash requires TLS (rediss://). Celery needs ssl_cert_reqs explicitly set.
@@ -37,12 +42,5 @@ if config.REDIS_URL and config.REDIS_URL.startswith("rediss://"):
     _ssl_opts = {"ssl_cert_reqs": ssl.CERT_NONE}
     celery_app.conf.update(
         broker_use_ssl=_ssl_opts,
-        redis_backend_use_ssl=_ssl_opts,
     )
 
-celery_app.conf.beat_schedule = {
-    "expire-pending-categories": {
-        "task": "workers.beat_tasks.expire_pending_categories",
-        "schedule": 30 * 60,  # every 30 minutes
-    },
-}

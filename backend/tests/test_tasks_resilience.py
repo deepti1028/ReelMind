@@ -276,8 +276,8 @@ def test_high_confidence_marks_ready():
     assert "Fitness" in push_kwargs["body"]
 
 
-def test_low_confidence_marks_pending_category():
-    """classify_reel returns <0.70 confidence → reel status set to pending_category."""
+def test_low_confidence_marks_ready():
+    """classify_reel returns <0.70 confidence → reel status set to ready (saved to inbox)."""
     from workers.tasks import process_reel
 
     task_self = _make_task_self()
@@ -300,21 +300,18 @@ def test_low_confidence_marks_pending_category():
                                 with patch("os.path.exists", return_value=False):
                                     result = process_reel.run.__func__(task_self, "reel-123")
 
-    assert result["status"] == "pending_category"
-    assert "suggestions" in result
-    assert "Fitness" in result["suggestions"]
+    assert result["status"] == "ready"
 
     reels_mock = mock_db.table("reels")
     update_payloads = [call.args[0] for call in reels_mock.update.call_args_list]
     final_update = update_payloads[-1]
-    assert final_update["status"] == "pending_category"
-    assert final_update["suggested_categories"] == ["Fitness", "Nutrition"]
+    assert final_update["status"] == "ready"
     assert final_update["confidence"] == 0.55
 
     _push.assert_called_once()
     push_kwargs = _push.call_args.kwargs
-    assert push_kwargs["category_id"] == "CATEGORISE"
-    assert push_kwargs["title"] == "Help us categorise this reel"
+    assert push_kwargs["title"] == "Reel saved"
+    assert push_kwargs["data"]["status"] == "ready"
 
 
 def test_classification_retryable_error_triggers_retry():
