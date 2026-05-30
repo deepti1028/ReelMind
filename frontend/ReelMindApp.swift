@@ -5,9 +5,10 @@
 //  Created by Deepti Jain on 01/05/26.
 //
 
-import SwiftUI
 import Firebase
 import FirebaseMessaging
+import Supabase
+import SwiftUI
 import UserNotifications
 
 extension Notification.Name {
@@ -157,6 +158,9 @@ struct ReelMindApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(auth)
+                .onOpenURL { url in
+                    SupabaseManager.shared.client.auth.handle(url)
+                }
         }
     }
 }

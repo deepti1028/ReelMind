@@ -16,6 +16,7 @@ struct ForgotPasswordView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
     @State private var didSendEmail = false
+    @State private var showSnackbar = false
 
     init(initialState: ForgotPasswordState, prefillEmail: String = "") {
         _state = State(initialValue: initialState)
@@ -38,6 +39,54 @@ struct ForgotPasswordView: View {
                 .padding(.bottom, 40)
             }
         }
+        .overlay(alignment: .bottom) {
+            if showSnackbar {
+                emailSentSnackbar
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 44)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                        removal: .move(edge: .bottom).combined(with: .opacity)
+                    ))
+            }
+        }
+        .animation(.spring(response: 0.48, dampingFraction: 0.72), value: showSnackbar)
+    }
+
+    private var emailSentSnackbar: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(Color(r: 0x6D, g: 0xD8, b: 0x96).opacity(0.18))
+                    .frame(width: 42, height: 42)
+                Image(systemName: "envelope.open.fill")
+                    .foregroundColor(Color(r: 0x6D, g: 0xD8, b: 0x96))
+                    .font(.system(size: 17, weight: .medium))
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Email sent!")
+                    .font(.system(size: 15, weight: .semibold, design: .serif))
+                    .foregroundColor(Color(r: 0xF0, g: 0xE8, b: 0xD8))
+                Text("Check your inbox for the reset link")
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundColor(Color(r: 0xF0, g: 0xE8, b: 0xD8).opacity(0.70))
+            }
+            Spacer()
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(Color(r: 0x6D, g: 0xD8, b: 0x96))
+                .font(.system(size: 20))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(r: 0x1E, g: 0x4D, b: 0x32))
+                .shadow(color: Color(r: 0x1E, g: 0x4D, b: 0x32).opacity(0.55), radius: 22, x: 0, y: 10)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color(r: 0x4A, g: 0xC0, b: 0x7A).opacity(0.32), lineWidth: 1)
+        )
     }
 
     // MARK: - Enter Email
@@ -70,33 +119,23 @@ struct ForgotPasswordView: View {
                 .padding(.bottom, 10)
         }
 
-        if didSendEmail {
-            HStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                Text("Check your inbox — we sent a reset link to \(email)")
-                    .font(.system(size: 14))
-                    .foregroundColor(AppTheme.textPrimary)
-            }
-        } else {
-            Button(action: sendResetEmail) {
-                ZStack {
-                    Text("Send reset link")
-                        .font(.system(size: 17, weight: .semibold, design: .serif))
-                        .foregroundColor(Color(r: 0xfd, g: 0xf4, b: 0xe3))
-                        .opacity(isSubmitting ? 0 : 1)
-                    if isSubmitting {
-                        ProgressView().tint(Color(r: 0xfd, g: 0xf4, b: 0xe3))
-                    }
+        Button(action: sendResetEmail) {
+            ZStack {
+                Text(didSendEmail ? "Resend email" : "Send reset link")
+                    .font(.system(size: 17, weight: .semibold, design: .serif))
+                    .foregroundColor(Color(r: 0xfd, g: 0xf4, b: 0xe3))
+                    .opacity(isSubmitting ? 0 : 1)
+                if isSubmitting {
+                    ProgressView().tint(Color(r: 0xfd, g: 0xf4, b: 0xe3))
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(AppTheme.buttonGradient)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .shadow(color: AppTheme.accentDark.opacity(0.35), radius: 12, x: 0, y: 6)
             }
-            .disabled(isSubmitting || email.trimmingCharacters(in: .whitespaces).isEmpty)
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(AppTheme.buttonGradient)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: AppTheme.accentDark.opacity(0.35), radius: 12, x: 0, y: 6)
         }
+        .disabled(isSubmitting || email.trimmingCharacters(in: .whitespaces).isEmpty)
     }
 
     // MARK: - Set New Password
@@ -198,6 +237,12 @@ struct ForgotPasswordView: View {
             do {
                 try await auth.resetPassword(email: email.trimmingCharacters(in: .whitespaces))
                 didSendEmail = true
+                showSnackbar = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
+                    withAnimation(.spring(response: 0.48, dampingFraction: 0.72)) {
+                        showSnackbar = false
+                    }
+                }
             } catch {
                 errorMessage = error.localizedDescription
             }
