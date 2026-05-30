@@ -18,12 +18,6 @@ struct OnboardingSplashView: View {
                     .foregroundColor(OnboardingTheme.primary)
             }
 
-            //Text("PERSONAL MEMORY")
-                //.font(.system(size: 13, weight: .semibold))
-                //.tracking(2)
-                //.foregroundColor(OnboardingTheme.textMuted)
-                //.padding(.top, 32)
-
             Text("Your reels.\nFinally\nremembered.")
                 .font(OnboardingTheme.serifTitle)
                 .foregroundColor(OnboardingTheme.textPrimary)

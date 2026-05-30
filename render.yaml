@@ -1,38 +1,17 @@
+# NOTE: This file is for reference only. The service was created manually in the
+# Render dashboard and is not managed via Blueprint. Changes here do not affect
+# the live service — update settings directly at dashboard.render.com.
+
 services:
   - type: web
-    name: reelmind-api
+    name: ReelMind
     runtime: python
     region: oregon
     plan: free
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: GROQ_API_KEY
-        sync: false
-      - key: FCM_SERVER_KEY
-        sync: false
-      - key: REDIS_URL
-        sync: false
-      - key: TAVILY_API_KEY
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
-
-  - type: worker
-    name: reelmind-celery
-    runtime: python
-    region: oregon
-    plan: free
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && celery -A workers.celery_app worker --loglevel=info --concurrency=1 --without-gossip --without-mingle
+    startCommand: cd backend && (uvicorn main:app --host 0.0.0.0 --port $PORT &) && celery -A workers.celery_app worker --loglevel=info --concurrency=2 --without-gossip --without-mingle
+    branch: main
+    autoDeploy: true
     envVars:
       - key: ENVIRONMENT
         value: production
@@ -49,4 +28,6 @@ services:
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false
       - key: GEMINI_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
         sync: false
