@@ -14,7 +14,7 @@ from config import get_config
 # brpop_timeout has no Celery config knob — patch the Transport class directly.
 # Channel.__init__ reads self.connection.brpop_timeout (the Transport instance),
 # which falls back to this class attribute since Transport.__init__ never sets
-# an instance attribute when polling_interval is None (the default).
+# an instance attribute when polling_interval is None (the default) .
 _kombu_redis.Transport.brpop_timeout = 60
 
 config = get_config()
