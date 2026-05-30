@@ -400,10 +400,18 @@ def _extract_media_item(html: str, log: logging.LoggerAdapter) -> dict[str, Any]
     log.info("found %d JSON script blocks", len(blocks))
 
     candidates = 0
+    xdt_api_seen = False  # True once any block contains the full xdt_api key string
     for raw in blocks:
         if "video_versions" not in raw and "shortcode" not in raw:
             continue
         candidates += 1
+        # Track whether the actual media-payload key appears anywhere in this block.
+        # Public reels always have a small (~1–2KB) block whose raw text contains
+        # "xdt_api__v1__media__shortcode" (the GraphQL operation key). Private reel
+        # pages only contain "shortcode" inside SEO-config blocks and never have
+        # the xdt_api key at all.
+        if "xdt_api__v1__media__shortcode" in raw:
+            xdt_api_seen = True
         try:
             blob = json.loads(raw)
         except json.JSONDecodeError:
@@ -438,11 +446,34 @@ def _extract_media_item(html: str, log: logging.LoggerAdapter) -> dict[str, Any]
             is_private_content=True,
         )
 
+    # Instagram serves private-account reel pages as HTTP 200 with a full page
+    # shell but the xdt_api GraphQL response block is simply absent. Public reel
+    # pages always include at least one block that contains the string
+    # "xdt_api__v1__media__shortcode" (the operation key, even if only in an
+    # error path). Private pages never include it. When it's absent on a
+    # substantial page (many blocks = full shell served, not a degraded stub),
+    # this is the private/deleted pattern, not a transient structure change.
+    # A genuine structure change would still emit the xdt_api key string in the
+    # GraphQL error paths even if the data shape changed.
+    if not xdt_api_seen and len(blocks) > 5:
+        log.error(
+            "JSON locate failed | xdt_api_seen=False | blocks=%d | candidates=%d | "
+            "no xdt_api key in any block — private account or reel no longer available",
+            len(blocks),
+            candidates,
+        )
+        raise DownloadError(
+            "Instagram served a page with no reel data — "
+            "reel is likely from a private account or is no longer available",
+            is_retryable=False,
+            is_private_content=True,
+        )
+
     log.error(
-        "JSON locate failed | candidates_scanned=%d | likely_cause=IG served "
-        "degraded HTML (no JSON blob), changed their page structure, or "
-        "returned a logged-out shell",
+        "JSON locate failed | candidates_scanned=%d | xdt_api_seen=%s | "
+        "likely_cause=IG changed item structure or returned a degraded response",
         candidates,
+        xdt_api_seen,
     )
     raise DownloadError(
         "could not locate reel media payload in HTML — Instagram likely changed "
