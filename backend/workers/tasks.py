@@ -291,7 +291,7 @@ def process_reel(self, reel_id: str, auto_categorise: bool = True) -> dict:
             send_push_notification(
                 fcm_token=_fcm_token,
                 title="Reel saved",
-                body="Added to your inbox",
+                body="Couldn't categorise it — saved to your Inbox",
                 data={"reel_id": reel_id, "status": "ready"},
             )
             return {"reel_id": reel_id, "status": "ready"}
