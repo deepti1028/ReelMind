@@ -67,6 +67,9 @@ def test_upload_retries_on_failure_then_succeeds(mock_get_supabase, mock_sleep):
 
     assert result == _PERMANENT_URL
     assert mock_sleep.call_count == 2
+    # attempt=1 → 2**1=2s, attempt=2 → 2**2=4s
+    mock_sleep.assert_any_call(2)
+    mock_sleep.assert_any_call(4)
 
 
 @patch("services.storage.time.sleep")
@@ -129,3 +132,23 @@ def test_storage_path_uses_user_and_reel_ids(mock_get_supabase, mock_sleep):
 
     upload_call = mock_supabase.storage.from_.return_value.upload.call_args
     assert upload_call.kwargs["path"] == "user-xyz/reel-abc.jpg"
+
+
+@patch("services.storage.time.sleep")
+@patch("services.storage.get_supabase")
+def test_file_not_found_returns_fallback_without_retrying(mock_get_supabase, mock_sleep):
+    """If the local thumbnail file doesn't exist, return fallback immediately — no retries."""
+    mock_get_supabase.return_value = _make_storage_mock(fail_count=0)
+
+    from services.storage import upload_thumbnail
+
+    result = upload_thumbnail(
+        reel_id="reel-1",
+        user_id="user-1",
+        thumbnail_path="/nonexistent/path/reel-1.jpg",
+        fallback_url=_FALLBACK_URL,
+    )
+
+    assert result == _FALLBACK_URL
+    mock_sleep.assert_not_called()
+    mock_get_supabase.return_value.storage.from_.return_value.upload.assert_not_called()

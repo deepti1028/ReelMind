@@ -6,7 +6,7 @@ import time
 
 from supabase_client import get_supabase
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 _BUCKET = "thumbnails"
 _MAX_ATTEMPTS = 4  # 1 initial + 3 retries; delays: 2s → 4s → 8s
@@ -24,15 +24,26 @@ def upload_thumbnail(
     exhausting retries (which may itself be None).
     """
     storage_path = f"{user_id}/{reel_id}.jpg"
-    log.info(
+    logger.info(
         "storage | uploading thumbnail | reel_id=%s | local_path=%s | storage_path=%s",
         reel_id,
         thumbnail_path,
         storage_path,
     )
 
-    with open(thumbnail_path, "rb") as fh:
-        file_bytes = fh.read()
+    try:
+        with open(thumbnail_path, "rb") as fh:
+            file_bytes = fh.read()
+    except (OSError, IOError) as exc:
+        logger.warning(
+            "storage | cannot read thumbnail file | reel_id=%s | path=%s | error=%s"
+            " | using fallback_url=%s",
+            reel_id,
+            thumbnail_path,
+            exc,
+            fallback_url,
+        )
+        return fallback_url
 
     supabase = get_supabase()
 
@@ -43,19 +54,11 @@ def upload_thumbnail(
                 file=file_bytes,
                 file_options={"content-type": "image/jpeg", "upsert": "true"},
             )
-            public_url: str = supabase.storage.from_(_BUCKET).get_public_url(
-                storage_path
-            )
-            log.info(
-                "storage | upload success | reel_id=%s | public_url=%s",
-                reel_id,
-                public_url,
-            )
-            return public_url
         except Exception as exc:
-            backoff = 2**attempt  # 2, 4, 8 seconds
+            # attempt is 1-indexed (range starts at 1), so backoff gives 2s, 4s, 8s
+            backoff = 2**attempt
             if attempt < _MAX_ATTEMPTS:
-                log.warning(
+                logger.warning(
                     "storage | upload attempt failed (%d/%d) | reel_id=%s"
                     " | error=%s | retrying in %ds",
                     attempt,
@@ -66,7 +69,7 @@ def upload_thumbnail(
                 )
                 time.sleep(backoff)
             else:
-                log.warning(
+                logger.warning(
                     "storage | upload attempt failed (%d/%d) | reel_id=%s"
                     " | error=%s | falling back to CDN URL",
                     attempt,
@@ -74,8 +77,18 @@ def upload_thumbnail(
                     reel_id,
                     exc,
                 )
+            continue
 
-    log.warning(
+        # get_public_url is pure URL construction — no network call, cannot fail
+        public_url: str = supabase.storage.from_(_BUCKET).get_public_url(storage_path)
+        logger.info(
+            "storage | upload success | reel_id=%s | public_url=%s",
+            reel_id,
+            public_url,
+        )
+        return public_url
+
+    logger.warning(
         "storage | all retries exhausted | reel_id=%s | using fallback_url=%s",
         reel_id,
         fallback_url,
