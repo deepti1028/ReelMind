@@ -36,7 +36,7 @@ docker compose up -d
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # Start Celery worker (separate terminal, venv active)
-celery -A workers.celery_app worker --loglevel=info
+celery -A workers.celery_app worker --loglevel=info --without-gossip --without-mingle
 
 # Smoke test Celery
 python -c "from workers.tasks import ping; print(ping.delay().get(timeout=5))"
@@ -55,7 +55,9 @@ Health check: http://localhost:8000/api/v1/health
 
 Copy `backend/.env.example` → `backend/.env`. Required vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Optional: `GROQ_API_KEY`, `REDIS_URL` (defaults to `redis://localhost:6379`), `FIREBASE_SERVICE_ACCOUNT_JSON` (base64-encoded Firebase service account JSON — enables FCM push; if unset, push is silently skipped), `TAVILY_API_KEY`.
 
-Production deployment: FastAPI runs on Render (`reelmind-api` web service). Celery runs on Render (`reelmind-celery` worker service). Redis is managed by Upstash (free tier, TLS URL). Set `REDIS_URL` on both Render services. Set `FIREBASE_SERVICE_ACCOUNT_JSON` only on the Celery worker — FastAPI never sends pushes directly.
+Production deployment: A **single Render web service** (`ReelMind`) runs both FastAPI and Celery in one process via the start command:
+`cd backend && (uvicorn main:app --host 0.0.0.0 --port $PORT &) && celery -A workers.celery_app worker --loglevel=info --concurrency=2 --without-gossip --without-mingle`
+Build command: `pip install -r backend/requirements.txt`. Redis is managed by Upstash (free tier, TLS URL). `render.yaml` exists in the repo but is **not used** — the service was created manually in the Render dashboard and all settings are configured there.
 
 ### Database / Supabase
 
@@ -87,12 +89,12 @@ iOS App (SwiftUI)
 iOS Share Extension ("URL Sharing module")
     └── ShareViewController  ← extracts URL, reads JWT from App Group, POSTs to backend
 
-Backend (FastAPI on Render)
+Backend (single Render web service — FastAPI + Celery in one process)
     └── POST /api/v1/reels  ← inserts reel row, dispatches Celery task
     └── Celery worker       ← runs ingestion pipeline (download → transcribe → …)
     └── Supabase            ← single database for both iOS and backend
 
-Redis  ← Celery broker (local Docker in dev, managed Redis in prod)
+Redis (Upstash, TLS)  ← Celery broker (local Docker in dev, Upstash in prod)
 ```
 
 ### iOS app navigation (`frontend/`)
