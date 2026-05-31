@@ -282,11 +282,15 @@ You will need to write these for every submission. Template to fill in:
     6. Return to the app — the reel will appear in the appropriate category.
 
   THIRD-PARTY SERVICES:
-    - Supabase: authentication and database
-    - Groq: audio transcription (Whisper) and content classification (Llama 3.3 70B)
-    - Google Gemini: semantic embeddings for search/organization
-    - Firebase Messaging: push notifications for save confirmation
-    - Firebase Analytics: app usage analytics
+    - Supabase: user authentication, PostgreSQL database, and thumbnail file storage
+    - Groq (whisper-large-v3-turbo): audio transcription of reel content
+    - Google Gemini (gemini-3.1-flash-lite): AI content classification and categorization
+    - Google Gemini (gemini-2.5-flash): AI-powered chat and semantic search (RAG)
+    - Google Gemini (gemini-embedding-2): semantic embeddings for reel organization (768-dim)
+    - Firebase Cloud Messaging: push notifications for save confirmation and category prompts
+    - Firebase Analytics: anonymous app usage analytics
+    - Resend: email delivery for in-app feedback submissions
+    - Render (reelmind-8paz.onrender.com): backend API hosting
 
   NOTES FOR REVIEWER:
     - The core feature (saving a reel) requires the iOS Share Sheet. The app's
