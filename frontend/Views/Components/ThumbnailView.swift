@@ -14,7 +14,11 @@ struct ThumbnailView: View {
                         placeholder
                             .overlay(ProgressView().scaleEffect(0.6).tint(AppTheme.textFaint))
                     case .success(let image):
-                        image.resizable().scaledToFill()
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: width, height: height)
+                            .clipped()
                     case .failure:
                         placeholder
                     @unknown default:

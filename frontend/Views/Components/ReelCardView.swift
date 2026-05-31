@@ -240,6 +240,7 @@ struct DetailReelCard: View {
                 .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
             }
             .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .background(AppTheme.surface)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
