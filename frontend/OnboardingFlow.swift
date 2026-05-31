@@ -5,7 +5,6 @@ enum OnboardingStep: Int, CaseIterable {
     case howItWorks
     case shareTutorial
     case permissions
-    case organizing
     case complete
 }
 
@@ -37,12 +36,6 @@ struct OnboardingFlow: View {
                     OnboardingPermissionsView(
                         onContinue: { advance() },
                         onMaybeLater: { advance() }
-                    )
-                case .organizing:
-                    OnboardingOrganizingView(
-                        onBack: { back() },
-                        onSkip: { skip() },
-                        onContinue: { advance() }
                     )
                 case .complete:
                     OnboardingCompleteView(onEnter: { finish() })
