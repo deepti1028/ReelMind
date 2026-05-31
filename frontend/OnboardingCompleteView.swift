@@ -5,24 +5,30 @@ struct OnboardingCompleteView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer().frame(height: 40)
+            OnboardingProgressDots(current: 4)
 
-            VStack(spacing: 8) {
-                Text("WELCOME HOME")
-                    .font(.system(size: 13, weight: .semibold))
-                    .tracking(2)
+            Spacer().frame(height: 28)
+
+            // Sparkle icon + headline + subtitle (left-aligned)
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(OnboardingTheme.primary)
 
-                Text("Your second\nbrain is ready")
+                Text("Your second\nbrain is ready.")
                     .font(OnboardingTheme.serifTitle)
                     .foregroundColor(OnboardingTheme.textPrimary)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 8)
+
+                Text("Save your first reel and watch your library come to life.")
+                    .font(OnboardingTheme.bodyText)
+                    .foregroundColor(OnboardingTheme.textMuted)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)
 
-            Spacer().frame(height: 36)
+            Spacer().frame(height: 28)
 
+            // Sample queries card
             VStack(spacing: 14) {
                 HStack {
                     Image(systemName: "sparkles")
@@ -38,8 +44,9 @@ struct OnboardingCompleteView: View {
                 Divider()
 
                 SampleQueryRow(icon: "clock.arrow.circlepath", text: "\"Skincare routines from last month\"")
-                SampleQueryRow(icon: "bookmark", text: "\"Productivity tips I bookmarked\"")
-                SampleQueryRow(icon: "fork.knife", text: "\"Pasta recipes\"")
+                SampleQueryRow(icon: "bookmark",               text: "\"Productivity tips I bookmarked\"")
+                SampleQueryRow(icon: "fork.knife",             text: "\"Pasta recipes\"")
+                SampleQueryRow(icon: "heart",                  text: "\"Reels I keep coming back to\"")
             }
             .padding(20)
             .background(OnboardingTheme.cardSurface)
@@ -53,11 +60,22 @@ struct OnboardingCompleteView: View {
 
             Spacer()
 
-            OnboardingPrimaryButton(
-                title: "Enter ReelMind",
-                background: OnboardingTheme.primaryDark,
-                action: onEnter
-            )
+            // CTA + trust line
+            VStack(spacing: 12) {
+                OnboardingPrimaryButton(
+                    title: "Open My Library",
+                    background: OnboardingTheme.primaryDark,
+                    action: onEnter
+                )
+
+                HStack(spacing: 5) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 11))
+                    Text("Private by default. Only you can see your library.")
+                        .font(.system(size: 12))
+                }
+                .foregroundColor(OnboardingTheme.textMuted)
+            }
             .padding(.horizontal, 24)
             .padding(.bottom, 40)
         }
@@ -85,4 +103,9 @@ private struct SampleQueryRow: View {
         .background(OnboardingTheme.iconBackground.opacity(0.4))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
+}
+
+#Preview {
+    OnboardingCompleteView(onEnter: {})
+        .background(OnboardingTheme.background)
 }
