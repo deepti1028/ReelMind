@@ -4,9 +4,7 @@ struct OnboardingPermissionsView: View {
     let onContinue: () -> Void
     let onMaybeLater: () -> Void
 
-    @AppStorage("shareSheetAcknowledged") private var shareSheetAcknowledged = false
     @StateObject private var notifications = NotificationPermissionManager()
-    @State private var showShareSheetDemo = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -42,15 +40,6 @@ struct OnboardingPermissionsView: View {
 
             VStack(spacing: 14) {
                 PermissionRow(
-                    icon: "square.and.arrow.up",
-                    title: "Share Sheet Access",
-                    description: "Save reels without leaving Instagram.",
-                    isOn: shareSheetAcknowledged,
-                    statusText: nil,
-                    onToggle: { showShareSheetDemo = true }
-                )
-
-                PermissionRow(
                     icon: "bell.fill",
                     title: "Notifications",
                     description: notificationDescription,
@@ -78,15 +67,6 @@ struct OnboardingPermissionsView: View {
             .padding(.bottom, 32)
         }
         .task { await notifications.refresh() }
-        .sheet(isPresented: $showShareSheetDemo) {
-            ShareSheetPresenter(
-                items: ["Try sharing this with ReelMind from your favorites!"],
-                onDismiss: {
-                    shareSheetAcknowledged = true
-                    showShareSheetDemo = false
-                }
-            )
-        }
     }
 
     private var notificationDescription: String {
