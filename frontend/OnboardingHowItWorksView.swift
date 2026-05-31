@@ -33,7 +33,7 @@ struct OnboardingHowItWorksView: View {
                     HowItWorksRow(
                         icon: "square.and.arrow.up",
                         title: "Save from Instagram",
-                        body: "Share any reel to ReelMind the same way you'd share a link. Three taps."
+                        subtitle: "Share any reel to ReelMind the same way you'd share a link. Three taps."
                     )
                     Divider()
                         .background(OnboardingTheme.divider)
@@ -41,7 +41,7 @@ struct OnboardingHowItWorksView: View {
                     HowItWorksRow(
                         icon: "brain.head.profile",
                         title: "AI does the work",
-                        body: "We transcribe it, understand it, and organize it automatically. Nothing to set up."
+                        subtitle: "We transcribe it, understand it, and organize it automatically. Nothing to set up."
                     )
                     Divider()
                         .background(OnboardingTheme.divider)
@@ -49,7 +49,7 @@ struct OnboardingHowItWorksView: View {
                     HowItWorksRow(
                         icon: "magnifyingglass",
                         title: "Find anything, anytime",
-                        body: "Ask in plain English. \"That pasta recipe from last week.\" Done."
+                        subtitle: "Ask in plain English. \"That pasta recipe from last week.\" Done."
                     )
                 }
                 .background(Color.white)
@@ -82,7 +82,7 @@ struct OnboardingHowItWorksView: View {
 private struct HowItWorksRow: View {
     let icon: String
     let title: String
-    let body: String
+    let subtitle: String
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -100,7 +100,7 @@ private struct HowItWorksRow: View {
                 Text(title)
                     .font(.system(size: 16, weight: .bold, design: .serif))
                     .foregroundColor(OnboardingTheme.textPrimary)
-                Text(body)
+                Text(subtitle)
                     .font(.system(size: 13))
                     .foregroundColor(OnboardingTheme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
