@@ -127,7 +127,8 @@ def process_reel(self, reel_id: str, auto_categorise: bool = True) -> dict:
                 )
                 return {"reel_id": reel_id, "status": "rejected_private"}
             return _handle_pipeline_error(
-                self, supabase, reel_id, exc, exc.is_retryable, log, _fcm_token
+                self, supabase, reel_id, exc, exc.is_retryable, log, _fcm_token,
+                countdown_secs=5 * (self.request.retries + 1),
             )
 
         meta = download_result.metadata
@@ -455,10 +456,11 @@ def _handle_pipeline_error(
     is_retryable: bool,
     log: logging.LoggerAdapter,
     fcm_token: str | None = None,
+    countdown_secs: int | None = None,
 ) -> dict:
     """Schedule a Celery retry or mark the reel failed."""
     if is_retryable and task.request.retries < task.max_retries:
-        countdown = 60 * (task.request.retries + 1)
+        countdown = countdown_secs if countdown_secs is not None else 60 * (task.request.retries + 1)
         log.info("scheduling retry | countdown=%ss", countdown)
         raise task.retry(exc=exc, countdown=countdown)
 
