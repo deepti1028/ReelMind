@@ -14,7 +14,7 @@ import logging
 import os
 from dataclasses import dataclass
 
-from groq import APIError, APITimeoutError, Groq
+from groq import APIError, APITimeoutError
 from groq import RateLimitError, APIConnectionError
 
 from config import get_config

@@ -15,7 +15,7 @@ import logging
 from dataclasses import dataclass, field
 
 from google import genai
-from google.genai.types import GenerateContentConfig, Tool
+from google.genai.types import GenerateContentConfig
 from pydantic import BaseModel
 
 from config import get_config

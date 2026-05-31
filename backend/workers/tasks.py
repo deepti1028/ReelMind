@@ -30,7 +30,7 @@ from services.downloader import (
 )
 from services.embedder import EmbeddingError, build_chunk_text, embed_document
 from services.signal_builder import NoSignalError, build_classification_signal
-from services.classifier import ClassificationError, ClassificationResult, classify_reel
+from services.classifier import ClassificationError, classify_reel
 from services.notifier import send_push_notification
 from services.storage import upload_thumbnail
 from services.transcriber import TranscriptionError, TranscriptionResult, transcribe_audio
