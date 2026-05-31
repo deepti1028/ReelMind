@@ -24,7 +24,7 @@ struct OnboardingSplashView: View {
                 .multilineTextAlignment(.center)
                 .padding(.top, 16)
 
-            Text("Save Instagram reels. Ask questions.\nDiscover insights you didn't know you had.")
+            Text("Save any Instagram reel. Ask questions later.\nYour AI-powered second brain.")
                 .font(OnboardingTheme.bodyText)
                 .foregroundColor(OnboardingTheme.textMuted)
                 .multilineTextAlignment(.center)
