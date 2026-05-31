@@ -8,153 +8,95 @@ struct OnboardingPermissionsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer().frame(height: 24)
-
-            ZStack {
-                Circle()
-                    .fill(OnboardingTheme.iconBackground)
-                    .frame(width: 120, height: 120)
-
-                Image(systemName: "checkmark.shield.fill")
-                    .font(.system(size: 48, weight: .semibold))
-                    .foregroundColor(OnboardingTheme.primary)
-
-                Circle()
-                    .fill(OnboardingTheme.iconBackground)
-                    .frame(width: 36, height: 36)
-                    .overlay(
-                        Image(systemName: "link")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(OnboardingTheme.primary)
-                    )
-                    .offset(x: 44, y: 38)
-            }
-            .padding(.top, 16)
-
-            Text("Stay connected")
-                .font(OnboardingTheme.serifTitle)
-                .foregroundColor(OnboardingTheme.textPrimary)
-                .padding(.top, 28)
-
-            Spacer().frame(height: 28)
-
-            VStack(spacing: 14) {
-                PermissionRow(
-                    icon: "bell.fill",
-                    title: "Notifications",
-                    description: notificationDescription,
-                    isOn: notifications.status == .authorized,
-                    statusText: notificationStatusText,
-                    onToggle: {
-                        Task { await notifications.requestOrOpenSettings() }
-                    }
-                )
-            }
-            .padding(.horizontal, 20)
+            OnboardingProgressDots(current: 3)
 
             Spacer()
 
+            // Bell icon with pulsing outer ring
+            ZStack {
+                Circle()
+                    .fill(OnboardingTheme.primary.opacity(0.12))
+                    .frame(width: 164, height: 164)
+                    .modifier(PulsingRingModifier())
+
+                Circle()
+                    .fill(OnboardingTheme.iconBackground)
+                    .frame(width: 136, height: 136)
+
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 52, weight: .semibold))
+                    .foregroundColor(OnboardingTheme.primary)
+            }
+
+            // Title
+            Text("Know the moment\nit's ready")
+                .font(OnboardingTheme.serifTitle)
+                .foregroundColor(OnboardingTheme.textPrimary)
+                .multilineTextAlignment(.center)
+                .padding(.top, 28)
+                .padding(.horizontal, 24)
+
+            // Body
+            Text("After saving a reel, we'll send one notification when it's been transcribed and organized. One per reel. No spam, ever.")
+                .font(OnboardingTheme.bodyText)
+                .foregroundColor(OnboardingTheme.textMuted)
+                .multilineTextAlignment(.center)
+                .padding(.top, 16)
+                .padding(.horizontal, 28)
+
+            // Privacy reassurance
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 13))
+                    .foregroundColor(OnboardingTheme.primary)
+                    .padding(.top, 1)
+                Text("Notifications only fire when you save something. You're always in control — turn off anytime in Settings.")
+                    .font(.system(size: 13))
+                    .foregroundColor(OnboardingTheme.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 16)
+
+            Spacer()
+
+            // CTAs
             VStack(spacing: 14) {
-                OnboardingPrimaryButton(title: "Grant Access", trailingIcon: nil, action: onContinue)
+                OnboardingPrimaryButton(title: "Enable Notifications", trailingIcon: nil) {
+                    Task { await notifications.requestOrOpenSettings() }
+                    onContinue()
+                }
 
                 Button(action: onMaybeLater) {
-                    Text("Maybe Later")
+                    Text("Not right now")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(OnboardingTheme.textMuted)
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 32)
+            .padding(.bottom, 40)
         }
         .task { await notifications.refresh() }
     }
-
-    private var notificationDescription: String {
-        switch notifications.status {
-        case .denied:
-            return "Notifications are disabled. Tap the toggle to open Settings."
-        default:
-            return "Get alerted when your reels are ready and categorized."
-        }
-    }
-
-    private var notificationStatusText: String? {
-        switch notifications.status {
-        case .denied: return "Tap to open Settings"
-        default: return nil
-        }
-    }
 }
 
-private struct PermissionRow: View {
-    let icon: String
-    let title: String
-    let description: String
-    let isOn: Bool
-    let statusText: String?
-    let onToggle: () -> Void
+// Pulsing outer ring — scales up and fades out on repeat
+private struct PulsingRingModifier: ViewModifier {
+    @State private var animating = false
 
-    var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(OnboardingTheme.iconBackground)
-                    .frame(width: 44, height: 44)
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(OnboardingTheme.primary)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 20, weight: .bold, design: .serif))
-                    .foregroundColor(OnboardingTheme.textPrimary)
-
-                Text(description)
-                    .font(.system(size: 14))
-                    .foregroundColor(OnboardingTheme.textMuted)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if let statusText = statusText {
-                    Text(statusText)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(OnboardingTheme.primary)
-                        .padding(.top, 2)
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(animating ? 1.15 : 0.85)
+            .opacity(animating ? 0 : 0.7)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: false)) {
+                    animating = true
                 }
             }
-
-            Spacer()
-
-            ToggleControl(isOn: isOn, action: onToggle)
-        }
-        .padding(16)
-        .background(OnboardingTheme.cardSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(OnboardingTheme.divider, lineWidth: 0.5)
-        )
     }
 }
 
-private struct ToggleControl: View {
-    let isOn: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            ZStack(alignment: isOn ? .trailing : .leading) {
-                Capsule()
-                    .fill(isOn ? OnboardingTheme.primary : AppTheme.border)
-                    .frame(width: 50, height: 30)
-
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 26, height: 26)
-                    .padding(.horizontal, 2)
-                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-            }
-        }
-        .animation(.easeInOut(duration: 0.2), value: isOn)
-    }
+#Preview {
+    OnboardingPermissionsView(onContinue: {}, onMaybeLater: {})
+        .background(OnboardingTheme.background)
 }
