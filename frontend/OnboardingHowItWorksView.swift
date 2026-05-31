@@ -2,7 +2,6 @@ import SwiftUI
 
 struct OnboardingHowItWorksView: View {
     let onBack: () -> Void
-    let onSkip: () -> Void
     let onContinue: () -> Void
 
     var body: some View {
@@ -115,6 +114,6 @@ private struct HowItWorksRow: View {
 }
 
 #Preview {
-    OnboardingHowItWorksView(onBack: {}, onSkip: {}, onContinue: {})
+    OnboardingHowItWorksView(onBack: {}, onContinue: {})
         .background(OnboardingTheme.background)
 }

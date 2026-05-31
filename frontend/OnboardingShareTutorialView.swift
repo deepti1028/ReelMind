@@ -2,7 +2,6 @@ import SwiftUI
 
 struct OnboardingShareTutorialView: View {
     let onBack: () -> Void
-    let onSkip: () -> Void
     let onContinue: () -> Void
 
     var body: some View {
@@ -153,6 +152,6 @@ private struct SharePhoneMockup: View {
 }
 
 #Preview {
-    OnboardingShareTutorialView(onBack: {}, onSkip: {}, onContinue: {})
+    OnboardingShareTutorialView(onBack: {}, onContinue: {})
         .background(OnboardingTheme.background)
 }

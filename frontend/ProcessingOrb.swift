@@ -2,7 +2,6 @@ import SwiftUI
 
 /// Animated pulsing gradient sphere — shown as thumbnail placeholder
 /// while a reel is queued or processing.
-/// Extracted from OnboardingOrganizingView.
 struct ProcessingOrb: View {
     @State private var pulse = false
 

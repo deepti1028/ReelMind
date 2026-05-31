@@ -23,13 +23,11 @@ struct OnboardingFlow: View {
                 case .howItWorks:
                     OnboardingHowItWorksView(
                         onBack: { back() },
-                        onSkip: { skip() },
                         onContinue: { advance() }
                     )
                 case .shareTutorial:
                     OnboardingShareTutorialView(
                         onBack: { back() },
-                        onSkip: { skip() },
                         onContinue: { advance() }
                     )
                 case .permissions:
