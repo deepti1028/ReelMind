@@ -7,27 +7,30 @@ struct OnboardingShareTutorialView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            OnboardingHeader(onBack: onBack, onSkip: onSkip)
+            // Back only — no Skip, this education is too important to bypass
+            OnboardingHeader(onBack: onBack, onSkip: nil)
+
+            OnboardingProgressDots(current: 2)
 
             ScrollView {
                 VStack(spacing: 24) {
                     VStack(spacing: 8) {
-                        Text("THE SHARE SHEET")
+                        Text("HOW TO SAVE")
                             .font(.system(size: 13, weight: .semibold))
                             .tracking(2)
                             .foregroundColor(OnboardingTheme.primary)
 
-                        Text("Save with ease")
+                        Text("From Instagram in 3 taps")
                             .font(OnboardingTheme.serifSection)
                             .foregroundColor(OnboardingTheme.textPrimary)
                     }
                     .padding(.top, 16)
 
-                    PhoneMockup()
+                    SharePhoneMockup()
                         .padding(.horizontal, 24)
 
                     VStack(spacing: 18) {
-                        TutorialStep(index: 1, text: "Open any reel.")
+                        TutorialStep(index: 1, text: "Open any reel in Instagram.")
                         TutorialStep(index: 2, text: "Tap Share", trailingIcon: "square.and.arrow.up")
                         TutorialStep(index: 3, text: "Select ReelMind.", isHighlighted: true)
                     }
@@ -37,7 +40,7 @@ struct OnboardingShareTutorialView: View {
                 .padding(.bottom, 24)
             }
 
-            OnboardingPrimaryButton(title: "Got it", trailingIcon: nil, action: onContinue)
+            OnboardingPrimaryButton(title: "I'm Ready", trailingIcon: nil, action: onContinue)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
         }
@@ -61,9 +64,8 @@ private struct TutorialStep: View {
 
             HStack(spacing: 6) {
                 Text(text)
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(OnboardingTheme.textPrimary)
-
+                    .font(.system(size: 18, weight: isHighlighted ? .bold : .medium))
+                    .foregroundColor(isHighlighted ? OnboardingTheme.primary : OnboardingTheme.textPrimary)
                 if let icon = trailingIcon {
                     Image(systemName: icon)
                         .font(.system(size: 16, weight: .medium))
@@ -76,7 +78,9 @@ private struct TutorialStep: View {
     }
 }
 
-private struct PhoneMockup: View {
+private struct SharePhoneMockup: View {
+    @State private var pulse = false
+
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 24)
@@ -88,6 +92,7 @@ private struct PhoneMockup: View {
                 )
 
             VStack(spacing: 0) {
+                // Reel thumbnail
                 ZStack {
                     RoundedRectangle(cornerRadius: 28)
                         .fill(LinearGradient(
@@ -97,21 +102,18 @@ private struct PhoneMockup: View {
                         ))
                         .frame(width: 130, height: 200)
 
-                    VStack {
-                        Spacer()
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.2))
-                                .frame(width: 60, height: 60)
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 22))
-                                .foregroundColor(.white)
-                        }
-                        Spacer()
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.2))
+                            .frame(width: 60, height: 60)
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 22))
+                            .foregroundColor(.white)
                     }
                 }
                 .padding(.top, -10)
 
+                // ReelMind share row with pulsing ring
                 HStack(spacing: 10) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8)
@@ -130,10 +132,27 @@ private struct PhoneMockup: View {
                 .padding(.vertical, 12)
                 .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(OnboardingTheme.primary, lineWidth: 2)
+                        .opacity(pulse ? 0 : 0.9)
+                        .scaleEffect(pulse ? 1.06 : 1.0)
+                        .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: false), value: pulse)
+                )
                 .shadow(color: OnboardingTheme.primary.opacity(0.12), radius: 10, x: 0, y: 4)
                 .padding(.top, 14)
                 .padding(.horizontal, 16)
             }
         }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                pulse = true
+            }
+        }
     }
+}
+
+#Preview {
+    OnboardingShareTutorialView(onBack: {}, onSkip: {}, onContinue: {})
+        .background(OnboardingTheme.background)
 }
