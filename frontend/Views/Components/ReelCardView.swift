@@ -118,9 +118,7 @@ struct InboxReelCard: View {
     // Thumbnail with no fixed height — stretches to match the content column
     private var inboxThumbnail: some View {
         Group {
-            if reel.status == "queued" || reel.status == "processing" {
-                ProcessingOrb()
-            } else if let str = reel.thumbnailUrl, let url = URL(string: str) {
+            if let str = reel.thumbnailUrl, let url = URL(string: str) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
@@ -179,15 +177,7 @@ struct DetailReelCard: View {
             }
         } label: {
             HStack(alignment: .center, spacing: 12) {
-                Group {
-                    if reel.status == "queued" || reel.status == "processing" {
-                        ProcessingOrb()
-                            .frame(width: 90, height: 130)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    } else {
-                        ThumbnailView(urlString: reel.thumbnailUrl, width: 90, height: 130)
-                    }
-                }
+                ThumbnailView(urlString: reel.thumbnailUrl, width: 90, height: 130)
 
                 VStack(alignment: .leading, spacing: 0) {
                     // Creator — bold and unmissable
