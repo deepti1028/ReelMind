@@ -46,6 +46,7 @@ final class AppViewModel: ObservableObject {
 
             inboxReels  = reels.filter { $0.categoryId == nil }
             totalCount  = reels.count
+            prefetchThumbnails(reels)
         } catch {
             print("[AppViewModel] load failed: \(error)")
         }
@@ -70,6 +71,24 @@ final class AppViewModel: ObservableObject {
             await load(silent: true)
         } catch {
             print("[AppViewModel] assignCategory failed: \(error)")
+        }
+    }
+
+    private func prefetchThumbnails(_ reels: [Reel]) {
+        let urls = Set(reels.compactMap(\.thumbnailUrl))
+            .filter { ImageCache.shared.image(for: $0) == nil }
+        guard !urls.isEmpty else { return }
+        Task.detached(priority: .utility) {
+            await withTaskGroup(of: Void.self) { group in
+                for urlString in urls {
+                    group.addTask {
+                        guard let url = URL(string: urlString),
+                              let (data, _) = try? await URLSession.shared.data(from: url),
+                              let image = UIImage(data: data) else { return }
+                        ImageCache.shared.insert(image, for: urlString)
+                    }
+                }
+            }
         }
     }
 }
