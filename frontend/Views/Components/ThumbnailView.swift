@@ -7,26 +7,22 @@ struct ThumbnailView: View {
 
     var body: some View {
         Group {
-            if let str = urlString, let url = URL(string: str) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .empty:
-                        placeholder
-                            .overlay(ProgressView().scaleEffect(0.6).tint(AppTheme.textFaint))
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: width, height: height)
-                            .clipped()
-                    case .failure:
-                        placeholder
-                    @unknown default:
-                        placeholder
-                    }
+            CachedAsyncImage(urlString: urlString) { phase in
+                switch phase {
+                case .empty:
+                    placeholder
+                        .overlay(ProgressView().scaleEffect(0.6).tint(AppTheme.textFaint))
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: width, height: height)
+                        .clipped()
+                case .failure:
+                    placeholder
+                @unknown default:
+                    placeholder
                 }
-            } else {
-                placeholder
             }
         }
         .frame(width: width, height: height)
