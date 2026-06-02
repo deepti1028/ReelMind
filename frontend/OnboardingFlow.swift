@@ -39,6 +39,7 @@ struct OnboardingFlow: View {
                     OnboardingCompleteView(onEnter: { finish() })
                 }
             }
+            .id(step)
             .transition(.asymmetric(
                 insertion: .move(edge: .trailing).combined(with: .opacity),
                 removal: .move(edge: .leading).combined(with: .opacity)
