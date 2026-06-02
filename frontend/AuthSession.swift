@@ -76,6 +76,13 @@ final class AuthSession: ObservableObject {
                 await MainActor.run {
                     self?.session = newSession
                     self?.syncToken(newSession?.accessToken)
+                    if event == .signedOut {
+                        // Only wipe the onboarding flag on an explicit sign-out so the
+                        // initialSession event (which fires on every cold launch with no
+                        // session) doesn't trigger an @AppStorage KVO update that can
+                        // recreate OnboardingFlow mid-transition and reset its @State.
+                        UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
+                    }
                     if event == .passwordRecovery {
                         print("[AuthSession] passwordRecovery detected — setting isRecovering = true")
                         self?.isRecovering = true
@@ -106,7 +113,6 @@ final class AuthSession: ObservableObject {
             }
         } else {
             defaults.removeObject(forKey: AppConfig.authTokenKey)
-            UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
             print("[AuthSession] token cleared from App Group")
         }
     }
