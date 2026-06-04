@@ -6,6 +6,7 @@ struct LibraryView: View {
     @EnvironmentObject private var auth: AuthSession
     var onInboxTap: () -> Void = {}
     @State private var bannerPulse = false
+    @State private var showSignInSheet = false
 
     var body: some View {
         ScrollView {
@@ -54,6 +55,9 @@ struct LibraryView: View {
         .navigationDestination(for: CategorySummary.self) { summary in
             CategoryDetailView(summary: summary)
         }
+        .sheet(isPresented: $showSignInSheet) {
+            LoginView().environmentObject(auth)
+        }
     }
 
     // MARK: - Sub-views
@@ -86,6 +90,10 @@ struct LibraryView: View {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(AppTheme.border, lineWidth: 1)
             )
+
+            if auth.session == nil {
+                GuestSignInCard(onTap: { showSignInSheet = true })
+            }
         }
     }
 
@@ -385,6 +393,62 @@ private struct CategoryCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.black.opacity(0.055), lineWidth: 1)
+        )
+    }
+}
+
+private struct GuestSignInCard: View {
+    let onTap: () -> Void
+    @State private var isPressed = false
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.accent.opacity(0.18))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: "arrow.right.circle")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(AppTheme.accentDark)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Save reels to your account")
+                        .font(.system(size: 13, weight: .semibold, design: .serif))
+                        .foregroundColor(AppTheme.textPrimary)
+                    Text("Sign in or create a free account →")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.accentDark)
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    colors: [
+                        AppTheme.accent.opacity(0.10),
+                        AppTheme.accent.opacity(0.04),
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .strokeBorder(AppTheme.accent.opacity(0.30), lineWidth: 1)
+            )
+            .scaleEffect(isPressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
         )
     }
 }

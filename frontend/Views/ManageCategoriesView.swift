@@ -2,12 +2,14 @@ import SwiftUI
 
 struct ManageCategoriesView: View {
     @EnvironmentObject private var appVM: AppViewModel
+    @EnvironmentObject private var auth: AuthSession
     @Environment(\.dismiss) private var dismiss
 
     @State private var categories: [Category] = []
     @State private var isLoading = false
     @State private var isMutating = false
     @State private var errorMessage: String?
+    @State private var showSignInSheet = false
 
     // Delete confirmation
     @State private var deleteTarget: Category?
@@ -50,11 +52,15 @@ struct ManageCategoriesView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 if !categories.isEmpty && !isMutating {
                     Button {
-                        formTarget = nil
-                        formName = ""
-                        formIcon = "bookmark"
-                        showIconPicker = false
-                        showFormSheet = true
+                        if auth.session != nil {
+                            formTarget = nil
+                            formName = ""
+                            formIcon = "bookmark"
+                            showIconPicker = false
+                            showFormSheet = true
+                        } else {
+                            showSignInSheet = true
+                        }
                     } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 15, weight: .semibold))
@@ -72,6 +78,9 @@ struct ManageCategoriesView: View {
             Button("Delete", role: .destructive) {
                 if let cat = deleteTarget { Task { await delete(cat) } }
             }
+        }
+        .sheet(isPresented: $showSignInSheet) {
+            LoginView().environmentObject(auth)
         }
         .sheet(isPresented: $showFormSheet) {
             CategoryFormSheet(
@@ -135,6 +144,13 @@ struct ManageCategoriesView: View {
 
     private var emptyState: some View {
         VStack(spacing: 16) {
+            if let msg = errorMessage {
+                Text(msg)
+                    .font(.system(size: 12))
+                    .foregroundColor(AppTheme.destructive)
+                    .padding(.horizontal, 20)
+            }
+
             Image(systemName: "folder.badge.plus")
                 .font(.system(size: 44))
                 .foregroundColor(AppTheme.accent)
@@ -151,11 +167,15 @@ struct ManageCategoriesView: View {
             }
 
             Button {
-                formTarget = nil
-                formName = ""
-                formIcon = "bookmark"
-                showIconPicker = false
-                showFormSheet = true
+                if auth.session != nil {
+                    formTarget = nil
+                    formName = ""
+                    formIcon = "bookmark"
+                    showIconPicker = false
+                    showFormSheet = true
+                } else {
+                    showSignInSheet = true
+                }
             } label: {
                 Text("Create collection")
                     .font(.system(size: 14, weight: .semibold))

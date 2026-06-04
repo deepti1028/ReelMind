@@ -118,7 +118,7 @@ struct InboxReelCard: View {
     // Thumbnail with no fixed height — stretches to match the content column
     private var inboxThumbnail: some View {
         Group {
-            CachedAsyncImage(urlString: reel.thumbnailUrl) { phase in
+            AsyncImage(url: reel.thumbnailUrl.flatMap { URL(string: $0) }) { phase in
                 switch phase {
                 case .success(let image):
                     image.resizable().scaledToFill().clipped()

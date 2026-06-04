@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var isDeletingAccount = false
     @State private var deleteError: String? = nil
     @State private var showFeedbackForm = false
+    @State private var showSignInForFeedback = false
     @State private var safariURL: URL? = nil
 
     var body: some View {
@@ -76,6 +77,9 @@ struct SettingsView: View {
         .sheet(isPresented: $showFeedbackForm) {
             FeedbackFormView()
         }
+        .sheet(isPresented: $showSignInForFeedback) {
+            LoginView().environmentObject(auth)
+        }
         .sheet(isPresented: Binding(
             get: { safariURL != nil },
             set: { if !$0 { safariURL = nil } }
@@ -118,11 +122,13 @@ struct SettingsView: View {
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(AppTheme.textPrimary)
                 Spacer()
-                Button("Sign out") {
-                    Task { try? await auth.signOut() }
+                if auth.session != nil {
+                    Button("Sign out") {
+                        Task { try? await auth.signOut() }
+                    }
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(AppTheme.destructive)
                 }
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(AppTheme.destructive)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -152,14 +158,16 @@ struct SettingsView: View {
                     .foregroundColor(AppTheme.textFaint)
             }
             Spacer()
-            Button {
-                showDeleteConfirmation = true
-            } label: {
-                Image(systemName: "trash")
-                    .font(.system(size: 14))
-                    .foregroundColor(AppTheme.destructive)
+            if auth.session != nil {
+                Button {
+                    showDeleteConfirmation = true
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppTheme.destructive)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(16)
         .background(AppTheme.surface)
@@ -174,7 +182,7 @@ struct SettingsView: View {
 
     private var librarySection: some View {
         SettingsSection(title: "Library") {
-            NavigationLink(destination: ManageCategoriesView().environmentObject(appVM)) {
+            NavigationLink(destination: ManageCategoriesView().environmentObject(appVM).environmentObject(auth)) {
                 SettingsRow(icon: "square.grid.2x2", iconBg: AppTheme.surfaceSecondary,
                             label: "Manage categories") {
                     Text("\(appVM.categorySummaries.filter { !$0.isDefault }.count)")
@@ -195,6 +203,13 @@ struct SettingsView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 13)
+            .overlay(
+                Group {
+                    if auth.session == nil {
+                        Button { showSignInForFeedback = true } label: { Color.clear }
+                    }
+                }
+            )
         }
     }
 
@@ -234,7 +249,11 @@ struct SettingsView: View {
     private var supportSection: some View {
         SettingsSection(title: "Support") {
             Button {
-                showFeedbackForm = true
+                if auth.session != nil {
+                    showFeedbackForm = true
+                } else {
+                    showSignInForFeedback = true
+                }
             } label: {
                 SettingsRow(icon: "paperplane", iconBg: AppTheme.surfaceSecondary,
                             label: "Send feedback") {

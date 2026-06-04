@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject private var auth: AuthSession
+    @Environment(\.dismiss) private var dismiss
 
     @State private var email = ""
     @State private var password = ""
@@ -136,11 +137,28 @@ struct LoginView: View {
                     }
                     .font(.footnote)
 
-                    Button("Continue without an account") { auth.enterGuestMode() }
-                        .font(.system(size: 13))
-                        .foregroundColor(AppTheme.textFaint)
+                    Button(action: { auth.enterGuestMode(); dismiss() }) {
+                        HStack(spacing: 7) {
+                            Image(systemName: "person.slash")
+                                .font(.system(size: 11, weight: .medium))
+                            Text("Continue without an account")
+                                .font(.system(size: 13, weight: .medium, design: .serif))
+                        }
+                        .foregroundColor(AppTheme.textMuted)
                         .frame(maxWidth: .infinity)
-                        .padding(.top, 16)
+                        .frame(height: 44)
+                        .background(AppTheme.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(
+                                    style: StrokeStyle(lineWidth: 1, dash: [4, 3])
+                                )
+                                .foregroundColor(AppTheme.border)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 16)
                 }
                 .padding(.horizontal, 26)
                 .padding(.top, 80)

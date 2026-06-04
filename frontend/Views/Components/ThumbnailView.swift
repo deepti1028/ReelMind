@@ -7,7 +7,7 @@ struct ThumbnailView: View {
 
     var body: some View {
         Group {
-            CachedAsyncImage(urlString: urlString) { phase in
+            AsyncImage(url: urlString.flatMap { URL(string: $0) }) { phase in
                 switch phase {
                 case .empty:
                     placeholder

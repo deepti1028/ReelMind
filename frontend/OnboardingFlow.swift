@@ -10,7 +10,14 @@ enum OnboardingStep: Int, CaseIterable {
 
 struct OnboardingFlow: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @State private var step: OnboardingStep = .splash
+    // Stored in UserDefaults so it survives any SwiftUI view recreation — @State
+    // is tied to view identity and resets whenever the parent re-renders and
+    // SwiftUI loses structural identity (e.g. concurrent AuthSession publishes).
+    @AppStorage("_onboardingStep") private var stepRaw: Int = 0
+
+    private var step: OnboardingStep {
+        OnboardingStep(rawValue: stepRaw) ?? .splash
+    }
 
     var body: some View {
         ZStack {
@@ -39,33 +46,35 @@ struct OnboardingFlow: View {
                     OnboardingCompleteView(onEnter: { finish() })
                 }
             }
-            .id(step)
+            .id(stepRaw)
             .transition(.asymmetric(
                 insertion: .move(edge: .trailing).combined(with: .opacity),
                 removal: .move(edge: .leading).combined(with: .opacity)
             ))
         }
-        .animation(.easeInOut(duration: 0.28), value: step)
+        .animation(.easeInOut(duration: 0.28), value: stepRaw)
     }
 
     private func advance() {
-        guard let next = OnboardingStep(rawValue: step.rawValue + 1) else {
+        let next = stepRaw + 1
+        guard OnboardingStep(rawValue: next) != nil else {
             finish()
             return
         }
-        step = next
+        stepRaw = next
     }
 
     private func back() {
-        guard let prev = OnboardingStep(rawValue: step.rawValue - 1) else { return }
-        step = prev
+        guard stepRaw > 0 else { return }
+        stepRaw -= 1
     }
 
     private func skip() {
-        step = .complete
+        stepRaw = OnboardingStep.complete.rawValue
     }
 
     private func finish() {
+        stepRaw = 0
         hasCompletedOnboarding = true
     }
 }

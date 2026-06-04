@@ -6,94 +6,110 @@ struct OnboardingHowItWorksView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Back only — no Skip on this screen
             OnboardingHeader(onBack: onBack, onSkip: nil)
 
             OnboardingProgressDots(current: 1)
 
-            ScrollView {
-                VStack(spacing: 28) {
-                    VStack(spacing: 8) {
-                        Text("HOW IT WORKS")
-                            .font(.system(size: 13, weight: .semibold))
-                            .tracking(2)
-                            .foregroundColor(OnboardingTheme.primary)
+            VStack(spacing: 0) {
+                // Eyebrow + title
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("HOW IT WORKS")
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(2)
+                        .foregroundColor(OnboardingTheme.primary)
 
-                        Text("Your reel brain\nin four steps")
-                            .font(OnboardingTheme.serifSection)
-                            .foregroundColor(OnboardingTheme.textPrimary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.top, 16)
-
-                    VStack(spacing: 16) {
-                        HowItWorksCard(
-                            icon: "square.and.arrow.up",
-                            title: "Share a reel",
-                            detail: "Tap Share in Instagram and pick ReelMind — done in seconds."
-                        )
-                        HowItWorksCard(
-                            icon: "waveform",
-                            title: "Transcribed instantly",
-                            detail: "The audio is transcribed so every word is searchable."
-                        )
-                        HowItWorksCard(
-                            icon: "tag",
-                            title: "Auto-categorised",
-                            detail: "AI reads the caption and transcript and picks the right category."
-                        )
-                        HowItWorksCard(
-                            icon: "bubble.left.and.text.bubble.right",
-                            title: "Ask anything",
-                            detail: "Chat with your saved reels. Find that recipe, quote, or tip instantly."
-                        )
-                    }
-                    .padding(.horizontal, 24)
+                    Text("Three steps to never\nlose a reel again")
+                        .font(OnboardingTheme.serifSection)
+                        .foregroundColor(OnboardingTheme.textPrimary)
                 }
-                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
+
+                // Three rows in one card
+                VStack(spacing: 0) {
+                    HowItWorksRow(
+                        icon: "square.and.arrow.up",
+                        title: "Save from Instagram",
+                        subtitle: "Share any reel to ReelMind the same way you'd share a link. Three taps."
+                    )
+                    Divider()
+                        .background(OnboardingTheme.divider)
+                        .padding(.horizontal, 16)
+                    HowItWorksRow(
+                        icon: "brain.head.profile",
+                        title: "AI does the work",
+                        subtitle: "We transcribe it, understand it, and organize it automatically. Nothing to set up."
+                    )
+                    Divider()
+                        .background(OnboardingTheme.divider)
+                        .padding(.horizontal, 16)
+                    HowItWorksRow(
+                        icon: "magnifyingglass",
+                        title: "Find anything, anytime",
+                        subtitle: "Ask in plain English. \"That pasta recipe from last week.\" Done."
+                    )
+                }
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(OnboardingTheme.divider, lineWidth: 0.5)
+                )
+                .shadow(color: OnboardingTheme.primary.opacity(0.05), radius: 10, x: 0, y: 4)
+                .padding(.horizontal, 20)
+
+                // Trust micro-copy
+                Text("You choose what to save. We never collect anything automatically.")
+                    .font(.system(size: 12))
+                    .foregroundColor(OnboardingTheme.textMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .padding(.top, 14)
             }
 
-            OnboardingPrimaryButton(title: "Next", action: onContinue)
+            Spacer()
+
+            OnboardingPrimaryButton(title: "Show Me How", action: onContinue)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
         }
     }
 }
 
-private struct HowItWorksCard: View {
+private struct HowItWorksRow: View {
     let icon: String
     let title: String
-    let detail: String
+    let subtitle: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .top, spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 11)
                     .fill(OnboardingTheme.iconBackground)
                     .frame(width: 44, height: 44)
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 19, weight: .semibold))
                     .foregroundColor(OnboardingTheme.primary)
             }
+            .padding(.top, 2)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 16, weight: .bold, design: .serif))
                     .foregroundColor(OnboardingTheme.textPrimary)
-                Text(detail)
-                    .font(.system(size: 14, weight: .regular))
+                Text(subtitle)
+                    .font(.system(size: 13))
                     .foregroundColor(OnboardingTheme.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer()
         }
-        .padding(16)
-        .background(OnboardingTheme.cardSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(OnboardingTheme.divider, lineWidth: 0.5)
-        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 }
 
