@@ -25,7 +25,7 @@ struct RootView: View {
                 // view (ContentView → LoginView) transitions simultaneously.
                 ForgotPasswordView(initialState: .setNewPassword)
                     .environmentObject(auth)
-            } else if auth.session != nil {
+            } else if auth.session != nil || auth.isGuest {
                 ContentView()
             } else {
                 LoginView()
