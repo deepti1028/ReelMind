@@ -135,6 +135,12 @@ struct LoginView: View {
                         Spacer()
                     }
                     .font(.footnote)
+
+                    Button("Continue without an account") { auth.enterGuestMode() }
+                        .font(.system(size: 13))
+                        .foregroundColor(AppTheme.textFaint)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 16)
                 }
                 .padding(.horizontal, 26)
                 .padding(.top, 80)
