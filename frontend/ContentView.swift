@@ -27,6 +27,9 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await appVM.load(silent: true) } }
         }
+        .onChange(of: auth.session) { _, newSession in
+            if newSession != nil { Task { await appVM.load() } }
+        }
         .sheet(isPresented: $appVM.showSettings) {
             NavigationStack {
                 SettingsView()
