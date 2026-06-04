@@ -39,6 +39,7 @@ struct CategoryDetailView: View {
     @StateObject private var viewModel = CategoryDetailViewModel()
     @Environment(\.dismiss) private var dismiss
     @State private var showChat = false
+    @State private var showSignInForChat = false
     @State private var reelToDelete: UUID?
     @State private var reelToReassign: Reel?
 
@@ -124,6 +125,10 @@ struct CategoryDetailView: View {
             })
             .environmentObject(appVM)
         }
+        .sheet(isPresented: $showSignInForChat) {
+            ChatGuestGateView()
+                .environmentObject(auth)
+        }
     }
 
     // MARK: - Sub-views
@@ -180,7 +185,13 @@ struct CategoryDetailView: View {
     }
 
     private var chatButton: some View {
-        Button { showChat = true } label: {
+        Button {
+            if auth.session != nil {
+                showChat = true
+            } else {
+                showSignInForChat = true
+            }
+        } label: {
             Circle()
                 .fill(AppTheme.accent)
                 .frame(width: 44, height: 44)
@@ -192,5 +203,57 @@ struct CategoryDetailView: View {
                 .shadow(color: AppTheme.accent.opacity(0.45), radius: 8, y: 4)
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct ChatGuestGateView: View {
+    @EnvironmentObject private var auth: AuthSession
+    @Environment(\.dismiss) private var dismiss
+    @State private var showLogin = false
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "bubble.left.and.bubble.right")
+                .font(.system(size: 48))
+                .foregroundColor(AppTheme.accent)
+
+            VStack(spacing: 8) {
+                Text("Sign in to chat with your reels")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(AppTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                Text("Chat is powered by your saved reels. Create a free account to get started.")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppTheme.textMuted)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+
+            VStack(spacing: 12) {
+                Button(action: { showLogin = true }) {
+                    Text("Sign In or Create Account")
+                        .font(.system(size: 16, weight: .semibold, design: .serif))
+                        .foregroundColor(Color(r: 0xfd, g: 0xf4, b: 0xe3))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(AppTheme.buttonGradient)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .shadow(color: AppTheme.accentDark.opacity(0.3), radius: 10, x: 0, y: 5)
+                }
+
+                Button("Not now") { dismiss() }
+                    .font(.system(size: 14))
+                    .foregroundColor(AppTheme.textFaint)
+            }
+            .padding(.horizontal, 26)
+
+            Spacer()
+        }
+        .background(AppTheme.background.ignoresSafeArea())
+        .sheet(isPresented: $showLogin) {
+            LoginView().environmentObject(auth)
+        }
     }
 }
