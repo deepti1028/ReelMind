@@ -42,6 +42,7 @@ final class AuthSession: ObservableObject {
     @Published var session: Session?
     @Published var isBootstrapping = true
     @Published var isRecovering = false
+    @Published private(set) var isGuest: Bool = UserDefaults.standard.bool(forKey: "isGuestMode")
 
     private var listenerTask: Task<Void, Never>?
     private var appleSignInCoordinator: AppleSignInCoordinator?
@@ -77,11 +78,12 @@ final class AuthSession: ObservableObject {
                     self?.session = newSession
                     self?.syncToken(newSession?.accessToken)
                     if event == .signedOut {
-                        // Only wipe the onboarding flag on an explicit sign-out so the
-                        // initialSession event (which fires on every cold launch with no
-                        // session) doesn't trigger an @AppStorage KVO update that can
-                        // recreate OnboardingFlow mid-transition and reset its @State.
+                        self?.clearGuestMode()
                         UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
+                        UserDefaults.standard.removeObject(forKey: "_onboardingStep")
+                    }
+                    if event == .signedIn {
+                        self?.clearGuestMode()
                     }
                     if event == .passwordRecovery {
                         print("[AuthSession] passwordRecovery detected — setting isRecovering = true")
@@ -142,6 +144,16 @@ final class AuthSession: ObservableObject {
     }
 
     // MARK: - Auth actions
+
+    func enterGuestMode() {
+        isGuest = true
+        UserDefaults.standard.set(true, forKey: "isGuestMode")
+    }
+
+    private func clearGuestMode() {
+        isGuest = false
+        UserDefaults.standard.removeObject(forKey: "isGuestMode")
+    }
 
     func signIn(email: String, password: String) async throws {
         try await SupabaseManager.shared.client.auth.signIn(
