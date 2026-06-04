@@ -144,6 +144,9 @@ class ShareViewController: UIViewController {
     private var rejectTitle = "Not a Reel"
     private var rejectSubtitle = "ReelMind only saves Instagram Reels"
 
+    // Set to true when no auth token is present — skips POST and shows sign-in message.
+    private var isGuestSave = false
+
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
@@ -404,8 +407,13 @@ class ShareViewController: UIViewController {
 
     private func handleURL(_ url: URL) {
         Log.event("handleURL invoked for: \(url.absoluteString)")
-        writeURLToAppGroup(url)
         let token = readAuthToken()
+        guard !token.isEmpty else {
+            Log.warn("No auth token — guest: skipping POST and queue write")
+            isGuestSave = true
+            return
+        }
+        writeURLToAppGroup(url)
         let autoCategorise = readAutoCategorise()
         postURLToBackend(url: url, authToken: token, autoCategorise: autoCategorise)
     }
@@ -542,7 +550,10 @@ class ShareViewController: UIViewController {
     /// Called from transitionToSavedState() (labels invisible, about to fade in) and
     /// from the network callback (labels may already be animating in — text update is instant).
     private func applyResultLabels() {
-        if saveRejected {
+        if isGuestSave {
+            savedTitleLabel.text = "Sign in to save your reels"
+            savedInfoLabel.text = "Open ReelMind to create an account"
+        } else if saveRejected {
             savedTitleLabel.text = rejectTitle
             savedInfoLabel.text = rejectSubtitle
         } else if duplicateSaveDetected {
