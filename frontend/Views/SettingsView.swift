@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var showDeleteConfirmation = false
     @State private var isDeletingAccount = false
     @State private var deleteError: String? = nil
+    @State private var isSigningOut = false
     @State private var showFeedbackForm = false
     @State private var showSignInForFeedback = false
     @State private var safariURL: URL? = nil
@@ -40,7 +41,7 @@ struct SettingsView: View {
                 }
             }
 
-            if isDeletingAccount {
+            if isDeletingAccount || isSigningOut {
                 Color.black.opacity(0.25).ignoresSafeArea()
                 ProgressView()
                     .tint(AppTheme.accentDark)
@@ -50,6 +51,7 @@ struct SettingsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
         }
+        .allowsHitTesting(!isSigningOut)
         .alert("Delete your account?", isPresented: $showDeleteConfirmation) {
             Button("Delete account", role: .destructive) {
                 Task {
@@ -124,10 +126,15 @@ struct SettingsView: View {
                 Spacer()
                 if auth.session != nil {
                     Button("Sign out") {
-                        Task { try? await auth.signOut() }
+                        Task {
+                            isSigningOut = true
+                            try? await auth.signOut()
+                            isSigningOut = false
+                        }
                     }
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(AppTheme.destructive)
+                    .disabled(isSigningOut)
                 }
             }
         }

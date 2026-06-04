@@ -165,6 +165,11 @@ struct SignupView: View {
                 .padding(.bottom, 40)
             }
         }
+        // Dismiss when a session is established (covers Google/Apple sign-in,
+        // which set the session without going through submit()).
+        .onChange(of: auth.session) { _, newSession in
+            if newSession != nil { dismiss() }
+        }
     }
 
     private func submit() {

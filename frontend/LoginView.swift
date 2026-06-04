@@ -172,6 +172,12 @@ struct LoginView: View {
             ForgotPasswordView(initialState: .enterEmail, prefillEmail: email)
                 .environmentObject(auth)
         }
+        // When presented as a sheet over ContentView (guest signing in), the
+        // session becoming non-nil won't swap the root view, so dismiss the
+        // sheet here. As a root view this is a harmless no-op.
+        .onChange(of: auth.session) { _, newSession in
+            if newSession != nil { dismiss() }
+        }
     }
 
     private var canSubmit: Bool {
