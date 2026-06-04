@@ -42,13 +42,14 @@ final class AuthSession: ObservableObject {
     @Published var session: Session?
     @Published var isBootstrapping = true
     @Published var isRecovering = false
-    @Published private(set) var isGuest: Bool = UserDefaults.standard.bool(forKey: "isGuestMode")
+    @Published private(set) var isGuest: Bool = false
 
     private var listenerTask: Task<Void, Never>?
     private var appleSignInCoordinator: AppleSignInCoordinator?
     private let seenOnboardingUsersKey = "seenOnboardingUsers"
 
     init() {
+        isGuest = UserDefaults.standard.bool(forKey: "isGuestMode")
         Task { await bootstrap() }
     }
 
