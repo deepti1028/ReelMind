@@ -1,7 +1,12 @@
 .claude/
 .superpowers/
+superpowers/
 .firecrawl/
 .DS_Store
+
+# Non-code planning artifacts
+docs/superpowers/
+*.pdf
 xcuserdata/
 *.xcuserstate
 .env
