@@ -15,6 +15,9 @@ xcuserdata/
 
 supabase/.temp/
 
+# Firebase config (regenerate from Firebase console; key is also restricted in GCP)
+frontend/GoogleService-Info.plist
+
 venv/
 env/
 .venv/
